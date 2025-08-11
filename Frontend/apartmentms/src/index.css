@@ -42,6 +42,66 @@
          hover:bg-yellow-400 hover:scale-105 transition-transform duration-300 animate-bounce;
 }
 
+
+/* Login Page Background */
+.loginPage {
+  @apply min-h-screen flex items-center justify-center px-4 w-screen
+         bg-gradient-to-l from-blue-800 via-blue-700 to-purple-700;
+}
+
+/* Login Card Container */
+.loginCard {
+  @apply rounded-2xl p-8 sm:p-10 max-w-md w-full bg-white
+         shadow-2xl text-black flex flex-col gap-6;
+}
+
+/* Login Title */
+.loginCard h2 {
+  @apply text-2xl font-bold text-gray-800 mb-2;
+}
+
+/* Form Layout */
+.loginForm {
+  @apply flex flex-col gap-5;
+}
+
+/* Label Styling */
+.loginLabel {
+  @apply block text-left text-gray-700 font-medium mb-1;
+}
+
+/* Input Styling */
+.loginInput {
+  @apply w-full px-4 py-2 rounded-lg border border-gray-300
+         focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent
+         transition duration-200;
+}
+
+/* Button Container */
+.loginButtonGroup {
+  @apply flex gap-4 mt-4;
+}
+
+/* Login Button */
+.loginButton {
+  @apply w-full py-2 rounded-lg font-semibold shadow-md transition-all duration-300;
+}
+
+.loginButton--submit {
+  @apply bg-purple-600 text-white hover:bg-purple-700 hover:scale-105;
+}
+
+.loginButton--cancel {
+  @apply bg-gray-300 text-gray-800 hover:bg-gray-400 hover:scale-105;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 640px) {
+  .loginCard {
+    @apply p-6;
+  }
+}
+
 /* Fade-in animation */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(20px); }
@@ -50,6 +110,8 @@
 .animate-fadeIn {
   animation: fadeIn 1s ease-in-out;
 }
+
+
 
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;

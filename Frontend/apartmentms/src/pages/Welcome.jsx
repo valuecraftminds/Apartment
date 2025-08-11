@@ -1,12 +1,7 @@
 import React, { useEffect } from "react";
 
 export default function Welcome() {
-  const nav=
-  
-  useEffect(()=>{
-
-  })
-  return (
+    return (
     <div className="welcomePage">
       <div className="welcomeCard">
         {/* Logo / Icon */}
