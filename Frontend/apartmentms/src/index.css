@@ -1,0 +1,183 @@
+@import "tailwindcss";
+
+@keyframes gradientMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.welcomePage {
+  @apply min-h-screen w-screen flex items-center justify-center px-4;
+  background-image: 
+    linear-gradient(135deg, rgba(29,78,216,0.65), rgba(139,92,246,0.65)),
+    url('../images/1.jpg'); /* Replace with your image */
+  background-size: cover;
+  background-position: center;
+  animation: gradientMove 15s ease infinite;
+}
+
+.welcomeCard {
+  @apply bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-3xl w-full 
+         shadow-2xl text-center;
+}
+
+.welcomeTitle {
+  @apply text-3xl sm:text-5xl md:text-6xl font-bold text-white mb-4;
+}
+
+.welcomeSubtitle {
+  @apply text-base sm:text-lg md:text-xl text-white/90 mb-8;
+}
+
+.featureGrid {
+  @apply grid grid-cols-2 gap-4 mb-10 text-lg text-white;
+}
+
+.featureItem {
+  @apply bg-white/20 rounded-lg py-3 px-4 backdrop-blur-sm shadow-md;
+}
+
+.welcomeButton {
+  @apply bg-yellow-300 text-purple-900 font-bold py-3 px-8 rounded-lg shadow-lg
+         hover:bg-yellow-400 hover:scale-105 transition-transform duration-300 animate-bounce;
+}
+
+
+/* Login Page Background */
+.loginPage {
+  @apply min-h-screen flex items-center justify-center px-4 w-screen
+         bg-gradient-to-l from-blue-800 via-blue-700 to-purple-700;
+}
+
+/* Login Card Container */
+.loginCard {
+  @apply rounded-2xl p-8 sm:p-10 max-w-md w-full bg-white
+         shadow-2xl text-black flex flex-col gap-6;
+}
+
+/* Login Title */
+.loginCard h2 {
+  @apply text-2xl font-bold text-gray-800 mb-2;
+}
+
+/* Form Layout */
+.loginForm {
+  @apply flex flex-col gap-5;
+}
+
+/* Label Styling */
+.loginLabel {
+  @apply block text-left text-gray-700 font-medium mb-1;
+}
+
+/* Input Styling */
+.loginInput {
+  @apply w-full px-4 py-2 rounded-lg border border-gray-300
+         focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent
+         transition duration-200;
+}
+
+/* Button Container */
+.loginButtonGroup {
+  @apply flex gap-4 mt-4;
+}
+
+/* Login Button */
+.loginButton {
+  @apply w-full py-2 rounded-lg font-semibold shadow-md transition-all duration-300;
+}
+
+.loginButton--submit {
+  @apply bg-purple-600 text-white hover:bg-purple-700 hover:scale-105;
+}
+
+.loginButton--cancel {
+  @apply bg-gray-300 text-gray-800 hover:bg-gray-400 hover:scale-105;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 640px) {
+  .loginCard {
+    @apply p-6;
+  }
+}
+
+/* Fade-in animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fadeIn {
+  animation: fadeIn 1s ease-in-out;
+}
+
+
+
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+button:hover {
+  border-color: #646cff;
+}
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}
