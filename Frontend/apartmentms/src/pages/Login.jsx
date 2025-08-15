@@ -24,15 +24,41 @@ export default function Login() {
     navigate('/admindashboard');
   }
 
+  const handleCancel=()=>{
+    navigate('/');
+  }
+
   return (
-    <div className="p-6 max-w-md mx-auto">
-      <h2 className="text-2xl font-bold mb-4">Login</h2>
+    <div className="container">
+    <div className="loginPage">
+        <div className='loginCard animate-fadeIn'>
+            <div className="flex items-center justify-center gap-2 mb-4">
+            <img
+              src="/favicon.ico"
+              alt="AptSync Logo"
+              className="w-10 h-10"
+            />
+            <h1 className="font-bold text-xl">Get Login</h1>
+          </div>
       {msg && <div className="mb-4 text-red-600">{msg}</div>}
-      <form onSubmit={submit} className="space-y-4">
-        <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" className="w-full" />
-        <input value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" type="password" className="w-full" />
-        <button className="px-4 py-2 bg-purple-600 text-white rounded" onClick={handleLogin}>Login</button>
+      <form onSubmit={submit} className="loginForm">
+        <div>
+            <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" className="loginInput" />
+        </div>
+        <div>
+        <input value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" type="password" className="loginInput" />
+        </div>
+        <div className="loginButtonGroup">
+              <button type="submit" name="submit" className="loginButton loginButton--submit" onClick={handleLogin}>
+                Login
+              </button>
+              <button type="button" name="cancel" className="loginButton loginButton--cancel" onClick={handleCancel}>
+                Cancel
+              </button>
+            </div>
       </form>
+      </div>
+    </div>
     </div>
   );
 }
