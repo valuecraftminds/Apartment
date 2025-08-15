@@ -1,6 +1,13 @@
 import React, { useEffect } from "react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function Welcome() {
+  const navigate=useNavigate();
+
+  const handleNavigation= ()=>{
+    navigate('/register');
+  }
     return (
     <div className="welcomePage">
       <div className="welcomeCard">
@@ -31,7 +38,7 @@ export default function Welcome() {
         </div>
 
         {/* CTA */}
-        <button className="welcomeButton">🚀 Get Started</button>
+        <button className="welcomeButton" onClick={handleNavigation}>🚀 Get Started</button>
       </div>
     </div>
   );
