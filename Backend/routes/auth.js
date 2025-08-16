@@ -19,14 +19,14 @@ function signRefreshToken(user) {
 /* Register: create user, store hashed verification token, send email */
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { firstname,lastname,country,mobile, email, password } = req.body;
     if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
 
     const [exists] = await pool.execute('SELECT id FROM users WHERE email = ?', [email]);
     if (exists.length) return res.status(409).json({ message: 'Email already registered' });
 
     const password_hash = await bcrypt.hash(password, 12);
-    const [ins] = await pool.execute('INSERT INTO users (name, email, password_hash, is_verified) VALUES (?, ?, ?, 0)', [name || null, email, password_hash]);
+    const [ins] = await pool.execute('INSERT INTO users (firstname,lastname,country,mobile, email, password_hash, is_verified) VALUES (?, ?, ? ,? ,? ,? , 0)', [firstname || null,lastname||null,country||null,mobile||null, email, password_hash]);
     const userId = ins.insertId;
 
     // create verification token (plain->email, hash->DB)
