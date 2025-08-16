@@ -42,6 +42,11 @@
          hover:bg-yellow-400 hover:scale-105 transition-transform duration-300 animate-bounce;
 }
 
+.signInSignUp{
+  @apply bg-gradient-to-t from-blue-500 font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-gradient-to-t bg-purple-500 border border-white
+         hover:scale-105 transition-transform duration-300 hover:text-blue-700
+}
+
 
 /* Login Page Background */
 .loginPage {
@@ -102,7 +107,7 @@
 
 .passwordInput {
 
-  @apply pr-10;
+  @apply  pr-10;
 }
 
 .passwordToggle {

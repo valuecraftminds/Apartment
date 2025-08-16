@@ -10,16 +10,25 @@ export default function Welcome() {
   }
     return (
     <div className="welcomePage">
-      <div className="absolute top-4 right-6 flex gap-4">
+      <div className="absolute top-4 left-6 flex -6 mt-5">
+        <img
+          src="/apartment.png"
+          alt="Apartment Logo"
+          className="w-12 sm:w-10 md:w-11 mx-auto mb-6"
+        />
+        <h2 className="text-3xl sm:text-3xl md:text-3xl font-bold text-white mb-4">AptSync</h2>
+      </div>
+
+      <div className="absolute top-4 right-6 flex gap-6 mt-6">
         <button 
           onClick={() => navigate("/login")} 
-          className="px-4 py-2 rounded-lg bg-transparent hover:bg-gray-300 font-medium"
+          className="signInSignUp"
         >
           Sign In
         </button>
         <button 
           onClick={() => navigate("/register")} 
-          className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-medium"
+          className="signInSignUp"
         >
           Sign Up
         </button>
