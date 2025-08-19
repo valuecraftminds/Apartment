@@ -22,6 +22,7 @@ CREATE TABLE users (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+
 SELECT User, Host FROM mysql.user WHERE User='myapp_user';
 
 
