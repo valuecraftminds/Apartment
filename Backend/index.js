@@ -33,3 +33,7 @@ app.listen(PORT, async () => {
   console.log(`Server running on http://localhost:${PORT}`);
   await verifyTransport(); // test SMTP
 });
+
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+});

@@ -6,8 +6,9 @@ import "react-toastify/dist/ReactToastify.css";
 import { Eye, EyeOff } from "lucide-react";
 
 export default function Register() {
-  const [firstName, setFirstname] = useState('');
-  const [lastName, setLastname] = useState('');
+  const [firstname, setFirstname] = useState('');
+  const [lastname, setLastname] = useState('');
+  const [username, setUsername] = useState('');
   const [country, setCountry] = useState('');
   const [mobile, setMobile] = useState('');
   const [email, setEmail] = useState('');
@@ -43,9 +44,9 @@ export default function Register() {
     }
 
     try {
-      await api.post('/auth/register', { firstName,lastName,country,mobile, email, password });
+      await api.post('/auth/register', { firstname,lastname,username,country,mobile, email, password });
       // setMsg('Registered! Check your inbox for a verification email.');
-      toast.success("🎉 Registered! Check your inbox for a verification email.");
+      toast.success("Registered! Check your inbox for a verification email.");
     } catch (err) {
       // setMsg(err.response?.data?.message || 'Register failed');
       toast.error(err.response?.data?.message || "❌ Registration failed");
@@ -62,15 +63,18 @@ export default function Register() {
               alt="AptSync Logo"
               className="w-10 h-10"
             />
-            <h1 className="font-bold text-xl">Register</h1>
+            <h1 className="font-bold text-xl">Sign Up</h1>
           </div>
       {msg && <div className="mb-4">{msg}</div>}
       <form onSubmit={submit} className="loginForm">
         <div>
-        <input value={firstName} onChange={e => setFirstname(e.target.value)} placeholder="Firstname" className="loginInput" />
+        <input value={firstname} onChange={e => setFirstname(e.target.value)} placeholder="Firstname" className="loginInput" />
         </div>
         <div>
-        <input value={lastName} onChange={e => setLastname(e.target.value)} placeholder="Lastname" className="loginInput" />
+        <input value={lastname} onChange={e => setLastname(e.target.value)} placeholder="Lastname" className="loginInput" />
+        </div>
+        <div>
+        <input value={username} onChange={e => setUsername(e.target.value)} placeholder="Username" className="loginInput" />
         </div>
         <div>
         <input value={country} onChange={e => setCountry(e.target.value)} placeholder="Country" className="loginInput" />

@@ -23,12 +23,12 @@ async function verifyTransport() {
 }
 
 async function sendVerificationEmail(toEmail, plainToken, userId) {
-  const verifyUrl = `${process.env.FRONTEND_URL}/verify?token=${plainToken}&id=${userId}`;
+  const loginUrl = `${process.env.FRONTEND_URL}/login?token=${plainToken}&id=${userId}`;
   const html = `
     <h3>Welcome to AptSync</h3>
     <p>Please verify your email by clicking the button below. This link expires in ${process.env.VERIFICATION_TOKEN_EXPIRES_HOURS || 24} hours.</p>
-    <p><a href="${verifyUrl}" style="display:inline-block;padding:10px 18px;background:#6b46c1;color:#fff;border-radius:6px;text-decoration:none">Verify Email</a></p>
-    <p>If the button doesn't work, copy/paste this URL into your browser:<br/><code>${verifyUrl}</code></p>
+    <p><a href="${loginUrl}" style="display:inline-block;padding:10px 18px;background:#6b46c1;color:#fff;border-radius:6px;text-decoration:none">Verify Email</a></p>
+    <p>If the button doesn't work, copy/paste this URL into your browser:<br/><code>${loginUrl}</code></p>
   `;
   await transporter.sendMail({
     from: process.env.EMAIL_FROM,

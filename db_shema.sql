@@ -6,10 +6,21 @@ FLUSH PRIVILEGES;
 use myapp_db;
 Drop database myapp_db;
 
+CREATE TABLE tenent(
+	id VARCHAR(255) not null,
+    regNo VARCHAR(255) not null,
+    name VARCHAR(255) not null,
+    businessInfo VARCHAR(255) not null,
+    employees int not null,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+    
+
 CREATE TABLE users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   firstname VARCHAR(100),
   lastname VARCHAR(100),
+  username VARCHAR(100),
   country VARCHAR(100),
   mobile VARCHAR(100),
   email VARCHAR(255) UNIQUE NOT NULL,
@@ -21,6 +32,8 @@ CREATE TABLE users (
   role VARCHAR(30) DEFAULT 'admin',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+
 
 
 SELECT User, Host FROM mysql.user WHERE User='myapp_user';
