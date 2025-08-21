@@ -87,6 +87,14 @@ export default function Login() {
 
   return (
     <div className="container">
+      <div className="absolute top-4 left-6 flex -6 mt-5">
+        <img
+          src="/apartment.png"
+          alt="Apartment Logo"
+          className="w-12 sm:w-10 md:w-11 mx-auto mb-6"
+        />
+        <h2 className="text-3xl sm:text-3xl md:text-3xl font-bold text-white mb-4">AptSync</h2>
+      </div>
     <div className="loginPage">
         <div className='loginCard animate-fadeIn'>
             <div className="flex items-center justify-center gap-2 mb-4">
@@ -143,7 +151,7 @@ export default function Login() {
               type="button" 
               onClick={handleResend}
               disabled={isResending}
-              className="text-indigo-600 hover:underline disabled:text-gray-400 disabled:cursor-not-allowed"
+              className="text-white hover:underline disabled:text-gray-400 disabled:cursor-not-allowed bg-white"
             >
               {isResending ? 'Sending...' : 'Resend'}
             </button>
