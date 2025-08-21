@@ -6,6 +6,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Verify from './pages/Verify'
 import AdminDashboard from './pages/AdminDashboard'
+import NavBar from './components/Navbar'
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
         <Route path='/login' element={<Login />} />
         <Route path='/register' element={<Register />}/>
         {/* <Route path='/verify' element={<Verify />}/> */}
+        <Route path='/navbar' element={<NavBar />}/>
         <Route path='/admindashboard' element={<AdminDashboard />}/>
       </Routes>
     </BrowserRouter>
