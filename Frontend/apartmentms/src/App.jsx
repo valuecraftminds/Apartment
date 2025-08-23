@@ -7,6 +7,7 @@ import Register from './pages/Register'
 import Verify from './pages/Verify'
 import AdminDashboard from './pages/AdminDashboard'
 import NavBar from './components/Navbar'
+import CompanyRegistration from './pages/CompanyRegistration'
 
 export default function App() {
   return (
@@ -14,7 +15,8 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Welcome />} />
         <Route path='/login' element={<Login />} />
-        <Route path='/register' element={<Register />}/>
+        <Route path='/companyregistration' element={<CompanyRegistration />}/>
+        <Route path='/admin/register' element={<Register />}/>
         {/* <Route path='/verify' element={<Verify />}/> */}
         <Route path='/navbar' element={<NavBar />}/>
         <Route path='/admindashboard' element={<AdminDashboard />}/>

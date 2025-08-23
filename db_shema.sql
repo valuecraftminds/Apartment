@@ -6,8 +6,8 @@ FLUSH PRIVILEGES;
 use myapp_db;
 Drop database myapp_db;
 
-CREATE TABLE tenent(
-	id VARCHAR(255) not null,
+CREATE TABLE tenants(
+	id VARCHAR(255) primary key not null,
     regNo VARCHAR(255) not null,
     name VARCHAR(255) not null,
     businessInfo VARCHAR(255) not null,
@@ -30,7 +30,8 @@ CREATE TABLE users (
   verification_token_expires DATETIME DEFAULT NULL,
   refresh_token TEXT DEFAULT NULL,
   role VARCHAR(30) DEFAULT 'admin',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  company_id varchar(100), foreign key(company_id) references tenants(id)
 );
 
 
