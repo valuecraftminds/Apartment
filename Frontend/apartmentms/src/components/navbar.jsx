@@ -40,11 +40,6 @@ export default function navbar() {
 
   const navigationItems = [
     { name: 'Dashboard', path: '/admindashboard', icon: Home },
-    { name: 'Analytics', path: '/analytics', icon: BarChart3 },
-    { name: 'Users', path: '/users', icon: Users },
-    { name: 'Properties', path: '/properties', icon: Building },
-    { name: 'Reports', path: '/reports', icon: FileText },
-    { name: 'Settings', path: '/settings', icon: Settings }
   ];
 
   const isActive = (path) => location.pathname === path;
@@ -56,37 +51,7 @@ export default function navbar() {
           {/* Left side - Logo and navigation links */}
           <div className="flex items-center">
             {/* Logo */}
-            <Link to="/admindashboard" className="flex-shrink-0 flex items-center">
-              <img
-                className="h-8 w-8"
-                src="/favicon.ico"
-                alt="AptSync Logo"
-              />
-              <span className="ml-2 text-xl font-bold text-gray-800 hidden md:block">
-                AptSync 
-              </span>
-            </Link>
-
-            {/* Desktop Navigation */}
-            <div className="hidden md:ml-6 md:flex md:space-x-1">
-              {navigationItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.name}
-                    to={item.path}
-                    className={`inline-flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
-                      isActive(item.path)
-                        ? 'bg-indigo-100 text-indigo-700 border-b-2 border-indigo-600'
-                        : 'text-gray-600 hover:text-indigo-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    <Icon size={18} className="mr-2" />
-                    {item.name}
-                  </Link>
-                );
-              })}
-            </div>
+            
           </div>
 
           {/* Right side - Search, notifications, user menu */}
