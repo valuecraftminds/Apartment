@@ -8,6 +8,7 @@ import Verify from './pages/Verify'
 import AdminDashboard from './pages/AdminDashboard'
 import NavBar from './components/Navbar'
 import CompanyRegistration from './pages/CompanyRegistration'
+import { Sidebar } from 'lucide-react'
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
         <Route path='/companyregistration' element={<CompanyRegistration />}/>
         <Route path='/admin/register' element={<Register />}/>
         {/* <Route path='/verify' element={<Verify />}/> */}
+        <Route path='/sidebar' element={<Sidebar/>}/>
         <Route path='/navbar' element={<NavBar />}/>
         <Route path='/admindashboard' element={<AdminDashboard />}/>
       </Routes>
