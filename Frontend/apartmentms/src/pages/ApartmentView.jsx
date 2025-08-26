@@ -1,4 +1,4 @@
-import { Building } from 'lucide-react'
+import { Building, Building2 } from 'lucide-react'
 import React, { useState } from 'react'
 import Sidebar from '../components/Sidebar'
 import Navbar from '../components/Navbar';
@@ -19,7 +19,7 @@ export default function ApartmentView() {
             {/* Page Content */}
             <div className="flex-1 overflow-y-auto p-6">
               <div className="mx-auto flex">
-                <Building />
+                <Building2 size={50} className='text-purple-600 mr-1.5'/>
                 <h1 className="text-2xl font-bold text-gray-800 mb-6">Apartments</h1>                
               </div>
             </div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import Navbar from '../components/Navbar'
 import Sidebar from '../components/Sidebar'
+import { Home } from 'lucide-react';
 
 export default function AdminDashboard() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -18,7 +19,10 @@ export default function AdminDashboard() {
         {/* Page Content */}
         <div className="flex-1 overflow-y-auto p-6">
           <div className="mx-auto">
+            <div className='flex bg-gray-100 rounded-2xl h-fit'>
+            <Home size={50} className='text-purple-600 mr-1.5'/>
             <h1 className="text-2xl font-bold text-gray-800 mb-6">Admin Dashboard</h1>
+            </div>
             
             {/* Dashboard Content */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
