@@ -106,7 +106,7 @@ export default function Login() {
             <h1 className="font-bold text-xl">Sign In</h1>
           </div>
       {/* Show a loading message only while verifying */}
-          {isVerifying && <div className="mb-4 text-blue-600">Verifying your email...</div>}
+          {isVerifying && <div className="mb-4 text-purple-600">Verifying your email...</div>}
           {/* Show other non-toast messages (e.g., from login) */}
           {/* {msg && <div className="mb-4 text-red-600">{msg}</div>} */}
       <form onSubmit={submit} className="loginForm">
@@ -151,7 +151,7 @@ export default function Login() {
               type="button" 
               onClick={handleResend}
               disabled={isResending}
-              className="text-white hover:underline disabled:text-gray-400 disabled:cursor-not-allowed bg-white"
+              className="text-purple-700 hover:underline disabled:text-gray-400 disabled:cursor-not-allowed bg-white"
             >
               {isResending ? 'Sending...' : 'Resend'}
             </button>
