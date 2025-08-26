@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom';
 import {
   Home,
-  BarChart3,
   Users,
   Building,
   FileText,
@@ -17,9 +16,8 @@ export default function Sidebar() {
 
   const navigationItems = [
     { name: 'Dashboard', path: '/admindashboard', icon: Home },
-    { name: 'Analytics', path: '/analytics', icon: BarChart3 },
     { name: 'Users', path: '/users', icon: Users },
-    { name: 'Properties', path: '/properties', icon: Building },
+    { name: 'Apartments', path: '/apartmentview', icon: Building },
     { name: 'Reports', path: '/reports', icon: FileText },
     { name: 'Settings', path: '/settings', icon: Settings }
   ];
@@ -39,7 +37,7 @@ export default function Sidebar() {
               alt="AptSync Logo"
             />
             <span className="ml-2 text-xl font-bold text-gray-800">
-              AptSync Admin
+              AptSync
             </span>
           </div>
         )}
@@ -56,7 +54,7 @@ export default function Sidebar() {
         
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-1 rounded-md hover:bg-gray-100 transition-colors duration-200"
+          className="p-1 rounded-md hover:bg-gray-100 transition-colors duration-200 text-purple-700"
         >
           {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
         </button>
@@ -72,37 +70,16 @@ export default function Sidebar() {
               to={item.path}
               className={`flex items-center rounded-lg px-3 py-3 text-sm font-medium transition-colors duration-200 ${
                 isActive(item.path)
-                  ? 'bg-indigo-100 text-indigo-700 border-r-2 border-indigo-600'
-                  : 'text-gray-600 hover:text-indigo-600 hover:bg-gray-100'
+                  ? 'bg-purple-100 text-purple-700 border-r-2 border-purple-600'
+                  : 'text-gray-600 hover:text-purple-600 hover:bg-gray-100'
               }`}
             >
-              <Icon size={20} className={isCollapsed ? '' : 'mr-3'} />
+              <Icon size={20} className={isCollapsed ? 'mx-auto' : 'mr-3'} />
               {!isCollapsed && <span>{item.name}</span>}
             </Link>
           );
         })}
       </nav>
-
-      {/* Collapsed Tooltips */}
-      {isCollapsed && (
-        <div className="absolute left-full ml-2 top-16">
-          {navigationItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <div
-                key={item.name}
-                className="relative group"
-              >
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute left-2 top-1/2 transform -translate-y-1/2">
-                  <div className="bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
-                    {item.name}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }

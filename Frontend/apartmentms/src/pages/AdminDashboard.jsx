@@ -1,21 +1,23 @@
-import React from 'react'
+import React, { useState } from 'react'
 import Navbar from '../components/Navbar'
 import Sidebar from '../components/Sidebar'
 
 export default function AdminDashboard() {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
   return (
-    <div className="flex h-screen bg-gray-100 w-full">
+    <div className="flex h-screen bg-gray-100 w-screen">
       {/* Sidebar */}
-      <Sidebar />
+      <Sidebar onCollapse={setIsSidebarCollapsed} />
       
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Main Content Area - Dynamic margin based on sidebar state */}
+      <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${isSidebarCollapsed ? 'ml-20' : 'ml-64'}`}>
         {/* Navbar */}
         <Navbar />
         
         {/* Page Content */}
         <div className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-7xl mx-auto">
+          <div className="mx-auto">
             <h1 className="text-2xl font-bold text-gray-800 mb-6">Admin Dashboard</h1>
             
             {/* Dashboard Content */}
@@ -23,17 +25,12 @@ export default function AdminDashboard() {
               {/* Stats Cards */}
               <div className="bg-white rounded-lg shadow p-6">
                 <h3 className="text-lg font-semibold text-gray-700">Total Users</h3>
-                <p className="text-3xl font-bold text-indigo-600">1,234</p>
+                <p className="text-3xl font-bold text-purple-600">1,234</p>
               </div>
               
               <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-semibold text-gray-700">Total Properties</h3>
-                <p className="text-3xl font-bold text-indigo-600">567</p>
-              </div>
-              
-              <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-semibold text-gray-700">Revenue</h3>
-                <p className="text-3xl font-bold text-indigo-600">$45,678</p>
+                <h3 className="text-lg font-semibold text-gray-700">Total Apartments</h3>
+                <p className="text-3xl font-bold text-purple-600">567</p>
               </div>
             </div>
             
