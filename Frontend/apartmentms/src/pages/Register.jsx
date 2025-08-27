@@ -5,40 +5,42 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Eye, EyeOff, ChevronLeft, ChevronRight, Check, X } from "lucide-react";
 
-export default function Register() {
-  const [formData, setFormData] = useState({
-    firstname: '',
-    lastname: '',
+export default function CombinedRegistration() {
+  // User data state
+  const [userData, setUserData] = useState({
     username: '',
-    country: '',
-    mobile: '',
     email: '',
     password: '',
     confirmPassword: ''
   });
-  
+
+  // Company data state
+  const [companyData, setCompanyData] = useState({
+    name: '',
+    businessInfo: '',
+    employees: ''
+  });
+
   const [errors, setErrors] = useState({
-    firstname: '',
-    lastname: '',
     username: '',
-    country: '',
-    mobile: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    name: '',
+    businessInfo: '',
+    employees: ''
   });
-  
+
   const [touched, setTouched] = useState({
-    firstname: false,
-    lastname: false,
     username: false,
-    country: false,
-    mobile: false,
     email: false,
     password: false,
-    confirmPassword: false
+    confirmPassword: false,
+    name: false,
+    businessInfo: false,
+    employees: false
   });
-  
+
   const [currentStep, setCurrentStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
@@ -51,18 +53,7 @@ export default function Register() {
     let error = '';
     
     switch (name) {
-      case 'firstname':
-        if (!value.trim()) error = 'First name is required';
-        else if (value.length < 2) error = 'First name must be at least 2 characters';
-        else if (!/^[a-zA-Z\s-']+$/.test(value)) error = 'First name can only contain letters, spaces, hyphens, and apostrophes';
-        break;
-        
-      case 'lastname':
-        if (!value.trim()) error = 'Last name is required';
-        else if (value.length < 2) error = 'Last name must be at least 2 characters';
-        else if (!/^[a-zA-Z\s-']+$/.test(value)) error = 'Last name can only contain letters, spaces, hyphens, and apostrophes';
-        break;
-        
+      // User validation
       case 'username':
         if (!value.trim()) error = 'Username is required';
         else if (value.length < 3) error = 'Username must be at least 3 characters';
@@ -86,15 +77,26 @@ export default function Register() {
         
       case 'confirmPassword':
         if (!value) error = 'Please confirm your password';
-        else if (value !== formData.password) error = 'Passwords do not match';
+        else if (value !== userData.password) error = 'Passwords do not match';
+        break;
+
+      // Company validation
+      case 'name':
+        if (!value.trim()) error = 'Company name is required';
+        else if (value.length < 2) error = 'Company name must be at least 2 characters';
         break;
         
-      case 'mobile':
-        if (value && !/^[\+]?[1-9][\d]{0,15}$/.test(value.replace(/[\s\-\(\)]/g, ''))) {
-          error = 'Please enter a valid phone number';
-        }
+      case 'businessInfo':
+        if (!value.trim()) error = 'Business information is required';
+        else if (value.length < 3) error = 'Business information must be at least 3 characters';
         break;
-        
+
+      case 'employees':
+        if (!value.trim()) error = 'Number of employees is required';
+        else if (!/^\d+$/.test(value)) error = 'Number of employees must be a valid number';
+        else if (parseInt(value) < 1) error = 'Number of employees must be at least 1';
+        break;
+                                
       default:
         break;
     }
@@ -102,12 +104,20 @@ export default function Register() {
     return error;
   };
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (e, isCompany = false) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    if (isCompany) {
+      setCompanyData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    } else {
+      setUserData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
 
     // Validate field in real-time if it's been touched
     if (touched[name]) {
@@ -116,17 +126,18 @@ export default function Register() {
     }
   };
 
-  const handleBlur = (e) => {
+  const handleBlur = (e, isCompany = false) => {
     const { name } = e.target;
     setTouched(prev => ({ ...prev, [name]: true }));
     
     // Validate field on blur
-    const error = validateField(name, formData[name]);
+    const value = isCompany ? companyData[name] : userData[name];
+    const error = validateField(name, value);
     setErrors(prev => ({ ...prev, [name]: error }));
   };
 
   const handleConfirmPwd = (value) => {
-    setFormData(prev => ({ ...prev, confirmPassword: value }));
+    setUserData(prev => ({ ...prev, confirmPassword: value }));
     
     if (touched.confirmPassword) {
       const error = validateField('confirmPassword', value);
@@ -141,14 +152,15 @@ export default function Register() {
 
     // Mark all fields in current step as touched and validate them
     const stepFields = {
-      1: ['firstname', 'lastname', 'username'],
-      2: ['country', 'mobile', 'email'],
-      3: ['password', 'confirmPassword']
+      1: ['username', 'email'], // User details
+      2: ['name', 'businessInfo', 'employees'], // Company details
+      3: ['password', 'confirmPassword'] // Security
     }[step];
 
     stepFields.forEach(field => {
       newTouched[field] = true;
-      const error = validateField(field, formData[field]);
+      const value = field in companyData ? companyData[field] : userData[field];
+      const error = validateField(field, value);
       newErrors[field] = error;
       if (error) isValid = false;
     });
@@ -192,25 +204,36 @@ export default function Register() {
     }
 
     try {
-      await api.post('/auth/register', formData);
-      toast.success("Registered! Check your inbox for a verification email.");
-      // Optional: Redirect to login after successful registration
+      // First register the company
+      const companyResponse = await api.post('/tenants', {
+        ...companyData,
+        employees: parseInt(companyData.employees, 10)
+      });
+
+      // Then register the user with the company ID
+      const userResponse = await api.post('/auth/register', {
+        ...userData,
+        companyId: companyResponse.data.data.id // Assuming your API returns the created company with ID
+      });
+
+      toast.success("Registration successful! Company and user account created.");
       setTimeout(() => navigate('/login'), 2000);
     } catch (err) {
+      console.error('Registration error:', err);
       toast.error(err.response?.data?.message || "❌ Registration failed");
     }
   }
 
   // Password strength indicator
   const getPasswordStrength = () => {
-    if (!formData.password) return { strength: 0, label: '' };
+    if (!userData.password) return { strength: 0, label: '' };
     
     let strength = 0;
-    if (formData.password.length >= 8) strength++;
-    if (/(?=.*[a-z])/.test(formData.password)) strength++;
-    if (/(?=.*[A-Z])/.test(formData.password)) strength++;
-    if (/(?=.*\d)/.test(formData.password)) strength++;
-    if (/(?=.*[@$!%*?&])/.test(formData.password)) strength++;
+    if (userData.password.length >= 8) strength++;
+    if (/(?=.*[a-z])/.test(userData.password)) strength++;
+    if (/(?=.*[A-Z])/.test(userData.password)) strength++;
+    if (/(?=.*\d)/.test(userData.password)) strength++;
+    if (/(?=.*[@$!%*?&])/.test(userData.password)) strength++;
     
     const labels = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong', 'Very Strong'];
     return { strength, label: labels[strength] };
@@ -220,9 +243,9 @@ export default function Register() {
 
   // Progress steps
   const steps = [
-    { number: 1, title: "Personal Info" },
-    { number: 2, title: "Contact Details" },
-    { number: 3, title: "Account Security" }
+    { number: 1, title: "User Details" },
+    { number: 2, title: "Company Info" },
+    { number: 3, title: "Security" }
   ];
 
   return (
@@ -239,7 +262,7 @@ export default function Register() {
         <div className='loginCard animate-fadeIn'>
           <div className="flex items-center justify-center gap-2 mb-4">
             <img src="/favicon.ico" alt="AptSync Logo" className="w-10 h-10" />
-            <h1 className="font-bold text-xl">Sign Up</h1>
+            <h1 className="font-bold text-xl">Complete Registration</h1>
           </div>
           
           {/* Progress Indicator */}
@@ -267,59 +290,17 @@ export default function Register() {
           </div>
 
           <form onSubmit={submit} className="loginForm">
-            {/* Step 1: Personal Information */}
+            {/* Step 1: User Details */}
             {currentStep === 1 && (
               <div className="space-y-4 animate-fadeIn">
-                <h2 className="text-lg font-semibold mb-4">Personal Information</h2>
-                
-                <div>
-                  <input 
-                    name="firstname" 
-                    value={formData.firstname} 
-                    onChange={handleInputChange}
-                    onBlur={handleBlur}
-                    placeholder="First Name *" 
-                    className={`loginInput ${errors.firstname ? 'border-red-500' : touched.firstname && 'border-green-500'}`}
-                  />
-                  {touched.firstname && errors.firstname && (
-                    <div className="text-red-500 text-sm mt-1 flex items-center">
-                      <X size={14} className="mr-1" /> {errors.firstname}
-                    </div>
-                  )}
-                  {touched.firstname && !errors.firstname && (
-                    <div className="text-green-500 text-sm mt-1 flex items-center">
-                      <Check size={14} className="mr-1" /> Looks good!
-                    </div>
-                  )}
-                </div>
-                
-                <div>
-                  <input 
-                    name="lastname" 
-                    value={formData.lastname} 
-                    onChange={handleInputChange}
-                    onBlur={handleBlur}
-                    placeholder="Last Name *" 
-                    className={`loginInput ${errors.lastname ? 'border-red-500' : touched.lastname && 'border-green-500'}`}
-                  />
-                  {touched.lastname && errors.lastname && (
-                    <div className="text-red-500 text-sm mt-1 flex items-center">
-                      <X size={14} className="mr-1" /> {errors.lastname}
-                    </div>
-                  )}
-                  {touched.lastname && !errors.lastname && (
-                    <div className="text-green-500 text-sm mt-1 flex items-center">
-                      <Check size={14} className="mr-1" /> Looks good!
-                    </div>
-                  )}
-                </div>
+                <h2 className="text-lg font-semibold mb-4">User Information</h2>
                 
                 <div>
                   <input 
                     name="username" 
-                    value={formData.username} 
-                    onChange={handleInputChange}
-                    onBlur={handleBlur}
+                    value={userData.username} 
+                    onChange={(e) => handleInputChange(e, false)}
+                    onBlur={(e) => handleBlur(e, false)}
                     placeholder="Username *" 
                     className={`loginInput ${errors.username ? 'border-red-500' : touched.username && 'border-green-500'}`}
                   />
@@ -334,53 +315,14 @@ export default function Register() {
                     </div>
                   )}
                 </div>
-              </div>
-            )}
-
-            {/* Step 2: Contact Details */}
-            {currentStep === 2 && (
-              <div className="space-y-4 animate-fadeIn">
-                <h2 className="text-lg font-semibold mb-4">Contact Details</h2>
-                
-                <div>
-                  <input 
-                    name="country" 
-                    value={formData.country} 
-                    onChange={handleInputChange}
-                    onBlur={handleBlur}
-                    placeholder="Country" 
-                    className={`loginInput ${errors.country ? 'border-red-500' : ''}`}
-                  />
-                  {errors.country && (
-                    <div className="text-red-500 text-sm mt-1 flex items-center">
-                      <X size={14} className="mr-1" /> {errors.country}
-                    </div>
-                  )}
-                </div>
-                
-                <div>
-                  <input 
-                    name="mobile" 
-                    value={formData.mobile} 
-                    onChange={handleInputChange}
-                    onBlur={handleBlur}
-                    placeholder="Mobile Number" 
-                    className={`loginInput ${errors.mobile ? 'border-red-500' : ''}`}
-                  />
-                  {errors.mobile && (
-                    <div className="text-red-500 text-sm mt-1 flex items-center">
-                      <X size={14} className="mr-1" /> {errors.mobile}
-                    </div>
-                  )}
-                </div>
                 
                 <div>
                   <input 
                     name="email" 
                     type="email"
-                    value={formData.email} 
-                    onChange={handleInputChange}
-                    onBlur={handleBlur}
+                    value={userData.email} 
+                    onChange={(e) => handleInputChange(e, false)}
+                    onBlur={(e) => handleBlur(e, false)}
                     placeholder="Email *" 
                     className={`loginInput ${errors.email ? 'border-red-500' : touched.email && 'border-green-500'}`}
                   />
@@ -398,6 +340,76 @@ export default function Register() {
               </div>
             )}
 
+            {/* Step 2: Company Details */}
+            {currentStep === 2 && (
+              <div className="space-y-4 animate-fadeIn">
+                <h2 className="text-lg font-semibold mb-4">Company Information</h2>
+                
+                <div>
+                  <input 
+                    name="name" 
+                    value={companyData.name} 
+                    onChange={(e) => handleInputChange(e, true)}
+                    onBlur={(e) => handleBlur(e, true)}
+                    placeholder="Company Name *" 
+                    className={`loginInput ${errors.name ? 'border-red-500' : touched.name && 'border-green-500'}`}
+                  />
+                  {touched.name && errors.name && (
+                    <div className="text-red-500 text-sm mt-1 flex items-center">
+                      <X size={14} className="mr-1" /> {errors.name}
+                    </div>
+                  )}
+                  {touched.name && !errors.name && (
+                    <div className="text-green-500 text-sm mt-1 flex items-center">
+                      <Check size={14} className="mr-1" /> Looks good!
+                    </div>
+                  )}
+                </div>
+                
+                <div>
+                  <input 
+                    name="businessInfo" 
+                    value={companyData.businessInfo} 
+                    onChange={(e) => handleInputChange(e, true)}
+                    onBlur={(e) => handleBlur(e, true)}
+                    placeholder="Business Information *" 
+                    className={`loginInput ${errors.businessInfo ? 'border-red-500' : touched.businessInfo && 'border-green-500'}`}
+                  />
+                  {touched.businessInfo && errors.businessInfo && (
+                    <div className="text-red-500 text-sm mt-1 flex items-center">
+                      <X size={14} className="mr-1" /> {errors.businessInfo}
+                    </div>
+                  )}
+                  {touched.businessInfo && !errors.businessInfo && (
+                    <div className="text-green-500 text-sm mt-1 flex items-center">
+                      <Check size={14} className="mr-1" /> Looks good!
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <input 
+                    name="employees" 
+                    value={companyData.employees} 
+                    onChange={(e) => handleInputChange(e, true)}
+                    onBlur={(e) => handleBlur(e, true)}
+                    placeholder="Number of Employees *" 
+                    className={`loginInput ${errors.employees ? 'border-red-500' : touched.employees && 'border-green-500'}`}
+                  />
+                  {touched.employees && errors.employees && (
+                    <div className="text-red-500 text-sm mt-1 flex items-center">
+                      <X size={14} className="mr-1" /> {errors.employees}
+                    </div>
+                  )}
+                  {touched.employees && !errors.employees && (
+                    <div className="text-green-500 text-sm mt-1 flex items-center">
+                      <Check size={14} className="mr-1" /> Valid number
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Step 3: Account Security */}
             {currentStep === 3 && (
               <div className="space-y-4 animate-fadeIn">
@@ -406,9 +418,9 @@ export default function Register() {
                 <div className='passwordField'>
                   <input 
                     name="password"
-                    value={formData.password} 
-                    onChange={handleInputChange}
-                    onBlur={handleBlur}
+                    value={userData.password} 
+                    onChange={(e) => handleInputChange(e, false)}
+                    onBlur={(e) => handleBlur(e, false)}
                     placeholder="Password *" 
                     type={showPassword ? "text" : "password"} 
                     className={`loginInput ${errors.password ? 'border-red-500' : touched.password && 'border-green-500'}`}
@@ -455,12 +467,12 @@ export default function Register() {
                 
                 <div className='passwordField'>
                   <input 
-                    value={formData.confirmPassword} 
+                    value={userData.confirmPassword} 
                     onChange={e => handleConfirmPwd(e.target.value)}
                     onBlur={() => setTouched(prev => ({ ...prev, confirmPassword: true }))}
                     placeholder="Confirm Password *" 
                     type={showConfirmPwd ? "text" : "password"} 
-                    className={`loginInput ${errors.confirmPassword ? 'border-red-500' : touched.confirmPassword && formData.confirmPassword && 'border-green-500'}`}
+                    className={`loginInput ${errors.confirmPassword ? 'border-red-500' : touched.confirmPassword && userData.confirmPassword && 'border-green-500'}`}
                   />
                   <span
                     type="button"
@@ -478,7 +490,7 @@ export default function Register() {
                   </div>
                 )}
                 
-                {touched.confirmPassword && !errors.confirmPassword && formData.confirmPassword && (
+                {touched.confirmPassword && !errors.confirmPassword && userData.confirmPassword && (
                   <div className="text-green-500 text-sm mt-1 flex items-center">
                     <Check size={14} className="mr-1" /> Passwords match!
                   </div>
@@ -513,7 +525,7 @@ export default function Register() {
                   type="submit" 
                   className="loginButton loginButton--submit"
                 >
-                  Register
+                  Complete Registration
                 </button>
               )}
               

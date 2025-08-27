@@ -19,7 +19,7 @@ function signRefreshToken(user) {
 /* Register: create user, store hashed verification token, send email */
 router.post('/register', async (req, res) => {
   try {
-    const { firstname,lastname,username,country,mobile, email, password } = req.body;
+    const { firstname,lastname,username,country,mobile, email, password,company_id } = req.body;
     if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
 
     const [exists] = await pool.execute('SELECT id FROM users WHERE email = ?', [email]);
@@ -28,8 +28,8 @@ router.post('/register', async (req, res) => {
     const password_hash = await bcrypt.hash(password, 12);
     // const [ins] = await pool.execute('INSERT INTO users (firstname,lastname,country,mobile, email, password_hash, is_verified) VALUES (?, ?, ? ,? ,? ,? , 0)', [firstname || null,lastname||null,country||null,mobile||null, email, password_hash]);
     const [ins] = await pool.execute(
-  'INSERT INTO users (firstname, lastname, username, country, mobile, email, password_hash, is_verified) VALUES (?, ?, ?, ?, ?, ?, ?, 0)',
-  [firstname || null, lastname || null, username, country || null, mobile || null, email, password_hash] // Added `null` for username
+  'INSERT INTO users (firstname, lastname, username, country, mobile, email, password_hash, is_verified,company_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)',
+  [firstname || null, lastname || null, username, country || null, mobile || null, email, password_hash,company_id] // Added `null` for username
 );
 const userId = ins.insertId;
 

@@ -16,7 +16,7 @@ export default function Sidebar() {
   const location = useLocation();
 
   const navigationItems = [
-    { name: 'Dashboard', path: '/admindashboard', icon: Home },
+    { name: 'Dashboard', path: '/admindashboard', icon: Home},
     { name: 'Users', path: '/users', icon: Users },
     { name: 'Apartments', path: '/apartmentview', icon: Building2 },
     { name: 'Reports', path: '/reports', icon: FileText },
@@ -26,10 +26,10 @@ export default function Sidebar() {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <div className={`bg-white shadow-lg border-r border-gray-200 fixed left-0 top-0 h-full z-50 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
+    <div className={`bg-white dark:bg-gray-800 shadow-lg border-r border-gray-200 dark:border-gray-700 fixed left-0 top-0 h-full z-50 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
       
       {/* Company Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:text-white">
         {!isCollapsed && (
           <div className="flex items-center">
             <img
@@ -37,7 +37,7 @@ export default function Sidebar() {
               src="/favicon.ico"
               alt="AptSync Logo"
             />
-            <span className="ml-2 text-xl font-bold text-gray-800">
+            <span className="ml-2 text-xl font-bold text-gray-800 dark:text-gray-300">
               AptSync
             </span>
           </div>
@@ -72,7 +72,7 @@ export default function Sidebar() {
               className={`flex items-center rounded-lg px-3 py-3 text-sm font-medium transition-colors duration-200 ${
                 isActive(item.path)
                   ? 'bg-purple-100 text-purple-700 border-r-2 border-purple-600'
-                  : 'text-gray-600 hover:text-purple-600 hover:bg-gray-100'
+                  : 'text-gray-600 hover:text-purple-600 hover:bg-gray-100 dark:text-gray-100'
               }`}
             >
               <Icon size={20} className={isCollapsed ? 'mx-auto' : 'mr-3'} />

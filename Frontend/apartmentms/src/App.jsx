@@ -17,8 +17,8 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Welcome />} />
         <Route path='/login' element={<Login />} />
-        <Route path='/companyregistration' element={<CompanyRegistration />}/>
-        <Route path='/admin/register' element={<Register />}/>
+        {/* <Route path='/companyregistration' element={<CompanyRegistration />}/> */}
+        <Route path='/register' element={<Register />}/>
         {/* <Route path='/verify' element={<Verify />}/> */}
         <Route path='/sidebar' element={<Sidebar/>}/>
         <Route path='/navbar' element={<NavBar />}/>
