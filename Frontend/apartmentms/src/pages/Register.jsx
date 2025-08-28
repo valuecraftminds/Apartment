@@ -57,7 +57,7 @@ export default function CombinedRegistration() {
       case 'username':
         if (!value.trim()) error = 'Username is required';
         else if (value.length < 3) error = 'Username must be at least 3 characters';
-        else if (!/^[a-zA-Z0-9_]+$/.test(value)) error = 'Username can only contain letters, numbers, and underscores';
+        else if (!/^[a-zA-Z0-9]+$/.test(value)) error = 'Username can only contain letters, and numbers';
         else if (value.length > 20) error = 'Username cannot exceed 20 characters';
         break;
         
@@ -184,45 +184,54 @@ export default function CombinedRegistration() {
   };
 
   async function submit(e) {
-    e.preventDefault();
-    
-    // Validate all steps before submitting
-    let allValid = true;
-    for (let step = 1; step <= totalSteps; step++) {
-      if (!validateStep(step)) {
-        allValid = false;
-        if (step !== currentStep) {
-          setCurrentStep(step);
-        }
-        break;
+  e.preventDefault();
+  
+  // Validate all steps before submitting
+  let allValid = true;
+  for (let step = 1; step <= totalSteps; step++) {
+    if (!validateStep(step)) {
+      allValid = false;
+      if (step !== currentStep) {
+        setCurrentStep(step);
       }
-    }
-
-    if (!allValid) {
-      toast.error("Please fix all validation errors before submitting");
-      return;
-    }
-
-    try {
-      // First register the company
-      const companyResponse = await api.post('/tenants', {
-        ...companyData,
-        employees: parseInt(companyData.employees, 10)
-      });
-
-      // Then register the user with the company ID
-      const userResponse = await api.post('/auth/register', {
-        ...userData,
-        companyId: companyResponse.data.data.id // Assuming your API returns the created company with ID
-      });
-
-      toast.success("Registration successful! Company and user account created.");
-      setTimeout(() => navigate('/login'), 2000);
-    } catch (err) {
-      console.error('Registration error:', err);
-      toast.error(err.response?.data?.message || "❌ Registration failed");
+      break;
     }
   }
+
+  if (!allValid) {
+    toast.error("Please fix all validation errors before submitting");
+    return;
+  }
+
+  try {
+    // Prepare company data
+    const companyPayload = {
+      name: companyData.name,
+      businessInfo: companyData.businessInfo,
+      employees: parseInt(companyData.employees, 10)
+    };
+
+    console.log('Sending company data to /tenants:', companyPayload);
+    
+    // First register the company
+    const companyResponse = await api.post('/tenants', companyPayload);
+    console.log('Company registration successful:', companyResponse.data);
+
+    // Then register the user with the company ID
+    const userResponse = await api.post('/auth/register', {
+      username: userData.username,
+      email: userData.email,
+      password: userData.password,
+      company_id: companyResponse.data.data.id // Send as company_id (not companyId)
+    });
+
+    toast.success("Registration successful! Company and user account created.");
+    setTimeout(() => navigate('/login'), 2000);
+  } catch (err) {
+    console.error('Registration error:', err);
+    toast.error(err.response?.data?.message || "❌ Registration failed");
+  }
+}
 
   // Password strength indicator
   const getPasswordStrength = () => {
@@ -262,7 +271,7 @@ export default function CombinedRegistration() {
         <div className='loginCard animate-fadeIn'>
           <div className="flex items-center justify-center gap-2 mb-4">
             <img src="/favicon.ico" alt="AptSync Logo" className="w-10 h-10" />
-            <h1 className="font-bold text-xl">Complete Registration</h1>
+            <h1 className="font-bold text-4xl items-center">Get Start with AptSync</h1>
           </div>
           
           {/* Progress Indicator */}
@@ -311,7 +320,7 @@ export default function CombinedRegistration() {
                   )}
                   {touched.username && !errors.username && (
                     <div className="text-green-500 text-sm mt-1 flex items-center">
-                      <Check size={14} className="mr-1" /> Looks good!
+                      <Check size={14} className="mr-1" /> Good!
                     </div>
                   )}
                 </div>
@@ -361,7 +370,7 @@ export default function CombinedRegistration() {
                   )}
                   {touched.name && !errors.name && (
                     <div className="text-green-500 text-sm mt-1 flex items-center">
-                      <Check size={14} className="mr-1" /> Looks good!
+                      <Check size={14} className="mr-1" /> Good!
                     </div>
                   )}
                 </div>
@@ -382,7 +391,7 @@ export default function CombinedRegistration() {
                   )}
                   {touched.businessInfo && !errors.businessInfo && (
                     <div className="text-green-500 text-sm mt-1 flex items-center">
-                      <Check size={14} className="mr-1" /> Looks good!
+                      <Check size={14} className="mr-1" /> Good!
                     </div>
                   )}
                 </div>
@@ -403,7 +412,7 @@ export default function CombinedRegistration() {
                   )}
                   {touched.employees && !errors.employees && (
                     <div className="text-green-500 text-sm mt-1 flex items-center">
-                      <Check size={14} className="mr-1" /> Valid number
+                      <Check size={14} className="mr-1" /> Good!
                     </div>
                   )}
                 </div>

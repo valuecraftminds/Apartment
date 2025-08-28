@@ -3,12 +3,12 @@ const { v4: uuidv4 } = require('uuid');
 
 class Tenant{
     static async create(tenantData){
-        const {regNo,name,businessInfo,employees}=tenantData;
+        const {name,businessInfo,employees}=tenantData;
         const id=uuidv4(); 
 
         const [result] = await pool.execute(
-            'INSERT INTO tenants (id,regNo,name,businessInfo,employees) values(?,?,?,?,?)',
-            [id,regNo,name,businessInfo,employees]
+            'INSERT INTO tenants (id,name,businessInfo,employees) values(?,?,?,?)',
+            [id,name,businessInfo,employees]
         );
         return {id, ...tenantData};
     }

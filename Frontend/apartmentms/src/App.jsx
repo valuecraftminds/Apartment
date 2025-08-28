@@ -10,6 +10,7 @@ import NavBar from './components/Navbar'
 import CompanyRegistration from './pages/CompanyRegistration'
 import { Sidebar } from 'lucide-react'
 import ApartmentView from './pages/ApartmentView'
+import UserView from './pages/UserView'
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
         <Route path='/navbar' element={<NavBar />}/>
         <Route path='/admindashboard' element={<AdminDashboard />}/>
         <Route path='/apartmentview' element={<ApartmentView/>}/>
+        <Route path='/userview' element={<UserView/>}/>
       </Routes>
     </BrowserRouter>
   )

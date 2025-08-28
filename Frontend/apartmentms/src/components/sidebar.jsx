@@ -17,7 +17,7 @@ export default function Sidebar() {
 
   const navigationItems = [
     { name: 'Dashboard', path: '/admindashboard', icon: Home},
-    { name: 'Users', path: '/users', icon: Users },
+    { name: 'Users', path: '/userview', icon: Users },
     { name: 'Apartments', path: '/apartmentview', icon: Building2 },
     { name: 'Reports', path: '/reports', icon: FileText },
     { name: 'Settings', path: '/settings', icon: Settings }
