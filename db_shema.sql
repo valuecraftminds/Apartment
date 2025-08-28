@@ -7,8 +7,8 @@ use myapp_db;
 Drop database myapp_db;
 
 CREATE TABLE tenants(
-	id VARCHAR(255) primary key not null,
-    regNo VARCHAR(255) not null,
+	id VARCHAR(255) primary key,
+    regNo VARCHAR(255),
     name VARCHAR(255) not null,
     businessInfo VARCHAR(255) not null,
     employees int not null,
@@ -31,11 +31,8 @@ CREATE TABLE users (
   refresh_token TEXT DEFAULT NULL,
   role VARCHAR(30) DEFAULT 'admin',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  company_id varchar(100), foreign key(company_id) references tenants(id)
+  company_id varchar(255), foreign key(company_id) references tenants(id)
 );
-
-
-
 
 SELECT User, Host FROM mysql.user WHERE User='myapp_user';
 

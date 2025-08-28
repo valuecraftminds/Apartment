@@ -6,7 +6,7 @@ export default function Welcome() {
   const navigate=useNavigate();
 
   const handleNavigation= ()=>{
-    navigate('/companyregistration');
+    navigate('/register');
   }
     return (
     <div className="welcomePage">
@@ -27,7 +27,7 @@ export default function Welcome() {
           Sign In
         </button>
         <button 
-          onClick={() => navigate("/companyregistration")} 
+          onClick={() => navigate("/register")} 
           className="signInSignUp"
         >
           Sign Up

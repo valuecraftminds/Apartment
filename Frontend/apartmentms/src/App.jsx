@@ -10,6 +10,7 @@ import NavBar from './components/Navbar'
 import CompanyRegistration from './pages/CompanyRegistration'
 import { Sidebar } from 'lucide-react'
 import ApartmentView from './pages/ApartmentView'
+import UserView from './pages/UserView'
 
 export default function App() {
   return (
@@ -17,13 +18,14 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Welcome />} />
         <Route path='/login' element={<Login />} />
-        <Route path='/companyregistration' element={<CompanyRegistration />}/>
-        <Route path='/admin/register' element={<Register />}/>
+        {/* <Route path='/companyregistration' element={<CompanyRegistration />}/> */}
+        <Route path='/register' element={<Register />}/>
         {/* <Route path='/verify' element={<Verify />}/> */}
         <Route path='/sidebar' element={<Sidebar/>}/>
         <Route path='/navbar' element={<NavBar />}/>
         <Route path='/admindashboard' element={<AdminDashboard />}/>
         <Route path='/apartmentview' element={<ApartmentView/>}/>
+        <Route path='/userview' element={<UserView/>}/>
       </Routes>
     </BrowserRouter>
   )
