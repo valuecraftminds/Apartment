@@ -36,4 +36,25 @@ CREATE TABLE users (
 
 SELECT User, Host FROM mysql.user WHERE User='myapp_user';
 
+CREATE TABLE apartments (
+    id VARCHAR(255) PRIMARY KEY,
+    company_id VARCHAR(255),
+    name VARCHAR(255) NOT NULL,
+    address VARCHAR(255) NOT NULL,
+    city VARCHAR(255),
+    floors INT DEFAULT 1,
+    houses INT DEFAULT 1 COMMENT 'Total units',    
+    main_picture_url VARCHAR(500),
+    status ENUM('active', 'maintenance', 'inactive') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (company_id) REFERENCES tenants(id) ON DELETE CASCADE,
+    INDEX idx_company_id (company_id),
+    INDEX idx_city (city)
+);
+-- Basic amenities (can be expanded later)
+    -- has_parking BOOLEAN DEFAULT FALSE,
+--     has_elevator BOOLEAN DEFAULT FALSE,
+--     has_security BOOLEAN DEFAULT FALSE,
 
