@@ -1,0 +1,49 @@
+const pool = require('../db');
+const { v4: uuidv4 } = require('uuid');
+
+class Apartment {
+    static async create(apartmentData) {
+        const { name, address, city, floors, houses, main_picture_url, status } = apartmentData;
+        const id = uuidv4();
+
+        const [result] = await pool.execute(
+            'INSERT INTO apartments (id, name, address, city, floors, houses, main_picture_url, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [id, name, address, city, floors, houses, main_picture_url, status]
+        );
+        return { id, ...apartmentData };
+    }
+
+    static async findById(id) {
+        const [rows] = await pool.execute(
+            'SELECT * FROM apartments WHERE id = ?',
+            [id]
+        );
+        return rows[0];
+    }
+
+    static async findAll() {
+        const [rows] = await pool.execute(
+            'SELECT * FROM apartments ORDER BY created_at DESC'
+        );
+        return rows; // FIXED: Return rows instead of rows[0]
+    }
+
+    static async update(id, apartmentData) {
+        const { name, address, city, floors, houses, main_picture_url, status } = apartmentData;
+        await pool.execute(
+            'UPDATE apartments SET name = ?, address = ?, city = ?, floors = ?, houses = ?, main_picture_url = ?, status = ? WHERE id = ?',
+            [name, address, city, floors, houses, main_picture_url, status, id]
+        );
+        return { id, ...apartmentData };
+    }
+
+    static async delete(id) {
+        await pool.execute(
+            'DELETE FROM apartments WHERE id = ?',
+            [id]
+        );
+        return true;
+    }
+}
+
+module.exports = Apartment;

@@ -41,6 +41,8 @@ app.get('/health', (req, res) => {
 
 // Add this with your other route imports
 const tenantRoutes = require('./routes/tenants');
-
-// Add this with your other route usage
 app.use('/api/tenants', tenantRoutes);
+
+//Route usage of Apartments
+const apartmentRoutes = require('./routes/apartments');
+app.use('/api/apartments', apartmentRoutes);
