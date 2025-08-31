@@ -32,11 +32,11 @@ export default function Sidebar() {
       <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:text-white">
         {!isCollapsed && (
           <div className="flex items-center">
-            <img
+            {/* <img
               className="h-8 w-8"
               src="/favicon.ico"
               alt="AptSync Logo"
-            />
+            /> */}
             <span className="ml-2 text-xl font-bold text-gray-800 dark:text-gray-300">
               AptSync
             </span>

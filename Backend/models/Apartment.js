@@ -3,12 +3,12 @@ const { v4: uuidv4 } = require('uuid');
 
 class Apartment {
     static async create(apartmentData) {
-        const { name, address, city, floors, houses, main_picture_url, status } = apartmentData;
+        const { name, address, city, floors, houses, main_picture_url, status,company_id } = apartmentData;
         const id = uuidv4();
 
         const [result] = await pool.execute(
-            'INSERT INTO apartments (id, name, address, city, floors, houses, main_picture_url, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            [id, name, address, city, floors, houses, main_picture_url, status]
+            'INSERT INTO apartments (id, name, address, city, floors, houses, main_picture_url, status,company_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [id, name, address, city, floors, houses, main_picture_url, status,company_id]
         );
         return { id, ...apartmentData };
     }
@@ -21,11 +21,19 @@ class Apartment {
         return rows[0];
     }
 
+    static async findByCompanyId(company_id){
+        const [rows] = await pool.execute(
+            'SELECT * FROM apartments WHERE company_id=? ORDER BY created_at DESC',
+            [company_id]
+        );
+        return rows;
+    }
+
     static async findAll() {
         const [rows] = await pool.execute(
             'SELECT * FROM apartments ORDER BY created_at DESC'
         );
-        return rows; // FIXED: Return rows instead of rows[0]
+        return rows; 
     }
 
     static async update(id, apartmentData) {

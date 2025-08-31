@@ -41,8 +41,8 @@ app.get('/health', (req, res) => {
 
 // Add this with your other route imports
 const tenantRoutes = require('./routes/tenants');
-app.use('/api/tenants', tenantRoutes);
+app.use('/api/tenants', authenticateToken, tenantRoutes);
 
 //Route usage of Apartments
 const apartmentRoutes = require('./routes/apartments');
-app.use('/api/apartments', apartmentRoutes);
+app.use('/api/apartments', authenticateToken, apartmentRoutes);

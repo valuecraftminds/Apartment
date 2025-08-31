@@ -4,6 +4,7 @@ const apartmentController = {
     async createApartment(req, res) {
         try {
             const { name, address, city, floors, houses, main_picture_url, status } = req.body;
+            const company_id=req.user.company_id;  //Get from authenticated user
             
             // FIXED: Corrected the validation condition
             if (!name || !address || !city || floors === undefined || houses === undefined || !main_picture_url || status === undefined) {
@@ -37,13 +38,14 @@ const apartmentController = {
                 floors: parseInt(floors),
                 houses: parseInt(houses),
                 main_picture_url,
-                status
+                status,
+                company_id
             });
 
             res.status(201).json({
                 success: true,
                 message: 'Apartment created successfully',
-                data: newApartment // FIXED: Return newApartment instead of newTenant
+                data: newApartment
             });
         } catch (err) {
             console.error('Create apartment error', err);
@@ -57,7 +59,25 @@ const apartmentController = {
     // Get all apartments
     async getAllApartments(req, res) {
         try {
-            const apartments = await Apartment.findAll();
+
+            // Get company_id from authenticated user (from JWT token)
+            const company_id = req.user.company_id; // Assuming you store company_id in JWT
+
+            if(!company_id){
+                return res.status(400).json({
+                    success:false,
+                    message:'Company Id is required'
+                });
+            }
+
+            if (!req.user) {
+            return res.status(401).json({
+                success: false,
+                message: 'Authentication required'
+            });
+        }
+
+            const apartments = await Apartment.findByCompanyId(company_id)
             res.json({
                 success: true,
                 data: apartments // This should now be an array
