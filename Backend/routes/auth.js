@@ -10,28 +10,53 @@ require('dotenv').config();
 
 // helpers for JWT
 function signAccessToken(user) {
-  return jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN });
+  return jwt.sign({ 
+    id: user.id, 
+    email: user.email, 
+    role: user.role,
+    company_id:user.company_id
+   }, 
+    process.env.ACCESS_TOKEN_SECRET, 
+    { 
+      expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN
+    });
 }
 function signRefreshToken(user) {
-  return jwt.sign({ id: user.id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN });
+  return jwt.sign({ 
+    id: user.id
+  }, 
+  process.env.REFRESH_TOKEN_SECRET, { 
+    expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN 
+  });
 }
 
 /* Register: create user, store hashed verification token, send email */
 router.post('/register', async (req, res) => {
   try {
-    const { firstname,lastname,username,country,mobile, email, password } = req.body;
+    const { firstname, lastname, username, country, mobile, email, password, company_id } = req.body;
     if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
 
     const [exists] = await pool.execute('SELECT id FROM users WHERE email = ?', [email]);
     if (exists.length) return res.status(409).json({ message: 'Email already registered' });
 
     const password_hash = await bcrypt.hash(password, 12);
-    // const [ins] = await pool.execute('INSERT INTO users (firstname,lastname,country,mobile, email, password_hash, is_verified) VALUES (?, ?, ? ,? ,? ,? , 0)', [firstname || null,lastname||null,country||null,mobile||null, email, password_hash]);
+    
+    // FIXED: Handle company_id properly - convert undefined to null
     const [ins] = await pool.execute(
-  'INSERT INTO users (firstname, lastname, username, country, mobile, email, password_hash, is_verified) VALUES (?, ?, ?, ?, ?, ?, ?, 0)',
-  [firstname || null, lastname || null, username, country || null, mobile || null, email, password_hash] // Added `null` for username
-);
-const userId = ins.insertId;
+      'INSERT INTO users (firstname, lastname, username, country, mobile, email, password_hash, is_verified, company_id) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)',
+      [
+        firstname || null, 
+        lastname || null, 
+        username || null, // Handle username if it's undefined
+        country || null, 
+        mobile || null, 
+        email, 
+        password_hash,
+        company_id || null // Convert undefined to null
+      ]
+    );
+    
+    const userId = ins.insertId;
 
     // create verification token (plain->email, hash->DB)
     const plainToken = crypto.randomBytes(32).toString('hex');
@@ -109,7 +134,7 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
 
-    const [rows] = await pool.execute('SELECT id, email, password_hash, is_verified, role FROM users WHERE email = ?', [email]);
+    const [rows] = await pool.execute('SELECT id, email, password_hash, is_verified, role, company_id FROM users WHERE email = ?', [email]);
     const user = rows[0];
     if (!user) return res.status(401).json({ message: 'Invalid credentials' });
     if (!user.is_verified) return res.status(403).json({ message: 'Please verify your email first' });
@@ -122,6 +147,14 @@ router.post('/login', async (req, res) => {
 
     await pool.execute('UPDATE users SET refresh_token = ? WHERE id = ?', [refreshToken, user.id]);
 
+    // NEW: send it in a cookie
+  res.cookie('accessToken', accessToken, {
+    httpOnly: true,
+    sameSite: 'lax',   // adjust if you have cross-site frontend/backend
+    secure: false      // set to true if using HTTPS
+  });
+
+
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -129,7 +162,7 @@ router.post('/login', async (req, res) => {
       maxAge: 1000 * 60 * 60 * 24 * 7
     });
 
-    res.json({ accessToken, user: { id: user.id, email: user.email, role: user.role } });
+    res.json({ accessToken, user: { id: user.id, email: user.email, role: user.role, company_id:user.company_id} });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
@@ -164,7 +197,7 @@ router.post('/refresh', async (req, res) => {
       maxAge: 1000 * 60 * 60 * 24 * 7
     });
 
-    res.json({ accessToken, user: { id: user.id, email: user.email, role: user.role } });
+    res.json({ accessToken, user: { id: user.id, email: user.email, role: user.role, company_id:user.company_id} });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });

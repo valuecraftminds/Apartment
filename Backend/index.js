@@ -13,7 +13,7 @@ app.use(helmet());
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors
-  ({ origin: process.env.FRONTEND_URL || 'http://localhost:3000', credentials: true }));
+  ({ origin: process.env.FRONTEND_URL || '*', credentials: true }));
 
 const limiter = rateLimit({ windowMs: 60_000, max: 100 });
 app.use(limiter);
@@ -29,7 +29,7 @@ app.get('/api/me', authenticateToken, async (req, res) => {
   res.json(rows[0]);
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
   console.log(`Server running on http://localhost:${PORT}`);
   await verifyTransport(); // test SMTP
@@ -41,6 +41,8 @@ app.get('/health', (req, res) => {
 
 // Add this with your other route imports
 const tenantRoutes = require('./routes/tenants');
+app.use('/api/tenants', authenticateToken, tenantRoutes);
 
-// Add this with your other route usage
-app.use('/api/tenants', tenantRoutes);
+//Route usage of Apartments
+const apartmentRoutes = require('./routes/apartments');
+app.use('/api/apartments', authenticateToken, apartmentRoutes);
