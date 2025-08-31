@@ -52,7 +52,7 @@ export default function CreateApartment({ onClose, onCreated }) {
         placeholder="Apartment Name"
         value={formData.name}
         onChange={handleChange}
-        className="border rounded p-2"
+        className="border rounded p-2 text-black dark:text-white"
         required
       />
       <input
@@ -61,7 +61,7 @@ export default function CreateApartment({ onClose, onCreated }) {
         placeholder="Address"
         value={formData.address}
         onChange={handleChange}
-        className="border rounded p-2"
+        className="border rounded p-2  text-black dark:text-white"
         required
       />
       <input
@@ -70,7 +70,7 @@ export default function CreateApartment({ onClose, onCreated }) {
         placeholder="Price"
         value={formData.price}
         onChange={handleChange}
-        className="border rounded p-2"
+        className="border rounded p-2 text-black dark:text-white"
         required
       />
       <input
@@ -78,7 +78,7 @@ export default function CreateApartment({ onClose, onCreated }) {
         name="image"
         accept="image/*"
         onChange={handleChange}
-        className="border rounded p-2"
+        className="border rounded p-2 text-black dark:text-white"
       />
       <div className="flex justify-end gap-2">
         <button
