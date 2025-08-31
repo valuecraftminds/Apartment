@@ -6,6 +6,7 @@ import { AuthContext } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import api from '../api/axios';
+import CreateApartment from '../Apartments/CreateApartment';
 
 export default function ApartmentView() {
     const { auth } = useContext(AuthContext);
@@ -15,15 +16,22 @@ export default function ApartmentView() {
     const [apartments, setApartments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [showCreateModal, setShowCreateModal] = useState(false);
+
+     const handleAddNew = () => {
+    setShowCreateModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowCreateModal(false);
+  };
 
 
     const loadApartments = async () => {
     try {
         setLoading(true);
         setError(null);
-        const result = await api.get('/apartments', {
-            params: { company_id: auth.user.company_id } // send company info
-        });
+        const result = await api.get('/apartments')
         console.log('API Response:', result.data);
 
         if (result.data.success && Array.isArray(result.data.data)) {
@@ -50,12 +58,12 @@ export default function ApartmentView() {
 };
 
     useEffect(() => {
-        if (!auth?.accessToken) {
-            navigate('/login');
-            return;
-        }
+        // if (!auth?.accessToken) {
+        //     navigate('/login');
+        //     return;
+        // }
         loadApartments();
-    }, [auth?.accessToken]);
+    }, []);
 
     const handleEdit = (apartment) => console.log('Edit apartment:', apartment);
     const handleDelete = (apartment) => console.log('Delete apartment:', apartment);
@@ -73,7 +81,7 @@ export default function ApartmentView() {
                                 <Building2 size={40} className='text-purple-600 dark:text-purple-400 mr-3'/>
                                 <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Apartments</h1>
                             </div>
-                            <button className='flex items-center gap-2 px-4 py-2 rounded-lg font-semibold shadow-md transition-all duration-300 text-white bg-purple-600 hover:bg-purple-700 hover:scale-105'>
+                            <button onClick={handleAddNew} className='flex items-center gap-2 px-4 py-2 rounded-lg font-semibold shadow-md transition-all duration-300 text-white bg-purple-600 hover:bg-purple-700 hover:scale-105'>
                                 <Plus size={20}/>
                                 <span>Add New</span>
                             </button>
@@ -192,6 +200,22 @@ export default function ApartmentView() {
                     </div>
                 </div>
             </div>
+                {showCreateModal && (
+                <div className="fixed inset-0 bg-white/0 backdrop-blur-lg flex items-center justify-center z-50">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md relative">
+                    <button
+                    onClick={handleCloseModal}
+                    className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 dark:hover:text-white"
+                    >
+                    ✖
+                    </button>
+                    <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
+                    Create New Apartment
+                    </h2>
+                    <CreateApartment />
+                </div>
+            </div>
+            )}
         </div>
     );
 }

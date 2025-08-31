@@ -9,22 +9,22 @@ const api = axios.create({
 });
 
 // Custom hook to get token from AuthContext
-export const useApi = () => {
-  const { auth } = React.useContext(AuthContext);
+// export const useApi = () => {
+//   const { auth } = React.useContext(AuthContext);
 
-  const instance = axios.create({
-    baseURL: 'http://localhost:3000/api',
-    withCredentials: true,
-  });
+//   const instance = axios.create({
+//     baseURL: 'http://localhost:3000/api',
+//     withCredentials: true,
+//   });
 
-  instance.interceptors.request.use((config) => {
-    if (auth?.accessToken) {
-      config.headers.Authorization = `Bearer ${auth.accessToken}`;
-    }
-    return config;
-  });
+//   instance.interceptors.request.use((config) => {
+//     if (auth?.accessToken) {
+//       config.headers.Authorization = `Bearer ${auth.accessToken}`;
+//     }
+//     return config;
+//   });
 
-  return instance;
-};
+//   return instance;
+// };
 
 export default api;

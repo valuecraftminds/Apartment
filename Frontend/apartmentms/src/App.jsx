@@ -11,6 +11,7 @@ import CompanyRegistration from './pages/CompanyRegistration'
 import { Sidebar } from 'lucide-react'
 import ApartmentView from './pages/ApartmentView'
 import UserView from './pages/UserView'
+import Layout from './pages/Layout'
 
 export default function App() {
   return (
