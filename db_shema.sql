@@ -44,7 +44,7 @@ CREATE TABLE apartments (
     city VARCHAR(255),
     floors INT DEFAULT 1,
     houses INT DEFAULT 1 COMMENT 'Total units',    
-    main_picture_url VARCHAR(500),
+    picture longblob,
     status ENUM('active', 'maintenance', 'inactive') DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -53,6 +53,8 @@ CREATE TABLE apartments (
     INDEX idx_company_id (company_id),
     INDEX idx_city (city)
 );
+drop table apartments;
+
 -- Basic amenities (can be expanded later)
     -- has_parking BOOLEAN DEFAULT FALSE,
 --     has_elevator BOOLEAN DEFAULT FALSE,

@@ -1,12 +1,16 @@
 // CreateApartment.jsx
 import React, { useState } from 'react';
 import api from '../api/axios'; // adjust path if needed
+import { toast } from 'react-toastify';
 
 export default function CreateApartment({ onClose, onCreated }) {
   const [formData, setFormData] = useState({
     name: '',
     address: '',
-    price: '',
+    city: '',
+    floors:'',
+    houses:'',
+    status:'active',
     image: null,
   });
   const [loading, setLoading] = useState(false);
@@ -20,29 +24,41 @@ export default function CreateApartment({ onClose, onCreated }) {
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    try {
-      const data = new FormData();
-      data.append('name', formData.name);
-      data.append('address', formData.address);
-      data.append('price', formData.price);
-      if (formData.image) data.append('image', formData.image);
-
-      await api.post('/apartments', data); // adjust endpoint
-      setLoading(false);
-
-      if (onCreated) onCreated(); // refresh the list
-      if (onClose) onClose(); // close the modal
-    } catch (err) {
-      console.error(err);
-      setError('Failed to create apartment.');
-      setLoading(false);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError('');
+  setLoading(true);
+  try {
+    const submitFormData = new FormData(); // Rename to avoid conflict
+    submitFormData.append('name', formData.name); // Use formData, not apartments
+    submitFormData.append('address', formData.address);
+    submitFormData.append('city', formData.city);
+    submitFormData.append('floors', formData.floors);
+    submitFormData.append('houses', formData.houses);
+    submitFormData.append('status', 'active'); // Add status field
+    
+    if (formData.image) { // Use formData.image, not apartments.picture
+      submitFormData.append('picture', formData.image);
     }
-  };
 
+    const response = await api.post('/apartments', submitFormData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    
+    setLoading(false);
+
+    if (onCreated) onCreated(); // refresh the list
+    if (onClose) onClose(); // close the modal
+    toast.success('Apartment Created');
+  } catch (err) {
+    console.error(err);
+    // setError('Failed to create apartment.');
+    toast.error('Failed to create apartment')
+    setLoading(false);
+  }
+};
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {error && <p className="text-red-500">{error}</p>}
@@ -65,12 +81,30 @@ export default function CreateApartment({ onClose, onCreated }) {
         required
       />
       <input
+        type="text"
+        name="city"
+        placeholder="City"
+        value={formData.city}
+        onChange={handleChange}
+        className="border rounded p-2  text-black dark:text-white"
+        required
+      />
+      <input
         type="number"
-        name="price"
-        placeholder="Price"
-        value={formData.price}
+        name="floors"
+        placeholder="No of Floors"
+        value={formData.floors}
         onChange={handleChange}
         className="border rounded p-2 text-black dark:text-white"
+        required
+      />
+      <input
+        type="number"
+        name="houses"
+        placeholder="No of Houses"
+        value={formData.houses}
+        onChange={handleChange}
+        className="border rounded p-2  text-black dark:text-white"
         required
       />
       <input
@@ -80,6 +114,17 @@ export default function CreateApartment({ onClose, onCreated }) {
         onChange={handleChange}
         className="border rounded p-2 text-black dark:text-white"
       />
+      {/* <select
+        name="status"
+        value={formData.status}
+        onChange={handleChange}
+        className="border rounded p-2 text-black dark:text-white"
+        required
+      >
+        <option value="active">Active</option>
+        <option value="maintenance">Maintenance</option>
+        <option value="inactive">Inactive</option>
+      </select> */}
       <div className="flex justify-end gap-2">
         <button
           type="button"

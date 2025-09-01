@@ -141,18 +141,26 @@ export default function ApartmentView() {
                                                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
                                                         {apartment.houses}
                                                     </td>
+                                                    {/* ApartmentView.jsx - Update the image display part */}
                                                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                                                        {apartment.main_picture_url ? (
+                                                        {apartment.picture ? (
+                                                            // If picture is a path (string)
                                                             <img 
-                                                                src={apartment.main_picture_url} 
+                                                                src={apartment.picture}
                                                                 alt={apartment.name}
                                                                 className="w-12 h-12 object-cover rounded-lg"
+                                                                onError={(e) => {
+                                                                    console.error('Image failed to load:', `http://localhost:3000${apartment.picture}`);
+                                                                    e.target.style.display = 'none';
+                                                                    const fallback = e.target.parentNode.querySelector('.image-fallback');
+                                                                    if (fallback) fallback.style.display = 'flex';
+                                                                }}
                                                             />
-                                                        ) : (
+                                                        ) : null}
                                                             <div className="w-12 h-12 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center">
                                                                 <Image size={20} className="text-gray-400" />
                                                             </div>
-                                                        )}
+                                                        
                                                     </td>
                                                     <td className="px-4 py-4 whitespace-nowrap">
                                                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${

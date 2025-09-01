@@ -7,21 +7,30 @@ const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const { verifyTransport } = require('./helpers/email');
+const path = require('path');
+// optional protected example route
+const { authenticateToken } = require('./middleware/auth');
 
 const app = express();
+// Add this before your routes
+app.use('/images', express.static(path.join(__dirname, 'uploads', 'images')));
+
 app.use(helmet());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(cors
   ({ origin: process.env.FRONTEND_URL || '*', credentials: true }));
+
+ 
 
 const limiter = rateLimit({ windowMs: 60_000, max: 100 });
 app.use(limiter);
 
 app.use('/api/auth', authRoutes);
 
-// optional protected example route
-const { authenticateToken } = require('./middleware/auth');
+
+
 app.get('/api/me', authenticateToken, async (req, res) => {
   // return user info example
   const pool = require('./db');
