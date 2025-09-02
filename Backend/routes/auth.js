@@ -222,4 +222,27 @@ router.post('/logout', async (req, res) => {
   }
 });
 
+router.get('/users', async (req, res) =>{
+  try{
+    const company_id=req.user.company_id;
+    const [users] = await pool.execute('SELECT * from users where company_id=?',[company_id]);
+    if(!company_id){
+      return res.status(400).json({
+        success:false,
+        message:'Company Id is required'
+      });
+    }
+
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+  }catch(err){
+    console.error(err);
+    res.status(200).json({message: 'Fail to view users'})
+  }
+})
+
 module.exports = router;

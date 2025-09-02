@@ -26,6 +26,15 @@ export default function ApartmentView() {
     setShowCreateModal(false);
   };
 
+   const handleApartmentCreated = () => {
+        // Refresh the apartments list
+        loadApartments();
+        // Close the modal
+        setShowCreateModal(false);
+        // Show success message
+        toast.success('Apartment created successfully!');
+    };
+
 
     const loadApartments = async () => {
     try {
@@ -150,23 +159,23 @@ export default function ApartmentView() {
                                                                 alt={apartment.name}
                                                                 className="w-12 h-12 object-cover rounded-lg"
                                                                 onError={(e) => {
-                                                                    console.error('Image failed to load:', `http://localhost:3000${apartment.picture}`);
+                                                                    console.error('Image failed to load:', apartment.picture);
                                                                     e.target.style.display = 'none';
                                                                     const fallback = e.target.parentNode.querySelector('.image-fallback');
                                                                     if (fallback) fallback.style.display = 'flex';
                                                                 }}
                                                             />
-                                                        ) : null}
+                                                        ) : (
                                                             <div className="w-12 h-12 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center">
                                                                 <Image size={20} className="text-gray-400" />
                                                             </div>
-                                                        
+                                                        )}
                                                     </td>
                                                     <td className="px-4 py-4 whitespace-nowrap">
                                                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                                                             apartment.status === 'active' 
                                                                 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                                                : apartment.status === 'under_construction'
+                                                                : apartment.status === 'maintenance'
                                                                 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
                                                                 : 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200'
                                                         }`}>
@@ -220,7 +229,10 @@ export default function ApartmentView() {
                     <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
                     Create New Apartment
                     </h2>
-                    <CreateApartment />
+                    <CreateApartment 
+                            onClose={handleCloseModal} 
+                            onCreated={handleApartmentCreated}
+                    />
                 </div>
             </div>
             )}

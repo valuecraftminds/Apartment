@@ -35,7 +35,7 @@ const handleSubmit = async (e) => {
     submitFormData.append('city', formData.city);
     submitFormData.append('floors', formData.floors);
     submitFormData.append('houses', formData.houses);
-    submitFormData.append('status', 'active'); // Add status field
+    submitFormData.append('status', formData.status); // Add status field
     
     if (formData.image) { // Use formData.image, not apartments.picture
       submitFormData.append('picture', formData.image);
@@ -46,12 +46,11 @@ const handleSubmit = async (e) => {
         'Content-Type': 'multipart/form-data'
       }
     });
-    
+   
     setLoading(false);
 
     if (onCreated) onCreated(); // refresh the list
     if (onClose) onClose(); // close the modal
-    toast.success('Apartment Created');
   } catch (err) {
     console.error(err);
     // setError('Failed to create apartment.');
@@ -68,7 +67,7 @@ const handleSubmit = async (e) => {
         placeholder="Apartment Name"
         value={formData.name}
         onChange={handleChange}
-        className="border rounded p-2 text-black dark:text-white"
+        className="border rounded p-2 text-black dark:text-white border-purple-600"
         required
       />
       <input
@@ -77,7 +76,7 @@ const handleSubmit = async (e) => {
         placeholder="Address"
         value={formData.address}
         onChange={handleChange}
-        className="border rounded p-2  text-black dark:text-white"
+        className="border rounded p-2  text-black dark:text-white border-purple-600"
         required
       />
       <input
@@ -86,7 +85,7 @@ const handleSubmit = async (e) => {
         placeholder="City"
         value={formData.city}
         onChange={handleChange}
-        className="border rounded p-2  text-black dark:text-white"
+        className="border rounded p-2  text-black dark:text-white border-purple-600"
         required
       />
       <input
@@ -95,7 +94,7 @@ const handleSubmit = async (e) => {
         placeholder="No of Floors"
         value={formData.floors}
         onChange={handleChange}
-        className="border rounded p-2 text-black dark:text-white"
+        className="border rounded p-2 text-black dark:text-white border-purple-600"
         required
       />
       <input
@@ -104,27 +103,27 @@ const handleSubmit = async (e) => {
         placeholder="No of Houses"
         value={formData.houses}
         onChange={handleChange}
-        className="border rounded p-2  text-black dark:text-white"
+        className="border rounded p-2  text-black dark:text-white border-purple-600"
         required
       />
-      <input
-        type="file"
-        name="image"
-        accept="image/*"
-        onChange={handleChange}
-        className="border rounded p-2 text-black dark:text-white"
-      />
-      {/* <select
+      <select
         name="status"
         value={formData.status}
         onChange={handleChange}
-        className="border rounded p-2 text-black dark:text-white"
+        className="border rounded p-2 text-black dark:text-white border-purple-600"
         required
       >
         <option value="active">Active</option>
         <option value="maintenance">Maintenance</option>
         <option value="inactive">Inactive</option>
-      </select> */}
+      </select>
+      <input
+        type="file"
+        name="image"
+        accept="image/*"
+        onChange={handleChange}
+        className="border rounded p-2 text-black dark:text-white border-purple-600"
+      />
       <div className="flex justify-end gap-2">
         <button
           type="button"
