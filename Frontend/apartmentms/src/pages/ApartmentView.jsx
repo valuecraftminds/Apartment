@@ -67,10 +67,6 @@ export default function ApartmentView() {
 };
 
     useEffect(() => {
-        // if (!auth?.accessToken) {
-        //     navigate('/login');
-        //     return;
-        // }
         loadApartments();
     }, []);
 
@@ -184,13 +180,13 @@ export default function ApartmentView() {
                                                     </td>
                                                     <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                                                         <div className="flex space-x-2">
-                                                            <button
+                                                            {/* <button
                                                                 onClick={() => handleView(apartment)}
                                                                 className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                                                                 title="View"
                                                             >
                                                                 <Eye size={16} />
-                                                            </button>
+                                                            </button> */}
                                                             <button
                                                                 onClick={() => handleEdit(apartment)}
                                                                 className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"

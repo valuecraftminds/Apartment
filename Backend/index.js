@@ -55,3 +55,4 @@ app.use('/api/tenants', authenticateToken, tenantRoutes);
 //Route usage of Apartments
 const apartmentRoutes = require('./routes/apartments');
 app.use('/api/apartments', authenticateToken, apartmentRoutes);
+
