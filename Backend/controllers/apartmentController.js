@@ -1,61 +1,78 @@
 const Apartment = require('../models/Apartment');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const uploadDir = 'uploads/images/';
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, 'apartment-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({ 
+    storage: storage,
+    limits: {
+        fileSize: 5 * 1024 * 1024 // 5MB limit
+    },
+    fileFilter: function (req, file, cb) {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only image files are allowed!'), false);
+        }
+    }
+});
 
 const apartmentController = {
     async createApartment(req, res) {
         try {
-            const { name, address, city, floors, houses, main_picture_url, status } = req.body;
-            const company_id=req.user.company_id;  //Get from authenticated user
-            
-            // FIXED: Corrected the validation condition
-            if (!name || !address || !city || floors === undefined || houses === undefined || !main_picture_url || status === undefined) {
+            const { name, address, city, floors, houses, status } = req.body;
+            const company_id = req.user.company_id;
+
+            let picturePath = null;
+            if (req.file) {
+                picturePath = '/uploads/images/' + req.file.filename;
+            }
+
+            if (!name || !address || !city || floors === undefined || houses === undefined || status === undefined) {
                 return res.status(400).json({
                     success: false,
                     message: 'All fields are required'
                 });
             }
 
-            // Validate floors is a positive number
-            if (isNaN(floors) || floors < 1) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Floors must be a positive number'
-                });
-            }
-
-            // Validate houses is a positive number
-            if (isNaN(houses) || houses < 1) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Houses must be a positive number'
-                });
-            }
-
-            // Create apartment - FIXED: Use Apartment.create instead of Tenant.create
             const newApartment = await Apartment.create({
-                name,
-                address,
-                city,
-                floors: parseInt(floors),
-                houses: parseInt(houses),
-                main_picture_url,
-                status,
-                company_id
+                    name,
+                    address,
+                    city,
+                    floors: parseInt(floors),
+                    houses: parseInt(houses),
+                    picture: picturePath, // Store the path, not the binary
+                    status,
+                    company_id
             });
-
             res.status(201).json({
-                success: true,
-                message: 'Apartment created successfully',
-                data: newApartment
+            success: true,
+            message: 'Apartment created successfully',
+            data: newApartment
             });
         } catch (err) {
             console.error('Create apartment error', err);
             res.status(500).json({
-                success: false,
-                message: 'Server error while creating apartment'
-            });
-        }
-    },
-
+            success: false,
+            message: 'Server error while creating apartment'
+        });
+    }
+},
     // Get all apartments
     async getAllApartments(req, res) {
         try {
@@ -121,7 +138,7 @@ const apartmentController = {
     async updateApartment(req,res){
         try{
             const {id}=req.params;
-            const {name,address,city,floors,houses,main_picture_url,status}=req.body;
+            const {name,address,city,floors,houses,picture,status}=req.body;
 
             //check tenant exist
             const existingApartment= await Apartment.findById(id);
@@ -148,7 +165,7 @@ const apartmentController = {
                 city: city || existingApartment.city,
                 floors: floors ? parseInt(floors): existingApartment.floors,
                 houses: houses ? parseInt(houses): existingApartment.houses,
-                main_picture_url: main_picture_url || existingApartment.main_picture_url,
+                picture: picture || existingApartment.picture,
                 status: status || existingApartment.status
             });
 

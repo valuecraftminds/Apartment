@@ -1,12 +1,16 @@
 // CreateApartment.jsx
 import React, { useState } from 'react';
-import api from '../api/axios'; // adjust path if needed
+import api from '../api/axios'; 
+import { toast } from 'react-toastify';
 
 export default function CreateApartment({ onClose, onCreated }) {
   const [formData, setFormData] = useState({
     name: '',
     address: '',
-    price: '',
+    city: '',
+    floors:'',
+    houses:'',
+    status:'active',
     image: null,
   });
   const [loading, setLoading] = useState(false);
@@ -20,29 +24,40 @@ export default function CreateApartment({ onClose, onCreated }) {
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    try {
-      const data = new FormData();
-      data.append('name', formData.name);
-      data.append('address', formData.address);
-      data.append('price', formData.price);
-      if (formData.image) data.append('image', formData.image);
-
-      await api.post('/apartments', data); // adjust endpoint
-      setLoading(false);
-
-      if (onCreated) onCreated(); // refresh the list
-      if (onClose) onClose(); // close the modal
-    } catch (err) {
-      console.error(err);
-      setError('Failed to create apartment.');
-      setLoading(false);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError('');
+  setLoading(true);
+  try {
+    const submitFormData = new FormData(); 
+    submitFormData.append('name', formData.name); 
+    submitFormData.append('address', formData.address);
+    submitFormData.append('city', formData.city);
+    submitFormData.append('floors', formData.floors);
+    submitFormData.append('houses', formData.houses);
+    submitFormData.append('status', formData.status); 
+    
+    if (formData.image) {
+      submitFormData.append('picture', formData.image);
     }
-  };
 
+    const response = await api.post('/apartments', submitFormData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+   
+    setLoading(false);
+
+    if (onCreated) onCreated(); // refresh the list
+    if (onClose) onClose(); // close the modal
+  } catch (err) {
+    console.error(err);
+    // setError('Failed to create apartment.');
+    toast.error('Failed to create apartment')
+    setLoading(false);
+  }
+};
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {error && <p className="text-red-500">{error}</p>}
@@ -52,7 +67,7 @@ export default function CreateApartment({ onClose, onCreated }) {
         placeholder="Apartment Name"
         value={formData.name}
         onChange={handleChange}
-        className="border rounded p-2"
+        className="border rounded p-2 text-black dark:text-white border-purple-600"
         required
       />
       <input
@@ -61,24 +76,53 @@ export default function CreateApartment({ onClose, onCreated }) {
         placeholder="Address"
         value={formData.address}
         onChange={handleChange}
-        className="border rounded p-2"
+        className="border rounded p-2  text-black dark:text-white border-purple-600"
+        required
+      />
+      <input
+        type="text"
+        name="city"
+        placeholder="City"
+        value={formData.city}
+        onChange={handleChange}
+        className="border rounded p-2  text-black dark:text-white border-purple-600"
         required
       />
       <input
         type="number"
-        name="price"
-        placeholder="Price"
-        value={formData.price}
+        name="floors"
+        placeholder="No of Floors"
+        value={formData.floors}
         onChange={handleChange}
-        className="border rounded p-2"
+        className="border rounded p-2 text-black dark:text-white border-purple-600"
         required
       />
+      <input
+        type="number"
+        name="houses"
+        placeholder="No of Houses"
+        value={formData.houses}
+        onChange={handleChange}
+        className="border rounded p-2  text-black dark:text-white border-purple-600"
+        required
+      />
+      <select
+        name="status"
+        value={formData.status}
+        onChange={handleChange}
+        className="border rounded p-2 text-black dark:text-white border-purple-600"
+        required
+      >
+        <option value="active">Active</option>
+        <option value="maintenance">Maintenance</option>
+        <option value="inactive">Inactive</option>
+      </select>
       <input
         type="file"
         name="image"
         accept="image/*"
         onChange={handleChange}
-        className="border rounded p-2"
+        className="border rounded p-2 text-black dark:text-white border-purple-600"
       />
       <div className="flex justify-end gap-2">
         <button

@@ -5,6 +5,7 @@ const pool = require('../db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const {authenticateToken} = require('../middleware/auth')
 const { sendVerificationEmail } = require('../helpers/email');
 require('dotenv').config();
 
@@ -219,6 +220,50 @@ router.post('/logout', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(200).json({ message: 'Logged out' });
+  }
+});
+
+//get users according to the company id
+router.get('/users', authenticateToken, async (req, res) => {
+  try {
+    const company_id = req.user.company_id;
+    
+    if (!company_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Company ID is required'
+      });
+    }
+
+    // Get users (excluding password and other sensitive info)
+    const [users] = await pool.execute(
+      `SELECT 
+        id, 
+        firstname, 
+        lastname, 
+        email, 
+        country,
+        mobile,
+        role, 
+        is_verified, 
+        created_at 
+       FROM users 
+       WHERE company_id = ? 
+       ORDER BY created_at DESC`,
+      [company_id]
+    );
+
+    res.json({
+      success: true,
+      data: users
+    });
+    
+  } catch (err) {
+    console.error('Get users error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch users'
+    });
   }
 });
 

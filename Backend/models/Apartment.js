@@ -3,12 +3,12 @@ const { v4: uuidv4 } = require('uuid');
 
 class Apartment {
     static async create(apartmentData) {
-        const { name, address, city, floors, houses, main_picture_url, status,company_id } = apartmentData;
+        const { name, address, city, floors, houses, picture, status,company_id } = apartmentData;
         const id = uuidv4();
 
         const [result] = await pool.execute(
-            'INSERT INTO apartments (id, name, address, city, floors, houses, main_picture_url, status,company_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [id, name, address, city, floors, houses, main_picture_url, status,company_id]
+            'INSERT INTO apartments (id, name, address, city, floors, houses,picture , status,company_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [id, name, address, city, floors, houses, picture, status,company_id]
         );
         return { id, ...apartmentData };
     }
@@ -37,10 +37,10 @@ class Apartment {
     }
 
     static async update(id, apartmentData) {
-        const { name, address, city, floors, houses, main_picture_url, status } = apartmentData;
+        const { name, address, city, floors, houses, picture, status } = apartmentData;
         await pool.execute(
-            'UPDATE apartments SET name = ?, address = ?, city = ?, floors = ?, houses = ?, main_picture_url = ?, status = ? WHERE id = ?',
-            [name, address, city, floors, houses, main_picture_url, status, id]
+            'UPDATE apartments SET name = ?, address = ?, city = ?, floors = ?, houses = ?, picture = ?, status = ? WHERE id = ?',
+            [name, address, city, floors, houses, picture, status, id]
         );
         return { id, ...apartmentData };
     }
