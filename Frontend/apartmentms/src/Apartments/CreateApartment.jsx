@@ -29,15 +29,15 @@ const handleSubmit = async (e) => {
   setError('');
   setLoading(true);
   try {
-    const submitFormData = new FormData(); // Rename to avoid conflict
-    submitFormData.append('name', formData.name); // Use formData, not apartments
+    const submitFormData = new FormData(); 
+    submitFormData.append('name', formData.name); 
     submitFormData.append('address', formData.address);
     submitFormData.append('city', formData.city);
     submitFormData.append('floors', formData.floors);
     submitFormData.append('houses', formData.houses);
-    submitFormData.append('status', formData.status); // Add status field
+    submitFormData.append('status', formData.status); 
     
-    if (formData.image) { // Use formData.image, not apartments.picture
+    if (formData.image) {
       submitFormData.append('picture', formData.image);
     }
 
