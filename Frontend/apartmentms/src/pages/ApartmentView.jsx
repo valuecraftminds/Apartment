@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import api from '../api/axios';
 import CreateApartment from '../Apartments/CreateApartment';
+import EditApartment from '../Apartments/EditApartment';
 
 export default function ApartmentView() {
     const { auth } = useContext(AuthContext);
@@ -17,13 +18,19 @@ export default function ApartmentView() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showEditModel, setShowEditModel] = useState(false);
 
      const handleAddNew = () => {
     setShowCreateModal(true);
   };
 
+  const handleEditModel = () =>{
+    setShowEditModel(true);
+  };
+
   const handleCloseModal = () => {
     setShowCreateModal(false);
+    setShowEditModel(false);
   };
 
    const handleApartmentCreated = () => {
@@ -34,6 +41,10 @@ export default function ApartmentView() {
         // Show success message
         toast.success('Apartment created successfully!');
     };
+
+    const handleApartmentEdit =() => {
+
+    }
 
 
     const loadApartments = async () => {
@@ -188,7 +199,7 @@ export default function ApartmentView() {
                                                                 <Eye size={16} />
                                                             </button> */}
                                                             <button
-                                                                onClick={() => handleEdit(apartment)}
+                                                                onClick={handleEditModel}
                                                                 className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
                                                                 title="Edit"
                                                             >
@@ -228,6 +239,25 @@ export default function ApartmentView() {
                     <CreateApartment 
                             onClose={handleCloseModal} 
                             onCreated={handleApartmentCreated}
+                    />
+                </div>
+            </div>
+            )}
+            {showEditModel && (
+                <div className="fixed inset-0 bg-white/0 backdrop-blur-lg flex items-center justify-center z-50">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md relative">
+                    <button
+                    onClick={handleCloseModal}
+                    className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 dark:hover:text-white"
+                    >
+                    ✖
+                    </button>
+                    <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
+                    Edit Apartment
+                    </h2>
+                    <EditApartment 
+                            onClose={handleCloseModal} 
+                            onCreated={handleApartmentEdit}
                     />
                 </div>
             </div>

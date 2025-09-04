@@ -44,7 +44,7 @@ router.post('/register', async (req, res) => {
     
     // FIXED: Handle company_id properly - convert undefined to null
     const [ins] = await pool.execute(
-      'INSERT INTO users (firstname, lastname, username, country, mobile, email, password_hash, is_verified, company_id) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)',
+      'INSERT INTO users (firstname, lastname, username, country, mobile, email, password_hash, is_verified, is_active,company_id) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 1, ?)',
       [
         firstname || null, 
         lastname || null, 
@@ -246,6 +246,7 @@ router.get('/users', authenticateToken, async (req, res) => {
         mobile,
         role, 
         is_verified, 
+        is_active,
         created_at 
        FROM users 
        WHERE company_id = ? 

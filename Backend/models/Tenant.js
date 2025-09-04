@@ -39,7 +39,7 @@ class Tenant{
     static async update(id, tenantData){
         const {regNo,name,businessInfo,employees}=tenantData;
         await pool.execute(
-            'UPDATE tenants SET regNo=?, name=?, businessInfo=?, employees=? WHERE id=?',
+            'UPDATE tenants SET regNo=?, name=?, businessInfo=?, employees=? is_active=? WHERE id=?',
             [regNo,name,businessInfo,employees,id]
         );
         return {id, ...tenantData}

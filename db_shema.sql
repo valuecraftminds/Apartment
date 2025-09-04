@@ -44,7 +44,7 @@ CREATE TABLE apartments (
     city VARCHAR(255),
     floors INT DEFAULT 1,
     houses INT DEFAULT 1 COMMENT 'Total units',    
-    picture longblob,
+    picture VARCHAR(255),
     status ENUM('active', 'maintenance', 'inactive') DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
