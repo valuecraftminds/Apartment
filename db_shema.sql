@@ -12,6 +12,7 @@ CREATE TABLE tenants(
     name VARCHAR(255) not null,
     businessInfo VARCHAR(255) not null,
     employees int not null,
+    is_active TINYINT(1) DEFAULT 1,
     createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
     
@@ -31,8 +32,11 @@ CREATE TABLE users (
   refresh_token TEXT DEFAULT NULL,
   role VARCHAR(30) DEFAULT 'admin',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  is_active TINYINT(1) DEFAULT 1,
   company_id varchar(255), foreign key(company_id) references tenants(id)
 );
+
+drop table users;
 
 SELECT User, Host FROM mysql.user WHERE User='myapp_user';
 
