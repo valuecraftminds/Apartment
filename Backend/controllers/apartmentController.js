@@ -138,7 +138,12 @@ const apartmentController = {
     async updateApartment(req,res){
         try{
             const {id}=req.params;
-            const {name,address,city,floors,houses,picture,status}=req.body;
+            const {name,address,city,floors,houses,status}=req.body;
+
+            let picturePath = null;
+                if (req.file) {
+                picturePath = '/uploads/images/' + req.file.filename;
+            }
 
             //check tenant exist
             const existingApartment= await Apartment.findById(id);
@@ -165,7 +170,7 @@ const apartmentController = {
                 city: city || existingApartment.city,
                 floors: floors ? parseInt(floors): existingApartment.floors,
                 houses: houses ? parseInt(houses): existingApartment.houses,
-                picture: picture || existingApartment.picture,
+                picture: picturePath || existingApartment.picture,
                 status: status || existingApartment.status
             });
 
