@@ -55,8 +55,11 @@ export default function ApartmentView() {
         setShowEditModal(false);
         setEditingApartment(null);
         toast.success('Apartment updated successfully!');
-};
+    };
 
+    const handleApartmentDeleted = () => {
+        loadApartments();
+    };
 
     const loadApartments = async () => {
     try {
@@ -111,6 +114,7 @@ export default function ApartmentView() {
             console.log('Error deleting Apartment')
         }
     }
+    
 
     return (
         <div className="flex h-screen bg-gray-100 dark:bg-gray-900 w-screen transition-colors duration-200">
