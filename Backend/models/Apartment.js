@@ -36,6 +36,24 @@ class Apartment {
         return rows; 
     }
 
+    // Deactivate apartment (set status to 'inactive')
+    static async deactivate(id) {
+        await pool.execute(
+            'UPDATE apartments SET status = "inactive" WHERE id = ?',
+            [id]
+        );
+        return true;
+    }
+
+    // Activate apartment (set status to 'active')
+    static async activate(id) {
+        await pool.execute(
+            'UPDATE apartments SET status = "active" WHERE id = ?',
+            [id]
+        );
+        return true;
+    }
+
     static async update(id, apartmentData) {
         const { name, address, city, floors, houses, picture, status } = apartmentData;
         await pool.execute(
