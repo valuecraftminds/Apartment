@@ -15,7 +15,6 @@ CREATE TABLE tenants(
     is_active TINYINT(1) DEFAULT 1,
     createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-    
 
 CREATE TABLE users (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -49,7 +48,8 @@ CREATE TABLE apartments (
     floors INT DEFAULT 1,
     houses INT DEFAULT 1 COMMENT 'Total units',    
     picture VARCHAR(255),
-    status ENUM('active', 'maintenance', 'inactive') DEFAULT 'active',
+    status ENUM('active', 'maintenance') DEFAULT 'active',
+    is_active TINYINT(1) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
@@ -59,8 +59,37 @@ CREATE TABLE apartments (
 );
 drop table apartments;
 
--- Basic amenities (can be expanded later)
-    -- has_parking BOOLEAN DEFAULT FALSE,
---     has_elevator BOOLEAN DEFAULT FALSE,
---     has_security BOOLEAN DEFAULT FALSE,
+-- floors
+-- CREATE TABLE floors(
+-- 	id VARCHAR(255) PRIMARY KEY,
+--     company_id VARCHAR(255),
+--     apartment_id VARCHAR(255), 
+--     houses INT DEFAULT 1,
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+--     
+--     FOREIGN KEY (company_id) REFERENCES tenants(id) ON DELETE CASCADE,
+--     FOREIGN KEY (apartment_id) REFERENCES apartments(id) ON DELETE CASCADE,
+--     INDEX idx_company_id (company_id),
+--     INDEX idx_apartment_id (apartment_id)
+-- );
+-- drop table floors;
 
+CREATE TABLE house(
+	id VARCHAR(255) PRIMARY KEY,
+    company_id VARCHAR(255),
+    apartment_id VARCHAR(255), 
+    floor VARCHAR(255),
+	status ENUM('vacant', 'occupied', 'maintenance') DEFAULT 'vacant',
+    registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (company_id) REFERENCES tenants(id) ON DELETE CASCADE,
+    FOREIGN KEY (apartment_id) REFERENCES apartments(id) ON DELETE CASCADE,
+    INDEX idx_company_id (company_id),
+    INDEX idx_apartment_id (apartment_id)
+);
+
+-- CREATE TABLE family(
+-- 	
+-- );

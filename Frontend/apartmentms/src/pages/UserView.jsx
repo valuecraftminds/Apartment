@@ -143,7 +143,7 @@ export default function UserView() {
                           <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
                             {user.role}
                           </td>
-                          <td colSpan={2} className="px-4 py-4 whitespace-nowrap">
+                          <td colSpan={2} className="px-4 py-4 whitespace-nowrap text-center">
                             <span className={`px-2 py-1 text-xs font-semibold rounded-full mr-2 ${
                               user.is_verified 
                                 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'

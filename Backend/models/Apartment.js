@@ -1,10 +1,10 @@
 const pool = require('../db');
-const { v4: uuidv4 } = require('uuid');
+//const { v4: uuidv4 } = require('uuid');
 
 class Apartment {
     static async create(apartmentData) {
-        const { name, address, city, floors, houses, picture, status,company_id } = apartmentData;
-        const id = uuidv4();
+        const { id,name, address, city, floors, houses, picture, status,company_id } = apartmentData;
+        //const id = uuidv4();
 
         const [result] = await pool.execute(
             'INSERT INTO apartments (id, name, address, city, floors, houses,picture , status,company_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',

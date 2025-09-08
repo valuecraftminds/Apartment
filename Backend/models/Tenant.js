@@ -4,7 +4,8 @@ const { v4: uuidv4 } = require('uuid');
 class Tenant{
     static async create(tenantData){
         const {name,businessInfo,employees}=tenantData;
-        const id=uuidv4(); 
+        //const id=uuidv4(); 
+        const id = uuidv4().replace(/-/g, '').substring(0, 10);
 
         const [result] = await pool.execute(
             'INSERT INTO tenants (id,name,businessInfo,employees) values(?,?,?,?)',
