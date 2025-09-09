@@ -1,7 +1,7 @@
-const House = require('../models/House');
+const Floor = require('../models/Floor');
 
-const houseController = {
-    async createHouse(req, res) {
+const floorController = {
+    async createFloors(req, res) {
         try {
             const { floor_no, house_count } = req.body;
             const company_id = req.user.company_id;
@@ -165,4 +165,4 @@ const houseController = {
     }
 }
 
-module.exports = houseController;
+module.exports = floorController;

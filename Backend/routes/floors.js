@@ -1,0 +1,17 @@
+const express = require('express');
+const router = express.Router();
+const { authenticateToken } = require('../middleware/auth');
+const floorController = require('../controllers/floorController');
+
+// Apply authentication to ALL apartment routes
+router.use(authenticateToken);
+
+// Routes
+router.post('/', floorController.createFloors);
+router.get('/', floorController.getAllFloors);
+router.get('/:id', floorController.getFloorById);
+router.put('/:id', floorController.updateFloors);
+router.delete('/:id', floorController.deleteFloors);
+
+
+module.exports = router;
