@@ -60,28 +60,13 @@ CREATE TABLE apartments (
 drop table apartments;
 
 -- floors
--- CREATE TABLE floors(
--- 	id VARCHAR(255) PRIMARY KEY,
---     company_id VARCHAR(255),
---     apartment_id VARCHAR(255), 
---     houses INT DEFAULT 1,
---     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
---     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
---     
---     FOREIGN KEY (company_id) REFERENCES tenants(id) ON DELETE CASCADE,
---     FOREIGN KEY (apartment_id) REFERENCES apartments(id) ON DELETE CASCADE,
---     INDEX idx_company_id (company_id),
---     INDEX idx_apartment_id (apartment_id)
--- );
--- drop table floors;
-
-CREATE TABLE house(
-	id VARCHAR(255) PRIMARY KEY,
+CREATE TABLE floors(
+	id INT AUTO_INCREMENT PRIMARY KEY,
     company_id VARCHAR(255),
     apartment_id VARCHAR(255), 
-    floor VARCHAR(255),
-	status ENUM('vacant', 'occupied', 'maintenance') DEFAULT 'vacant',
-    registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    floor_no VARCHAR(255) NOT NULL,
+    house_count INT DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
     FOREIGN KEY (company_id) REFERENCES tenants(id) ON DELETE CASCADE,
@@ -89,6 +74,27 @@ CREATE TABLE house(
     INDEX idx_company_id (company_id),
     INDEX idx_apartment_id (apartment_id)
 );
+drop table floors;
+
+CREATE TABLE houses(
+	id INT Auto_INCREMENT PRIMARY KEY,
+    company_id VARCHAR(255),
+    apartment_id VARCHAR(255), 
+    floor_id INT,
+    house_no VARCHAR(255) NOT NULL,
+	status ENUM('vacant', 'occupied', 'maintenance') DEFAULT 'vacant',
+    registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (company_id) REFERENCES tenants(id) ON DELETE CASCADE,
+    FOREIGN KEY (apartment_id) REFERENCES apartments(id) ON DELETE CASCADE,
+    FOREIGN KEY (floor_id) REFERENCES floors(id) ON DELETE CASCADE,
+    INDEX idx_company_id (company_id),
+    INDEX idx_apartment_id (apartment_id),
+    INDEX idx_floor_id (floor_id)
+);
+
+drop table house;
 
 -- CREATE TABLE family(
 -- 	

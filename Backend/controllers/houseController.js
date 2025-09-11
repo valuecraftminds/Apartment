@@ -3,43 +3,46 @@ const House = require('../models/House');
 const houseController = {
     async createHouse(req, res) {
         try {
-            const { floor_no, house_count } = req.body;
+            const { house_no, status } = req.body;
             const company_id = req.user.company_id;
-            const apartment_id=req.apartment.id
+            const apartment_id=req.apartment.id;
+            const floor_id=req.floor.id;
 
-            if (!floor_no || house_count === undefined) {
+            if (!house_no || !status === undefined) {
                 return res.status(400).json({
                     success: false,
                     message: 'All fields are required'
                 });
             }
 
-            const newFloor = await Floor.create({
-                    floor_no,
-                    house_count: parseInt(houses),
+            const newHouse = await House.create({
+                    house_no,
+                    status,
                     company_id,
-                    apartment_id
+                    apartment_id,
+                    floor_id
             });
             res.status(201).json({
             success: true,
-            message: 'Floors Added successfully',
+            message: 'House Added successfully',
             data: newFloor
             });
         } catch (err) {
-            console.error('Create Floor error', err);
+            console.error('Create House error', err);
             res.status(500).json({
             success: false,
-            message: 'Server error while creating floor'
+            message: 'Server error while creating house'
         });
     }
 },
-    // Get all floors
-    async getAllFloors(req, res) {
+    // Get all house
+    async getAllHouses(req, res) {
         try {
 
             // Get company_id from authenticated user (from JWT token)
             const company_id = req.user.company_id; // Assuming you store company_id in JWT
             const apartment_id=req.apartment.id;
+            const floor_id=req.floor.id;
 
             if(!company_id){
                 return res.status(400).json({
@@ -53,6 +56,12 @@ const houseController = {
                     message:'Apartment Id is required'
                 });
             }
+            if(!floor_id){
+                return res.status(400).json({
+                    success:false,
+                    message:'Floor Id is required'
+                });
+            }
 
 
             if (!req.user) {
@@ -62,104 +71,104 @@ const houseController = {
             });
         }
 
-            const floors = await Floor.findByCompanyId(company_id)
+            const house = await House.findByCompanyId(company_id)
             res.json({
                 success: true,
-                data: floors // This should now be an array
+                data: house // This should now be an array
             });
         } catch (err) {
-            console.error('Get floors error', err);
+            console.error('Get house error', err);
             res.status(500).json({
                 success: false,
-                message: 'Server error while fetching floors'
+                message: 'Server error while fetching houses'
             });
         }
     },
 
-    //get floors by ID
-    async getFloorById(req,res){
+    //get house by ID
+    async getHouseById(req,res){
         try{
             const {id}=req.params;
-            const floor=await Floor.findById(id);
+            const house=await House.findById(id);
 
-            if(!floor){
+            if(!house){
                 return res.status(404).json({
                     success:false,
-                    message:'Floor not found'
+                    message:'house not found'
                 });
             }
 
             res.json({
                 success:true,
-                data:floor
+                data:house
             });
         }catch(err){
-            console.error('Get floor error',err);
+            console.error('Get house error',err);
             res.status(500).json({
                 success:false,
-                message:'Server error while fetching floors'
+                message:'Server error while fetching houses'
             });
         }
     },
 
-     //update floors
-    async updateFloors(req,res){
+     //update houses
+    async updateHouse(req,res){
         try{
             const {id}=req.params;
-            const {floor_no,house_count}=req.body;
+            const {house_no,status}=req.body;
 
-            //check tenant exist
-            const existingFloors= await Floor.findById(id);
-            if(!existingFloors){
+            //check house exist
+            const existingHouse= await House.findById(id);
+            if(!existingHouse){
                 return res.status(404).json({
                     success:false,
-                    message:'Floor not found'
+                    message:'House not found'
                 });
             }
 
-            const updateFloors= await Floor.update(id,{
-                floor_no: floor_no || existingFloors.floor_no,
-                house_count: house_count ? parseInt(house_count): existingFloors.house_count,
+            const updateHouse= await House.update(id,{
+                house_no: house_no || existingHouse.house_no,
+                status: status || existingHouse.status,
             });
 
             res.json({
                 success:true,
-                message:'Floor updated successfully',
-                data: updateFloors
+                message:'House updated successfully',
+                data: updateHouse
             });
         }catch(err){
-            console.error('Update floor error:',err);
+            console.error('Update house error:',err);
             res.status(500).json({
                 success:false,
-                message:'Server error while updating floor'
+                message:'Server error while updating house'
             });
         }
     },
 
-    //Delete Floor
-    async deleteFloors(req,res){
+    //Delete house
+    async deleteHouse(req,res){
         try{
             const {id} = req.params;
 
-            //check if floor exists
-            const existingFloor= await Floor.findById(id);
-            if(!existingFloor){
+            //check if house exists
+            const existingHouse= await House.findById(id);
+            if(!existingHouse){
                 return res.status(404).json({
                     success:false,
-                    message:'Floor not found'
+                    message:'House not found'
                 });
             }
 
-            await Floor.delete(id);
+            await House.delete(id);
             res.json({
                 success:true,
-                message:'Floor deleted successfully'
+                message:'House deleted successfully'
             });
         }catch(err){
-            console.error('Delete floor error:',err);
+            console.error('Delete house error:',err);
             res.status(500).json({
                 success:false,
-                message:'Server error while deleting floor'
+                message:'Server error while deleting house'
             });
         }
     }
