@@ -62,4 +62,4 @@ class Floor {
     }
 }
 
-module.exports = Apartment;
+module.exports = Floor;

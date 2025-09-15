@@ -21,6 +21,8 @@ export default function ApartmentView() {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingApartment, setEditingApartment] = useState(null);
+    const [viewApartmentModel, setViewApartmentModel] = useState(false);
+    const [showFloorCreateModel, setShowFloorCreateModal] = useState(false);
 
 
      const handleAddNew = () => {
@@ -31,6 +33,10 @@ export default function ApartmentView() {
   setEditingApartment(apartment);
   setShowEditModal(true);
 };
+
+    const handleView = (apartment) =>{
+        setViewApartmentModel(true);
+    }
 
   const handleCloseModal = () => {
     setShowCreateModal(false);
@@ -98,7 +104,7 @@ export default function ApartmentView() {
 
     // const handleEdit = (apartment) => console.log('Edit apartment:', apartment);
     const handleDelete = (apartment) => console.log('Delete apartment:', apartment);
-    const handleView = (apartment) => console.log('View apartment:', apartment);
+    //const handleView = (apartment) => console.log('View apartment:', apartment);
 
     const deleteApartments = async() => {
         try{
@@ -222,13 +228,13 @@ export default function ApartmentView() {
                                                     </td>
                                                     <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                                                         <div className="flex space-x-2">
-                                                            {/* <button
+                                                            <button
                                                                 onClick={() => handleView(apartment)}
                                                                 className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                                                                 title="View"
                                                             >
-                                                                <Eye size={16} />
-                                                            </button> */}
+                                                                <Plus size={16} />
+                                                            </button>
                                                             <button
                                                                 onClick={() => handleEdit(apartment)}
                                                                 className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
