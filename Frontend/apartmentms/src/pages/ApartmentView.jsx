@@ -9,6 +9,7 @@ import api from '../api/axios';
 import CreateApartment from '../Apartments/CreateApartment';
 import EditApartment from '../Apartments/EditApartment';
 import { toast } from 'react-toastify';
+import ViewApartment from '../Apartments/ViewApartment';
 
 export default function ApartmentView() {
     const { auth } = useContext(AuthContext);
@@ -21,8 +22,8 @@ export default function ApartmentView() {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingApartment, setEditingApartment] = useState(null);
-    const [viewApartmentModel, setViewApartmentModel] = useState(false);
-    const [showFloorCreateModel, setShowFloorCreateModal] = useState(false);
+    const [viewingApartment, setViewingApartment] = useState(null);
+    const [showViewModal, setShowViewModal] = useState(false);
 
 
      const handleAddNew = () => {
@@ -34,9 +35,15 @@ export default function ApartmentView() {
   setShowEditModal(true);
 };
 
-    const handleView = (apartment) =>{
-        setViewApartmentModel(true);
-    }
+    const handleView = (apartment) => {
+  setViewingApartment(apartment);
+  setShowViewModal(true);
+};
+
+    const handleViewModalClose = () => {
+        setShowViewModal(false);
+        setViewingApartment(null);
+    };
 
   const handleCloseModal = () => {
     setShowCreateModal(false);
@@ -233,7 +240,7 @@ export default function ApartmentView() {
                                                                 className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                                                                 title="View"
                                                             >
-                                                                <Plus size={16} />
+                                                                <Eye size={16} />
                                                             </button>
                                                             <button
                                                                 onClick={() => handleEdit(apartment)}
@@ -299,6 +306,17 @@ export default function ApartmentView() {
                     />
                     </div>
                 </div>
+            )}
+
+            {showViewModal && viewingApartment && (
+                <ViewApartment
+                    apartment={viewingApartment}
+                    onClose={handleViewModalClose}
+                    onAddHouse={() => {
+                    // Handle add house functionality
+                    console.log('Add house for:', viewingApartment);
+                    }}
+                />
             )}
         </div>
     );

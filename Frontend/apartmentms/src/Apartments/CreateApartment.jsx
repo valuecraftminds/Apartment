@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 
 export default function CreateApartment({ onClose, onCreated }) {
   const [formData, setFormData] = useState({
+    id:'',
     name: '',
     address: '',
     city: '',
