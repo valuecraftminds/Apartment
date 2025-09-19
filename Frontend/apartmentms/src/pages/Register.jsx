@@ -291,8 +291,8 @@ export default function CombinedRegistration() {
 
   // Progress steps
   const steps = [
-    { number: 1, title: "User Details" },
-    { number: 2, title: "Company Info" },
+    { number: 1, title: "Company Details" },
+    { number: 2, title: "User Info" },
     { number: 3, title: "Security" }
   ];
 
