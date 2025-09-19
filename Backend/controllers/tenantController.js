@@ -4,22 +4,22 @@ const Tenant = require('../models/Tenant');
 const tenantController = {
     async createTenant(req,res){
         try{
-            const {name, businessInfo, employees}=req.body;
-            if(!name || !businessInfo || employees === undefined){
+            const {regNo,name, address, employees}=req.body;
+            if(!regNo || !name || !address || employees === undefined){
                 return res.status(400).json({
                     success: false,
-                    message: 'All fields are required: name, businessInfo, employees'
+                    message: 'All fields are required'
                 });
             }
             
-            //check existing tenants
-            // const existingTenant = await Tenant.findByRegNo(regNo);
-            // if(existingTenant){
-            //     return res.status(409).json({
-            //         success:false,
-            //         message:'Tenant is already exists'
-            //     });
-            // }
+            // check existing tenants
+            const existingTenant = await Tenant.findByRegNo(regNo);
+            if(existingTenant){
+                return res.status(409).json({
+                    success:false,
+                    message:'Tenant is already exists'
+                });
+            }
 
             //Validate employees is a positive number
             if(isNaN(employees) || employees < 1){
@@ -31,8 +31,9 @@ const tenantController = {
 
             //create tenant
             const newTenant=await Tenant.create({
+                regNo,
                 name,
-                businessInfo,
+                address,
                 employees:parseInt(employees)
             });
 
@@ -98,7 +99,7 @@ const tenantController = {
     async updateTenant(req,res){
         try{
             const {id}=req.params;
-            const {regNo,name,businessInfo,employees}=req.body;
+            const {regNo,name,address,employees}=req.body;
 
             //check tenant exist
             const existingTenant= await Tenant.findById(id);
@@ -122,7 +123,7 @@ const tenantController = {
             const updateTenant= await Tenant.update(id,{
                 regNo: regNo || existingTenant.regNo, // Keep existing regNo if not provided
                 name: name || existingTenant.name,
-                businessInfo: businessInfo || existingTenant.businessInfo,
+                address: address || existingTenant.address,
                 employees: employees ? parseInt(employees): existingTenant.employees
             });
 

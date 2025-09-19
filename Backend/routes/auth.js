@@ -34,7 +34,7 @@ function signRefreshToken(user) {
 /* Register: create user, store hashed verification token, send email */
 router.post('/register', async (req, res) => {
   try {
-    const { firstname, lastname, username, country, mobile, email, password, company_id } = req.body;
+    const { firstname, lastname, country, mobile, email, password, company_id } = req.body;
     if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
 
     const [exists] = await pool.execute('SELECT id FROM users WHERE email = ?', [email]);
@@ -44,11 +44,10 @@ router.post('/register', async (req, res) => {
     
     // FIXED: Handle company_id properly - convert undefined to null
     const [ins] = await pool.execute(
-      'INSERT INTO users (firstname, lastname, username, country, mobile, email, password_hash, is_verified, is_active,company_id) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 1, ?)',
+      'INSERT INTO users (firstname, lastname, country, mobile, email, password_hash, is_verified, is_active,company_id) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 1, ?)',
       [
         firstname || null, 
         lastname || null, 
-        username || null, // Handle username if it's undefined
         country || null, 
         mobile || null, 
         email, 

@@ -3,13 +3,13 @@ const { v4: uuidv4 } = require('uuid');
 
 class Tenant{
     static async create(tenantData){
-        const {regNo,name,businessInfo,employees}=tenantData;
+        const {regNo,name,address,employees}=tenantData;
         //const id=uuidv4(); 
         const id = uuidv4().replace(/-/g, '').substring(0, 10);
 
         const [result] = await pool.execute(
-            'INSERT INTO tenants (id,regNo,name,businessInfo,employees) values(?,?,?,?)',
-            [id,regNo,name,businessInfo,employees]
+            'INSERT INTO tenants (id,regNo,name,address,employees) values(?,?,?,?)',
+            [id,regNo,name,address,employees]
         );
         return {id, ...tenantData};
     }
@@ -38,10 +38,10 @@ class Tenant{
     }
 
     static async update(id, tenantData){
-        const {regNo,name,businessInfo,employees}=tenantData;
+        const {regNo,name,address,employees}=tenantData;
         await pool.execute(
-            'UPDATE tenants SET regNo=?, name=?, businessInfo=?, employees=? is_active=? WHERE id=?',
-            [regNo,name,businessInfo,employees,id]
+            'UPDATE tenants SET regNo=?, name=?, address=?, employees=? is_active=? WHERE id=?',
+            [regNo,name,address,employees,id]
         );
         return {id, ...tenantData}
     }

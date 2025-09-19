@@ -8,7 +8,10 @@ import { Eye, EyeOff, ChevronLeft, ChevronRight, Check, X } from "lucide-react";
 export default function CombinedRegistration() {
   // User data state
   const [userData, setUserData] = useState({
-    username: '',
+    firstname:'',
+    lastname:'',
+    country:'',
+    mobile:'',
     email: '',
     password: '',
     confirmPassword: ''
@@ -16,28 +19,37 @@ export default function CombinedRegistration() {
 
   // Company data state
   const [companyData, setCompanyData] = useState({
+    regNo: '',
     name: '',
-    businessInfo: '',
+    address: '',
     employees: ''
   });
 
   const [errors, setErrors] = useState({
-    username: '',
+    firstname:'',
+    lastname:'',
+    country:'',
+    mobile:'',
     email: '',
     password: '',
     confirmPassword: '',
+    regNo:'',
     name: '',
-    businessInfo: '',
+    address: '',
     employees: ''
   });
 
   const [touched, setTouched] = useState({
-    username: false,
+    firstname:false,
+    lastname:false,
+    country:false,
+    mobile:false,
     email: false,
     password: false,
     confirmPassword: false,
+    regNo:false,
     name: false,
-    businessInfo: false,
+    address: false,
     employees: false
   });
 
@@ -54,12 +66,30 @@ export default function CombinedRegistration() {
     
     switch (name) {
       // User validation
-      case 'username':
-        if (!value.trim()) error = 'Username is required';
-        else if (value.length < 3) error = 'Username must be at least 3 characters';
-        else if (!/^[a-zA-Z0-9]+$/.test(value)) error = 'Username can only contain letters, and numbers';
-        else if (value.length > 20) error = 'Username cannot exceed 20 characters';
+      case 'firtname':
+        if (!value.trim()) error = 'First name is required';
+        else if (value.length < 3) error = 'First name must be at least 3 characters';
+        else if (!/^[a-zA-Z0-9]+$/.test(value)) error = 'First name can only contain letters, and numbers';
+        else if (value.length > 20) error = 'First name cannot exceed 20 characters';
         break;
+
+      case 'lastname':
+        if (!value.trim()) error = 'Last name is required';
+        else if (value.length < 3) error = 'Last name must be at least 3 characters';
+        else if (!/^[a-zA-Z0-9]+$/.test(value)) error = 'Last name can only contain letters, and numbers';
+        else if (value.length > 20) error = 'Last name cannot exceed 20 characters';
+        break;
+
+      case 'country':
+        if (!value.trim()) error = 'Country is required';
+        break;
+
+      case 'mobile':
+        if (!value.trim()) error = 'Mobile Number is required';
+        else if (!/^[0-9]+$/.test(value)) error = 'Mobile can only contain numbers';
+        else if (value.length > 15) error = 'Mobile cannot exceed 15 digits';
+        break;
+
         
       case 'email':
         if (!value.trim()) error = 'Email is required';
@@ -81,14 +111,19 @@ export default function CombinedRegistration() {
         break;
 
       // Company validation
+      case 'regNo':
+        if (!value.trim()) error = 'Business Registration No is required';
+        else if (value.length < 2) error = 'Business REgistration No must be at least 2 characters';
+        break;
+
       case 'name':
         if (!value.trim()) error = 'Company name is required';
         else if (value.length < 2) error = 'Company name must be at least 2 characters';
         break;
         
-      case 'businessInfo':
-        if (!value.trim()) error = 'Business information is required';
-        else if (value.length < 3) error = 'Business information must be at least 3 characters';
+      case 'address':
+        if (!value.trim()) error = 'Company address is required';
+        else if (value.length < 3) error = 'Company address must be at least 3 characters';
         break;
 
       case 'employees':
@@ -152,8 +187,8 @@ export default function CombinedRegistration() {
 
     // Mark all fields in current step as touched and validate them
     const stepFields = {
-      1: ['username', 'email'], // User details
-      2: ['name', 'businessInfo', 'employees'], // Company details
+      1: ['regNo','name', 'address', 'employees'], // Company details
+      2: ['email'], // User details
       3: ['password', 'confirmPassword'] // Security
     }[step];
 
@@ -206,8 +241,9 @@ export default function CombinedRegistration() {
   try {
     // Prepare company data
     const companyPayload = {
+      regNo: companyData.regNo,
       name: companyData.name,
-      businessInfo: companyData.businessInfo,
+      address: companyData.address,
       employees: parseInt(companyData.employees, 10)
     };
 
@@ -219,7 +255,10 @@ export default function CombinedRegistration() {
 
     // Then register the user with the company ID
     const userResponse = await api.post('/auth/register', {
-      username: userData.username,
+      firstname: userData.firstname,
+      lastname: userData.lastname,
+      country: userData.country,
+      mobile:userData.mobile,
       email: userData.email,
       password: userData.password,
       company_id: companyResponse.data.data.id // Send as company_id (not companyId)
