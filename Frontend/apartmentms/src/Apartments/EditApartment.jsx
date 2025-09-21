@@ -10,44 +10,12 @@ export default function CreateApartment({ onClose, onEdited, apartment  }) {
     city: '',
     floors:'',
     houses:'',
-    status:'active',
     image: null,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // const loadApartmentsById = async() =>{
-  //   try {
-  //       setLoading(true);
-  //       setError(null);
-  //       const result = await api.get(`/apartments/${id}`)
-  //       console.log('API Response:', result.data);
-
-  //       if (result.data.success && Array.isArray(result.data.data)) {
-  //           setApartments(result.data.data);
-  //       } else if (Array.isArray(result.data)) {
-  //           setApartments(result.data);
-  //       } else {
-  //           console.warn('Unexpected response format:', result.data);
-  //           setApartments([]);
-  //       }
-  //   } catch (err) {
-  //       console.error('Error loading apartments:', err);
-  //       if (err.response?.status === 401) {
-  //           setError('Unauthorized. Please login again.');
-  //           navigate('/login');
-  //       } else if (err.response?.status === 400) {
-  //           setError('Company information missing. Please contact support.');
-  //       } else {
-  //           setError('Failed to load apartments. Please try again.');
-  //       }
-  //   } finally {
-  //       setLoading(false);
-  //   }
-  // }
-
   useEffect(()=>{
-    //loadApartmentsById();
     if (apartment) {
       setFormData({
         name: apartment.name || '',
@@ -55,7 +23,6 @@ export default function CreateApartment({ onClose, onEdited, apartment  }) {
         city: apartment.city || '',
         floors: apartment.floors || '',
         houses: apartment.houses || '',
-        status: apartment.status || 'active',
         image: null, // Keep image as null, user can choose to update
       });
     }
@@ -81,14 +48,13 @@ const handleSubmit = async (e) => {
       submitFormData.append('city', formData.city);
       submitFormData.append('floors', formData.floors);
       submitFormData.append('houses', formData.houses);
-      submitFormData.append('status', formData.status); 
       
       if (formData.image) {
         submitFormData.append('picture', formData.image);
       }
 
       // Use PUT request instead of POST
-      const response = await api.put(`/apartments/${apartment.id}`, submitFormData, {
+      const response = await api.put(`/apartments/${apartment.apartment_id}`, submitFormData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -154,17 +120,6 @@ const handleSubmit = async (e) => {
         className="border rounded p-2  text-black dark:text-white border-purple-600"
         required
       />
-      <select
-        name="status"
-        value={formData.status}
-        onChange={handleChange}
-        className="border rounded p-2 text-black dark:text-white border-purple-600"
-        required
-      >
-        <option value="active">Active</option>
-        <option value="maintenance">Maintenance</option>
-        <option value="inactive">Inactive</option>
-      </select>
       <input
         type="file"
         name="image"

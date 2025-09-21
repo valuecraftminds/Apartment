@@ -66,7 +66,7 @@ export default function CombinedRegistration() {
     
     switch (name) {
       // User validation
-      case 'firtname':
+      case 'firstname':
         if (!value.trim()) error = 'First name is required';
         else if (value.length < 3) error = 'First name must be at least 3 characters';
         else if (!/^[a-zA-Z0-9]+$/.test(value)) error = 'First name can only contain letters, and numbers';
@@ -188,8 +188,8 @@ export default function CombinedRegistration() {
     // Mark all fields in current step as touched and validate them
     const stepFields = {
       1: ['regNo','name', 'address', 'employees'], // Company details
-      2: ['email'], // User details
-      3: ['password', 'confirmPassword'] // Security
+      2: ['firstname','lastname','country','mobile','email'], // User details
+      3: ['password', 'confirmPassword'], // Security
     }[step];
 
     stepFields.forEach(field => {
@@ -291,7 +291,7 @@ export default function CombinedRegistration() {
 
   // Progress steps
   const steps = [
-    { number: 1, title: "Company Details" },
+    { number: 1, title: "Company Info" },
     { number: 2, title: "User Info" },
     { number: 3, title: "Security" }
   ];
@@ -338,61 +338,32 @@ export default function CombinedRegistration() {
           </div>
 
           <form onSubmit={submit} className="loginForm">
-            {/* Step 1: User Details */}
+            {/* Step 1: Company Details */}
             {currentStep === 1 && (
-              <div className="space-y-4 animate-fadeIn">
-                <h2 className="text-lg font-semibold mb-4">User Information</h2>
-                
-                <div>
-                  <input 
-                    name="username" 
-                    value={userData.username} 
-                    onChange={(e) => handleInputChange(e, false)}
-                    onBlur={(e) => handleBlur(e, false)}
-                    placeholder="Username *" 
-                    className={`loginInput ${errors.username ? 'border-red-500' : touched.username && 'border-green-500'}`}
-                  />
-                  {touched.username && errors.username && (
-                    <div className="text-red-500 text-sm mt-1 flex items-center">
-                      <X size={14} className="mr-1" /> {errors.username}
-                    </div>
-                  )}
-                  {touched.username && !errors.username && (
-                    <div className="text-green-500 text-sm mt-1 flex items-center">
-                      <Check size={14} className="mr-1" /> Good!
-                    </div>
-                  )}
-                </div>
-                
-                <div>
-                  <input 
-                    name="email" 
-                    type="email"
-                    value={userData.email} 
-                    onChange={(e) => handleInputChange(e, false)}
-                    onBlur={(e) => handleBlur(e, false)}
-                    placeholder="Email *" 
-                    className={`loginInput ${errors.email ? 'border-red-500' : touched.email && 'border-green-500'}`}
-                  />
-                  {touched.email && errors.email && (
-                    <div className="text-red-500 text-sm mt-1 flex items-center">
-                      <X size={14} className="mr-1" /> {errors.email}
-                    </div>
-                  )}
-                  {touched.email && !errors.email && (
-                    <div className="text-green-500 text-sm mt-1 flex items-center">
-                      <Check size={14} className="mr-1" /> Valid email
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Step 2: Company Details */}
-            {currentStep === 2 && (
               <div className="space-y-4 animate-fadeIn">
                 <h2 className="text-lg font-semibold mb-4">Company Information</h2>
                 
+                <div>
+                  <input 
+                    name="regNo" 
+                    value={companyData.regNo} 
+                    onChange={(e) => handleInputChange(e, true)}
+                    onBlur={(e) => handleBlur(e, true)}
+                    placeholder="Company Registration No *" 
+                    className={`loginInput ${errors.regNo ? 'border-red-500' : touched.regNo && 'border-green-500'}`}
+                  />
+                  {touched.regNo && errors.regNo && (
+                    <div className="text-red-500 text-sm mt-1 flex items-center">
+                      <X size={14} className="mr-1" /> {errors.regNo}
+                    </div>
+                  )}
+                  {touched.regNo && !errors.regNo && (
+                    <div className="text-green-500 text-sm mt-1 flex items-center">
+                      <Check size={14} className="mr-1" />
+                    </div>
+                  )}
+                </div>
+
                 <div>
                   <input 
                     name="name" 
@@ -409,19 +380,19 @@ export default function CombinedRegistration() {
                   )}
                   {touched.name && !errors.name && (
                     <div className="text-green-500 text-sm mt-1 flex items-center">
-                      <Check size={14} className="mr-1" /> Good!
+                      <Check size={14} className="mr-1" />
                     </div>
                   )}
                 </div>
                 
                 <div>
                   <input 
-                    name="businessInfo" 
-                    value={companyData.businessInfo} 
+                    name="address" 
+                    value={companyData.address} 
                     onChange={(e) => handleInputChange(e, true)}
                     onBlur={(e) => handleBlur(e, true)}
-                    placeholder="Business Information *" 
-                    className={`loginInput ${errors.businessInfo ? 'border-red-500' : touched.businessInfo && 'border-green-500'}`}
+                    placeholder="Company Address *" 
+                    className={`loginInput ${errors.address ? 'border-red-500' : touched.address && 'border-green-500'}`}
                   />
                   {touched.businessInfo && errors.businessInfo && (
                     <div className="text-red-500 text-sm mt-1 flex items-center">
@@ -430,7 +401,7 @@ export default function CombinedRegistration() {
                   )}
                   {touched.businessInfo && !errors.businessInfo && (
                     <div className="text-green-500 text-sm mt-1 flex items-center">
-                      <Check size={14} className="mr-1" /> Good!
+                      <Check size={14} className="mr-1" />
                     </div>
                   )}
                 </div>
@@ -451,7 +422,119 @@ export default function CombinedRegistration() {
                   )}
                   {touched.employees && !errors.employees && (
                     <div className="text-green-500 text-sm mt-1 flex items-center">
-                      <Check size={14} className="mr-1" /> Good!
+                      <Check size={14} className="mr-1" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            {/* Step 2: User email */}
+            {currentStep === 2 && (
+              <div className="space-y-4 animate-fadeIn">
+                <h2 className="text-lg font-semibold mb-4">User Info</h2>
+                                
+                <div>
+                  <input 
+                    name="firstname" 
+                    value={userData.firstname} 
+                    onChange={(e) => handleInputChange(e, false)}
+                    onBlur={(e) => handleBlur(e, false)}
+                    placeholder="First Name *" 
+                    className={`loginInput ${errors.firstname ? 'border-red-500' : touched.firstname && 'border-green-500'}`}
+                  />
+                  {touched.firstname && errors.firstname && (
+                    <div className="text-red-500 text-sm mt-1 flex items-center">
+                      <X size={14} className="mr-1" /> {errors.firstname}
+                    </div>
+                  )}
+                  {touched.firstname && !errors.firstname && (
+                    <div className="text-green-500 text-sm mt-1 flex items-center">
+                      <Check size={14} className="mr-1" />
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <input 
+                    name="lastname" 
+                    value={userData.lastname} 
+                    onChange={(e) => handleInputChange(e, false)}
+                    onBlur={(e) => handleBlur(e, false)}
+                    placeholder="Last Name *" 
+                    className={`loginInput ${errors.lastname ? 'border-red-500' : touched.lastname && 'border-green-500'}`}
+                  />
+                  {touched.lastname && errors.lastname && (
+                    <div className="text-red-500 text-sm mt-1 flex items-center">
+                      <X size={14} className="mr-1" /> {errors.lastname}
+                    </div>
+                  )}
+                  {touched.lastname && !errors.lastname && (
+                    <div className="text-green-500 text-sm mt-1 flex items-center">
+                      <Check size={14} className="mr-1" />
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <input 
+                    name="country" 
+                    value={userData.country} 
+                    onChange={(e) => handleInputChange(e, false)}
+                    onBlur={(e) => handleBlur(e, false)}
+                    placeholder="Select country *" 
+                    className={`loginInput ${errors.country ? 'border-red-500' : touched.country && 'border-green-500'}`}
+                  />
+                  {touched.country && errors.country && (
+                    <div className="text-red-500 text-sm mt-1 flex items-center">
+                      <X size={14} className="mr-1" /> {errors.country}
+                    </div>
+                  )}
+                  {touched.country && !errors.country && (
+                    <div className="text-green-500 text-sm mt-1 flex items-center">
+                      <Check size={14} className="mr-1" />
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <input 
+                    name="mobile" 
+                    value={userData.mobile} 
+                    onChange={(e) => handleInputChange(e, false)}
+                    onBlur={(e) => handleBlur(e, false)}
+                    placeholder="Mobile *" 
+                    className={`loginInput ${errors.mobile ? 'border-red-500' : touched.mobile && 'border-green-500'}`}
+                  />
+                  {touched.mobile && errors.mobile && (
+                    <div className="text-red-500 text-sm mt-1 flex items-center">
+                      <X size={14} className="mr-1" /> {errors.mobile}
+                    </div>
+                  )}
+                  {touched.mobile && !errors.mobile && (
+                    <div className="text-green-500 text-sm mt-1 flex items-center">
+                      <Check size={14} className="mr-1" />
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <input 
+                    name="email" 
+                    type="email"
+                    value={userData.email} 
+                    onChange={(e) => handleInputChange(e, false)}
+                    onBlur={(e) => handleBlur(e, false)}
+                    placeholder="Email *" 
+                    className={`loginInput ${errors.email ? 'border-red-500' : touched.email && 'border-green-500'}`}
+                  />
+                  {touched.email && errors.email && (
+                    <div className="text-red-500 text-sm mt-1 flex items-center">
+                      <X size={14} className="mr-1" /> {errors.email}
+                    </div>
+                  )}
+                  {touched.email && !errors.email && (
+                    <div className="text-green-500 text-sm mt-1 flex items-center">
+                      <Check size={14} className="mr-1" /> Valid email
                     </div>
                   )}
                 </div>
@@ -507,11 +590,11 @@ export default function CombinedRegistration() {
                   </div>
                 )}
                 
-                {touched.password && !errors.password && (
+                {/* {touched.password && !errors.password && (
                   <div className="text-green-500 text-sm mt-1 flex items-center">
                     <Check size={14} className="mr-1" /> Strong password!
                   </div>
-                )}
+                )} */}
                 
                 <div className='passwordField'>
                   <input 
@@ -544,7 +627,7 @@ export default function CombinedRegistration() {
                   </div>
                 )}
               </div>
-            )}
+            )}            
 
             {/* Navigation Buttons */}
             <div className='loginButtonGroup mt-6'>
@@ -573,7 +656,7 @@ export default function CombinedRegistration() {
                   type="submit" 
                   className="loginButton loginButton--submit"
                 >
-                  Complete Registration
+                  Register
                 </button>
               )}
               

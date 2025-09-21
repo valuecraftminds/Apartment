@@ -8,7 +8,7 @@ class Tenant{
         const id = uuidv4().replace(/-/g, '').substring(0, 10);
 
         const [result] = await pool.execute(
-            'INSERT INTO tenants (id,regNo,name,address,employees) values(?,?,?,?)',
+            'INSERT INTO tenants (id,regNo,name,address,employees) values(?,?,?,?,?)',
             [id,regNo,name,address,employees]
         );
         return {id, ...tenantData};

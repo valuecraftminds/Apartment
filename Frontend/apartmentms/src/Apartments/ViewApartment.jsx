@@ -3,41 +3,11 @@ import { X, Plus, Home, Building2, MapPin, Navigation, Users } from 'lucide-reac
 import api from '../api/axios';
 import { toast } from 'react-toastify';
 
-export default function ViewApartment({ apartment, onClose, onAddHouse }) {
-  const [houses, setHouses] = useState([]);
+export default function ViewApartment({ apartment, onClose}) {
   const [loading, setLoading] = useState(true);
-  const [showAddHouseModal, setShowAddHouseModal] = useState(false);
-
-  const loadHouses = async () => {
-    try {
-      setLoading(true);
-      const response = await api.get(`/houses?apartment_id=${apartment.id}`);
-      setHouses(response.data.data || []);
-    } catch (err) {
-      console.error('Error loading houses:', err);
-      toast.error('Failed to load houses');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (apartment) {
-      loadHouses();
-    }
-  }, [apartment]);
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'occupied': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'vacant': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-      case 'maintenance': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200';
-    }
-  };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
@@ -79,75 +49,22 @@ export default function ViewApartment({ apartment, onClose, onAddHouse }) {
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Status & Image</h3>
-              <div>
-                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                  apartment.status === 'active' 
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                    : apartment.status === 'maintenance'
-                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                    : 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200'
-                }`}>
-                  {apartment.status}
-                </span>
-              </div>
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white"></h3>
               {apartment.picture && (
                 <div className="mt-2">
                   <img 
-                    src={apartment.picture} 
+                    src={`http://localhost:3000${apartment.picture}`} 
                     alt={apartment.name}
-                    className="w-32 h-32 object-cover rounded-lg"
+                    className="w-52 h-48 object-cover rounded-lg"
                   />
                 </div>
               )}
             </div>
           </div>
-
-          {/* Houses Section */}
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Houses/Units</h3>
-              <button
-                onClick={() => setShowAddHouseModal(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-white bg-purple-600 hover:bg-purple-700"
-              >
-                <Plus size={16} />
-                Add House
-              </button>
-            </div>
-
-            {loading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-                <p className="text-gray-600 dark:text-gray-300 mt-2">Loading houses...</p>
-              </div>
-            ) : houses.length === 0 ? (
-              <div className="text-center py-8 text-gray-600 dark:text-gray-300">
-                <Home size={48} className="mx-auto mb-4 text-gray-400" />
-                <p>No houses found</p>
-                <p className="text-sm">Add houses to this apartment</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {houses.map((house) => (
-                  <div key={house.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold text-gray-800 dark:text-white">
-                        Unit {house.house_number}
-                      </h4>
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(house.status)}`}>
-                        {house.status}
-                      </span>
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-300">
-                      <p>Floor: {house.floor_number}</p>
-                      {house.house_owner && <p>Owner: {house.house_owner}</p>}
-                      <p>Members: {house.members}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+          <div>
+            <button className='flex items-center gap-2 px-4 py-2 rounded-lg font-semibold shadow-md transition-all duration-300 text-white bg-purple-600 hover:bg-purple-700 hover:scale-105'>
+                Floors & Houses 
+            </button>
           </div>
         </div>
 

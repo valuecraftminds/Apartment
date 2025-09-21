@@ -35,7 +35,7 @@ const upload = multer({
 const apartmentController = {
     async createApartment(req, res) {
         try {
-            const { name, address, city, floors, houses, status } = req.body;
+            const { apartment_id,name, address, city } = req.body;
             const company_id = req.user.company_id;
 
             let picturePath = null;
@@ -43,7 +43,7 @@ const apartmentController = {
                 picturePath = '/uploads/images/' + req.file.filename;
             }
 
-            if (!name || !address || !city || floors === undefined || houses === undefined || status === undefined) {
+            if (!apartment_id || !name || !address || !city ) {
                 return res.status(400).json({
                     success: false,
                     message: 'All fields are required'
@@ -51,13 +51,11 @@ const apartmentController = {
             }
 
             const newApartment = await Apartment.create({
+                    apartment_id,
                     name,
                     address,
                     city,
-                    floors: parseInt(floors),
-                    houses: parseInt(houses),
                     picture: picturePath, // Store the path, not the binary
-                    status,
                     company_id
             });
             res.status(201).json({
@@ -111,8 +109,8 @@ const apartmentController = {
     //get apartment by ID
     async getApartmentById(req,res){
         try{
-            const {id}=req.params;
-            const apartment=await Apartment.findById(id);
+            const {apartment_id}=req.params;
+            const apartment=await Apartment.findById(apartment_id);
 
             if(!apartment){
                 return res.status(404).json({
@@ -137,8 +135,8 @@ const apartmentController = {
      //update apartment
     async updateApartment(req,res){
         try{
-            const {id}=req.params;
-            const {name,address,city,floors,houses,status}=req.body;
+            const {apartment_id}=req.params;
+            const {name,address,city,floors,houses}=req.body;
 
             let picturePath = null;
                 if (req.file) {
@@ -146,14 +144,14 @@ const apartmentController = {
             }
 
             //check tenant exist
-            const existingApartment= await Apartment.findById(id);
+            const existingApartment= await Apartment.findById(apartment_id);
             if(!existingApartment){
                 return res.status(404).json({
                     success:false,
                     message:'Apartment not found'
                 });
             }
-            // Check if new regNo conflicts with other tenants
+            //Check if new regNo conflicts with other tenants
             // if(regNo && regNo !== existingTenant.regNo){
             //      const tenantWithRegNo = await Tenant.findByRegNo(regNo);
             //      if(tenantWithRegNo && tenantWithRegNo.id !== id){
@@ -164,14 +162,13 @@ const apartmentController = {
             //      }
             // }
 
-            const updateApartment= await Apartment.update(id,{
+            const updateApartment= await Apartment.update(apartment_id,{
                 name: name || existingApartment.name,
                 address: address || existingApartment.address,
                 city: city || existingApartment.city,
                 floors: floors ? parseInt(floors): existingApartment.floors,
                 houses: houses ? parseInt(houses): existingApartment.houses,
                 picture: picturePath || existingApartment.picture,
-                status: status || existingApartment.status
             });
 
             res.json({
@@ -191,10 +188,10 @@ const apartmentController = {
     //Delete Apartment
     async deleteApartment(req,res){
         try{
-            const {id} = req.params;
+            const {apartment_id} = req.params;
 
             //check if apartment exists
-            const existingApartment= await Apartment.findById(id);
+            const existingApartment= await Apartment.findById(apartment_id);
             if(!existingApartment){
                 return res.status(404).json({
                     success:false,
@@ -202,7 +199,7 @@ const apartmentController = {
                 });
             }
 
-            await Apartment.delete(id);
+            await Apartment.delete(apartment_id);
             res.json({
                 success:true,
                 message:'Apartment deleted successfully'

@@ -4,7 +4,6 @@ import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import { AuthContext } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import api from '../api/axios';
 import CreateApartment from '../Apartments/CreateApartment';
 import EditApartment from '../Apartments/EditApartment';
@@ -115,7 +114,7 @@ export default function ApartmentView() {
 
     const deleteApartments = async() => {
         try{
-            const result = await api.delete(`/apartments/${apartment.id}`);
+            const result = await api.delete(`/apartments/${apartments.apartment_id}`);
             console.log('API Response', result.data);
             if(result.data.success){
                 toast.success('Apartment is successfully deleted...!');
@@ -179,13 +178,12 @@ export default function ApartmentView() {
                                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Floors</th>
                                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Units</th>
                                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Picture</th>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
                                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                             {apartments.map((apartment, index) => (
-                                                <tr key={apartment.id || index} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                                <tr key={apartment.id || index} onClick={() => handleView(apartment)} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
                                                     <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                                                         {apartment.name}
                                                     </td>
@@ -206,7 +204,7 @@ export default function ApartmentView() {
                                                         {apartment.picture ? (
                                                             // If picture is a path (string)
                                                             <img 
-                                                                src={apartment.picture}
+                                                                src={`http://localhost:3000${apartment.picture}`}
                                                                 alt={apartment.name}
                                                                 className="w-12 h-12 object-cover rounded-lg"
                                                                 onError={(e) => {
@@ -222,35 +220,23 @@ export default function ApartmentView() {
                                                             </div>
                                                         )}
                                                     </td>
-                                                    <td className="px-4 py-4 whitespace-nowrap">
-                                                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                                                            apartment.status === 'active' 
-                                                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                                                : apartment.status === 'maintenance'
-                                                                ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                                                                : 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200'
-                                                        }`}>
-                                                            {apartment.status || 'inactive'}
-                                                        </span>
-                                                    </td>
                                                     <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                                                         <div className="flex space-x-2">
                                                             <button
-                                                                onClick={() => handleView(apartment)}
-                                                                className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                                                                title="View"
-                                                            >
-                                                                <Eye size={16} />
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleEdit(apartment)}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation(); 
+                                                                    handleEdit(apartment);
+                                                                }}
                                                                 className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
                                                                 title="Edit"
                                                             >
                                                                 <Edit size={16} />
                                                             </button>
                                                             <button
-                                                                onClick={() => handleDelete(apartment)}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleDelete(apartment)}
+                                                                }
                                                                 className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                                                                 title="Delete"
                                                             >
@@ -309,14 +295,13 @@ export default function ApartmentView() {
             )}
 
             {showViewModal && viewingApartment && (
+                <div className="fixed inset-0 bg-white/0 backdrop-blur-lg flex items-center justify-center z-50">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md relative"></div>
                 <ViewApartment
                     apartment={viewingApartment}
                     onClose={handleViewModalClose}
-                    onAddHouse={() => {
-                    // Handle add house functionality
-                    console.log('Add house for:', viewingApartment);
-                    }}
                 />
+                </div>
             )}
         </div>
     );

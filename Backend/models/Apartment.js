@@ -3,20 +3,21 @@ const pool = require('../db');
 
 class Apartment {
     static async create(apartmentData) {
-        const { id,name, address, city, floors, houses, picture, status,company_id } = apartmentData;
+        const { apartment_id,name, address, city, picture,company_id } = apartmentData;
         //const id = uuidv4();
 
         const [result] = await pool.execute(
-            'INSERT INTO apartments (id, name, address, city, floors, houses,picture , status,company_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [id, name, address, city, floors, houses, picture, status,company_id]
+            'INSERT INTO apartments (apartment_id, name, address, city,  picture, is_active, company_id) VALUES (?, ?, ?, ?, ?, 1, ?)',
+            [apartment_id, name, address, city, picture, company_id]
+
         );
-        return { id, ...apartmentData };
+        return { apartment_id, ...apartmentData };
     }
 
-    static async findById(id) {
+    static async findById(apartment_id) {
         const [rows] = await pool.execute(
-            'SELECT * FROM apartments WHERE id = ?',
-            [id]
+            'SELECT * FROM apartments WHERE apartment_id= ?',
+            [apartment_id]
         );
         return rows[0];
     }
@@ -37,36 +38,35 @@ class Apartment {
     }
 
     // Deactivate apartment (set status to 'inactive')
-    static async deactivate(id) {
+    static async deactivate(apartment_id) {
+    await pool.execute(
+        'UPDATE apartments SET is_active = 0 WHERE apartment_id = ?',
+        [apartment_id]
+    );
+    return true;
+}
+    //Activate Apartment
+    static async activate(apartment_id) {
         await pool.execute(
-            'UPDATE apartments SET status = "inactive" WHERE id = ?',
-            [id]
+            'UPDATE apartments SET is_active = 1 WHERE apartment_id = ?',
+            [apartment_id]
         );
         return true;
     }
 
-    // Activate apartment (set status to 'active')
-    static async activate(id) {
+    static async update(apartment_id, apartmentData) {
+        const { name, address, city, floors, houses, picture} = apartmentData;
         await pool.execute(
-            'UPDATE apartments SET status = "active" WHERE id = ?',
-            [id]
+            'UPDATE apartments SET name = ?, address = ?, city = ?, floors = ?, houses = ?, picture = ? WHERE apartment_id = ?',
+            [name, address, city, floors, houses, picture, apartment_id]
         );
-        return true;
+        return { apartment_id, ...apartmentData };
     }
 
-    static async update(id, apartmentData) {
-        const { name, address, city, floors, houses, picture, status } = apartmentData;
+    static async delete(apartment_id) {
         await pool.execute(
-            'UPDATE apartments SET name = ?, address = ?, city = ?, floors = ?, houses = ?, picture = ?, status = ? WHERE id = ?',
-            [name, address, city, floors, houses, picture, status, id]
-        );
-        return { id, ...apartmentData };
-    }
-
-    static async delete(id) {
-        await pool.execute(
-            'DELETE FROM apartments WHERE id = ?',
-            [id]
+            'DELETE FROM apartments WHERE apartment_id = ?',
+            [apartment_id]
         );
         return true;
     }

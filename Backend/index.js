@@ -13,7 +13,7 @@ const { authenticateToken } = require('./middleware/auth');
 
 const app = express();
 // Add this before your routes
-app.use('/images', express.static(path.join(__dirname, 'uploads', 'images')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use(helmet());
 app.use(express.json());
