@@ -54,13 +54,12 @@ const handleSubmit = async (e) => {
       }
 
       // Use PUT request instead of POST
-      const response = await api.put(`/apartments/${apartment.apartment_id}`, submitFormData, {
+      const response = await api.put(`/apartments/${apartment.id}`, submitFormData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
       
-      toast.success('Apartment updated successfully!');
       setLoading(false);
 
       if (onEdited) onEdited(); // refresh the list

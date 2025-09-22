@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import api from '../api/axios';
 import { useNavigate } from 'react-router-dom';
 import { ToastContainer, toast } from "react-toastify";
@@ -56,6 +56,32 @@ export default function CombinedRegistration() {
   const [currentStep, setCurrentStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
+  const [countries, setCountries] = useState([]);
+
+  useEffect(() => {
+    const fetchCountries = async () => {
+      try {
+        const res = await api.get('/countries');
+        setCountries(res.data.data);
+      } catch (err) {
+        console.error("Error fetching countries:", err);
+      }
+    };
+    fetchCountries();
+  }, []);
+
+  const handleCountryChange = (e) => {
+    const countryId = e.target.value;
+    const selectedCountry = countries.find(c => c.id.toString() === countryId);
+
+    if (selectedCountry) {
+      setUserData(prev => ({
+        ...prev,
+        country: selectedCountry.country_name, //set country
+        mobile: selectedCountry.phone_code // auto set phone code
+      }));
+    }
+  };
   
   const navigate = useNavigate();
   const totalSteps = 3;
@@ -86,7 +112,7 @@ export default function CombinedRegistration() {
 
       case 'mobile':
         if (!value.trim()) error = 'Mobile Number is required';
-        else if (!/^[0-9]+$/.test(value)) error = 'Mobile can only contain numbers';
+        else if (!/^\+\d{2} \d{9}$/.test(value)) error = 'Mobile must be in format +XX XXXXXXXXX';
         else if (value.length > 15) error = 'Mobile cannot exceed 15 digits';
         break;
 
@@ -357,11 +383,11 @@ export default function CombinedRegistration() {
                       <X size={14} className="mr-1" /> {errors.regNo}
                     </div>
                   )}
-                  {touched.regNo && !errors.regNo && (
+                  {/* {touched.regNo && !errors.regNo && (
                     <div className="text-green-500 text-sm mt-1 flex items-center">
                       <Check size={14} className="mr-1" />
                     </div>
-                  )}
+                  )} */}
                 </div>
 
                 <div>
@@ -378,11 +404,11 @@ export default function CombinedRegistration() {
                       <X size={14} className="mr-1" /> {errors.name}
                     </div>
                   )}
-                  {touched.name && !errors.name && (
+                  {/* {touched.name && !errors.name && (
                     <div className="text-green-500 text-sm mt-1 flex items-center">
                       <Check size={14} className="mr-1" />
                     </div>
-                  )}
+                  )} */}
                 </div>
                 
                 <div>
@@ -399,11 +425,11 @@ export default function CombinedRegistration() {
                       <X size={14} className="mr-1" /> {errors.businessInfo}
                     </div>
                   )}
-                  {touched.businessInfo && !errors.businessInfo && (
+                  {/* {touched.businessInfo && !errors.businessInfo && (
                     <div className="text-green-500 text-sm mt-1 flex items-center">
                       <Check size={14} className="mr-1" />
                     </div>
-                  )}
+                  )} */}
                 </div>
 
                 <div>
@@ -420,11 +446,11 @@ export default function CombinedRegistration() {
                       <X size={14} className="mr-1" /> {errors.employees}
                     </div>
                   )}
-                  {touched.employees && !errors.employees && (
+                  {/* {touched.employees && !errors.employees && (
                     <div className="text-green-500 text-sm mt-1 flex items-center">
                       <Check size={14} className="mr-1" />
                     </div>
-                  )}
+                  )} */}
                 </div>
               </div>
             )}
@@ -447,11 +473,11 @@ export default function CombinedRegistration() {
                       <X size={14} className="mr-1" /> {errors.firstname}
                     </div>
                   )}
-                  {touched.firstname && !errors.firstname && (
+                  {/* {touched.firstname && !errors.firstname && (
                     <div className="text-green-500 text-sm mt-1 flex items-center">
                       <Check size={14} className="mr-1" />
                     </div>
-                  )}
+                  )} */}
                 </div>
 
                 <div>
@@ -468,51 +494,48 @@ export default function CombinedRegistration() {
                       <X size={14} className="mr-1" /> {errors.lastname}
                     </div>
                   )}
-                  {touched.lastname && !errors.lastname && (
+                  {/* {touched.lastname && !errors.lastname && (
                     <div className="text-green-500 text-sm mt-1 flex items-center">
                       <Check size={14} className="mr-1" />
                     </div>
-                  )}
+                  )} */}
                 </div>
 
                 <div>
-                  <input 
-                    name="country" 
-                    value={userData.country} 
-                    onChange={(e) => handleInputChange(e, false)}
+                  <select
+                    name="country"
+                    value={countries.find(c => c.country_name === userData.country)?.id || ''}
+                    onChange={handleCountryChange}
                     onBlur={(e) => handleBlur(e, false)}
-                    placeholder="Select country *" 
                     className={`loginInput ${errors.country ? 'border-red-500' : touched.country && 'border-green-500'}`}
-                  />
+                  >
+                    <option value="">Select country *</option>
+                    {countries.map(country => (
+                      <option key={country.id} value={country.id}>
+                        {country.country_name}
+                      </option>
+                    ))}
+                  </select>
                   {touched.country && errors.country && (
                     <div className="text-red-500 text-sm mt-1 flex items-center">
                       <X size={14} className="mr-1" /> {errors.country}
                     </div>
                   )}
-                  {touched.country && !errors.country && (
-                    <div className="text-green-500 text-sm mt-1 flex items-center">
-                      <Check size={14} className="mr-1" />
-                    </div>
-                  )}
                 </div>
 
+
                 <div>
-                  <input 
-                    name="mobile" 
-                    value={userData.mobile} 
+                  <input
+                    name="mobile"
+                    value={userData.mobile}
                     onChange={(e) => handleInputChange(e, false)}
                     onBlur={(e) => handleBlur(e, false)}
-                    placeholder="Mobile *" 
+                    placeholder="Mobile *"
                     className={`loginInput ${errors.mobile ? 'border-red-500' : touched.mobile && 'border-green-500'}`}
                   />
                   {touched.mobile && errors.mobile && (
                     <div className="text-red-500 text-sm mt-1 flex items-center">
                       <X size={14} className="mr-1" /> {errors.mobile}
-                    </div>
-                  )}
-                  {touched.mobile && !errors.mobile && (
-                    <div className="text-green-500 text-sm mt-1 flex items-center">
-                      <Check size={14} className="mr-1" />
                     </div>
                   )}
                 </div>
@@ -532,11 +555,11 @@ export default function CombinedRegistration() {
                       <X size={14} className="mr-1" /> {errors.email}
                     </div>
                   )}
-                  {touched.email && !errors.email && (
+                  {/* {touched.email && !errors.email && (
                     <div className="text-green-500 text-sm mt-1 flex items-center">
                       <Check size={14} className="mr-1" /> Valid email
                     </div>
-                  )}
+                  )} */}
                 </div>
               </div>
             )}

@@ -59,7 +59,8 @@ INSERT INTO countries (country_code, country_name, phone_code) VALUES
 SELECT User, Host FROM mysql.user WHERE User='myapp_user';
 
 CREATE TABLE apartments (
-	apartment_id VARCHAR(255) PRIMARY KEY,
+	id VARCHAR(255) primary key,
+	apartment_id VARCHAR(255) not null,
     company_id VARCHAR(255),
     name VARCHAR(255) NOT NULL,
     address VARCHAR(255) NOT NULL,
@@ -79,10 +80,10 @@ drop table apartments;
 
 -- floors
 CREATE TABLE floors(
-	id INT AUTO_INCREMENT PRIMARY KEY,
+	id VARCHAR(255) PRIMARY KEY,
     company_id VARCHAR(255),
     apartment_id VARCHAR(255), 
-    floor_no VARCHAR(255) NOT NULL,
+    floor_id VARCHAR(255) NOT NULL,
     house_count INT DEFAULT 1,
     status ENUM('active', 'maintenance') DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -101,9 +102,12 @@ CREATE TABLE houses(
     apartment_id VARCHAR(255), 
     floor_id INT,
     house_no VARCHAR(255) NOT NULL,
+    type ENUM('Bachelor','family'),
+    sqrfeet float,
+    rooms INT,
+    bathrooms INT,
 	status ENUM('vacant', 'occupied', 'maintenance') DEFAULT 'vacant',
-    occupied_way VARCHAR(255) not null,
-    
+    occupied_way ENUM('For rent','own'),
     registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     

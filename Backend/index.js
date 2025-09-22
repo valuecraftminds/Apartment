@@ -48,11 +48,18 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Add this with your other route imports
 const tenantRoutes = require('./routes/tenants');
 app.use('/api/tenants', tenantRoutes);
 
 //Route usage of Apartments
 const apartmentRoutes = require('./routes/apartments');
 app.use('/api/apartments', authenticateToken, apartmentRoutes);
+
+//Routes the countries
+const countryRoutes = require('./routes/countries');
+app.use('/api/countries', countryRoutes);
+
+//Routes the floor
+const floorRoutes = require('./routes/floors');
+app.use('/api/floors', authenticateToken, floorRoutes);
 

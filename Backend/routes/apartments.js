@@ -41,9 +41,10 @@ router.use(authenticateToken);
 // Routes
 router.post('/', upload.single('picture'), apartmentController.createApartment);
 router.get('/', apartmentController.getAllApartments);
-router.get('/:apartment_id', apartmentController.getApartmentById);
-router.put('/:apartment_id', upload.single('picture'), apartmentController.updateApartment);
-router.delete('/:apartment_id', apartmentController.deleteApartment);
+router.get('/:id', apartmentController.getApartmentById);
+router.put('/:id', upload.single('picture'), apartmentController.updateApartment);
+router.delete('/:id', apartmentController.deleteApartment);
+router.patch('/:id/toggle', apartmentController.toggleApartmentStatus);
 
 // Error handling middleware for multer
 router.use((error, req, res, next) => {

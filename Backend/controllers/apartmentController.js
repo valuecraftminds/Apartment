@@ -109,8 +109,8 @@ const apartmentController = {
     //get apartment by ID
     async getApartmentById(req,res){
         try{
-            const {apartment_id}=req.params;
-            const apartment=await Apartment.findById(apartment_id);
+            const {id}=req.params;
+            const apartment=await Apartment.findById(id);
 
             if(!apartment){
                 return res.status(404).json({
@@ -135,7 +135,7 @@ const apartmentController = {
      //update apartment
     async updateApartment(req,res){
         try{
-            const {apartment_id}=req.params;
+            const {id}=req.params;
             const {name,address,city,floors,houses}=req.body;
 
             let picturePath = null;
@@ -144,7 +144,7 @@ const apartmentController = {
             }
 
             //check tenant exist
-            const existingApartment= await Apartment.findById(apartment_id);
+            const existingApartment= await Apartment.findById(id);
             if(!existingApartment){
                 return res.status(404).json({
                     success:false,
@@ -162,7 +162,7 @@ const apartmentController = {
             //      }
             // }
 
-            const updateApartment= await Apartment.update(apartment_id,{
+            const updateApartment= await Apartment.update(id,{
                 name: name || existingApartment.name,
                 address: address || existingApartment.address,
                 city: city || existingApartment.city,
@@ -188,10 +188,10 @@ const apartmentController = {
     //Delete Apartment
     async deleteApartment(req,res){
         try{
-            const {apartment_id} = req.params;
+            const {id} = req.params;
 
             //check if apartment exists
-            const existingApartment= await Apartment.findById(apartment_id);
+            const existingApartment= await Apartment.findById(id);
             if(!existingApartment){
                 return res.status(404).json({
                     success:false,
@@ -199,7 +199,7 @@ const apartmentController = {
                 });
             }
 
-            await Apartment.delete(apartment_id);
+            await Apartment.delete(id);
             res.json({
                 success:true,
                 message:'Apartment deleted successfully'
@@ -211,7 +211,44 @@ const apartmentController = {
                 message:'Server error while deleting apartment'
             });
         }
+    },
+
+    // Deactivate / Activate Apartment
+    async toggleApartmentStatus(req, res) {
+        try {
+            const { id } = req.params;
+
+            const apartment = await Apartment.findById(id);
+            if (!apartment) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Apartment not found'
+                });
+            }
+
+            let updatedApartment;
+            if (apartment.is_active) {
+                await Apartment.deactivate(id);
+                updatedApartment = { ...apartment, is_active: 0 };
+            } else {
+                await Apartment.activate(id);
+                updatedApartment = { ...apartment, is_active: 1 };
+            }
+
+            res.json({
+                success: true,
+                message: apartment.is_active ? 'Apartment deactivated' : 'Apartment activated',
+                data: updatedApartment
+            });
+        } catch (err) {
+            console.error('Toggle apartment status error:', err);
+            res.status(500).json({
+                success: false,
+                message: 'Server error while toggling apartment status'
+            });
+        }
     }
+
 }
 
 module.exports = apartmentController;

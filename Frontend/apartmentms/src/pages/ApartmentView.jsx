@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { Building2, Plus, Edit, Trash2, Eye, Image, Loader } from 'lucide-react';
+import { Building2, Plus, Edit, Trash2, Eye, Image, Loader, ToggleRight, ToggleLeft } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import { AuthContext } from '../contexts/AuthContext';
@@ -7,8 +7,8 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import CreateApartment from '../Apartments/CreateApartment';
 import EditApartment from '../Apartments/EditApartment';
-import { toast } from 'react-toastify';
-import ViewApartment from '../Apartments/ViewApartment';
+import { toast, ToastContainer } from 'react-toastify';
+// import ViewApartment from '../Apartments/ViewApartment';
 
 export default function ApartmentView() {
     const { auth } = useContext(AuthContext);
@@ -21,8 +21,10 @@ export default function ApartmentView() {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingApartment, setEditingApartment] = useState(null);
-    const [viewingApartment, setViewingApartment] = useState(null);
-    const [showViewModal, setShowViewModal] = useState(false);
+    // const [viewingApartment, setViewingApartment] = useState(null);
+    // const [showViewModal, setShowViewModal] = useState(false);
+    const [showDeactivateModal,setShowDeactivateModal] = useState(false);
+    const [deactivatingApartment, setDeactivatingApartment] = useState(null);
 
 
      const handleAddNew = () => {
@@ -34,15 +36,14 @@ export default function ApartmentView() {
   setShowEditModal(true);
 };
 
-    const handleView = (apartment) => {
-  setViewingApartment(apartment);
-  setShowViewModal(true);
+  const handleFloorView = (apartment) => {
+    navigate(`/floors/${apartment.id}`);
 };
 
-    const handleViewModalClose = () => {
-        setShowViewModal(false);
-        setViewingApartment(null);
-    };
+    // const handleViewModalClose = () => {
+    //     setShowViewModal(false);
+    //     setViewingApartment(null);
+    // };
 
   const handleCloseModal = () => {
     setShowCreateModal(false);
@@ -69,9 +70,14 @@ export default function ApartmentView() {
         toast.success('Apartment updated successfully!');
     };
 
-    const handleApartmentDeleted = () => {
-        loadApartments();
+    const confirmDeactivate = (apartment) => {
+        setDeactivatingApartment(apartment);
+        setShowDeactivateModal(true);
     };
+
+    const cancelDeactivate = () => {
+        setShowDeactivateModal(false);
+    }
 
     const loadApartments = async () => {
     try {
@@ -105,27 +111,38 @@ export default function ApartmentView() {
 
     useEffect(() => {
         loadApartments();
-        deleteApartments();
+        //deactivateApartments();
     }, []);
 
     // const handleEdit = (apartment) => console.log('Edit apartment:', apartment);
-    const handleDelete = (apartment) => console.log('Delete apartment:', apartment);
+    //const handleDeactivate = (apartment) => console.log('Delete apartment:', apartment);
     //const handleView = (apartment) => console.log('View apartment:', apartment);
 
-    const deleteApartments = async() => {
-        try{
-            const result = await api.delete(`/apartments/${apartments.apartment_id}`);
-            console.log('API Response', result.data);
-            if(result.data.success){
-                toast.success('Apartment is successfully deleted...!');
-            }
-            else{
-                toast.error('Failed to Delete Apartment ')
-            }
-        }catch(err){
-            console.log('Error deleting Apartment')
-        }
+    // const deactivateApartments = async() => {
+    //     try{
+    //         const result = await api.delete(`/apartments/${apartments.id}`);
+    //         console.log('API Response', result.data);
+    //         if(result.data.success){
+    //             toast.success('Apartment deactivated...!');
+    //         }
+    //         else{
+    //             toast.error('Failed to deactivate Apartment ')
+    //         }
+    //     }catch(err){
+    //         console.log('Error deactivating Apartment')
+    //     }
+    // }
+
+    const handleToggle = async (apartment) => {
+    try {
+        const result = await api.patch(`/apartments/${apartment.id}/toggle`);
+        toast.success(result.data.message);
+        loadApartments(); // refresh list
+    } catch (err) {
+        console.error('Error toggling apartment:', err);
+        toast.error('Failed to toggle apartment status');
     }
+};
     
 
     return (
@@ -183,7 +200,15 @@ export default function ApartmentView() {
                                         </thead>
                                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                             {apartments.map((apartment, index) => (
-                                                <tr key={apartment.id || index} onClick={() => handleView(apartment)} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
+                                                <tr 
+                                                    key={apartment.id || index} 
+                                                    onClick={() => apartment.is_active && handleFloorView(apartment)} 
+                                                    className={`transition-colors cursor-pointer ${
+                                                        apartment.is_active 
+                                                            ? 'hover:bg-gray-50 dark:hover:bg-gray-700' 
+                                                            : 'opacity-50 cursor-not-allowed'
+                                                    }`}
+                                                >
                                                     <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                                                         {apartment.name}
                                                     </td>
@@ -230,18 +255,19 @@ export default function ApartmentView() {
                                                                 className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
                                                                 title="Edit"
                                                             >
-                                                                <Edit size={16} />
+                                                                <Edit size={20} />
                                                             </button>
                                                             <button
                                                                 onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    handleDelete(apartment)}
-                                                                }
+                                                                    e.stopPropagation(); // prevent row click
+                                                                    confirmDeactivate(apartment);
+                                                                    // handleToggle(apartment);
+                                                                }}
                                                                 className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                                                                title="Delete"
-                                                            >
-                                                                <Trash2 size={16} />
-                                                            </button>
+                                                                title={apartment.is_active ? 'Deactivate' : 'Activate'}
+                                                                >
+                                                                {apartment.is_active ? <ToggleRight size={25} /> : <ToggleLeft size={25} />}
+                                                                </button>
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -294,7 +320,7 @@ export default function ApartmentView() {
                 </div>
             )}
 
-            {showViewModal && viewingApartment && (
+            {/* {showViewModal && viewingApartment && (
                 <div className="fixed inset-0 bg-white/0 backdrop-blur-lg flex items-center justify-center z-50">
                     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md relative"></div>
                 <ViewApartment
@@ -302,7 +328,41 @@ export default function ApartmentView() {
                     onClose={handleViewModalClose}
                 />
                 </div>
+            )} */}
+
+            {showDeactivateModal && (
+                <div className="fixed inset-0 bg-white/0 backdrop-blur-lg flex items-center justify-center z-50">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm relative">
+                        <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                        Confirm Deactivation of Apartment
+                        </h2>
+                        <p className="text-gray-600 dark:text-gray-300 mb-6">
+                        Are you sure you want to deactivate the apartment?
+                        </p>
+                    <div className="flex justify-end space-x-3">
+                        <button
+                        onClick={cancelDeactivate}
+                        className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200"
+                        >
+                        Cancel
+                        </button>
+                        <button
+                            onClick={() => {
+                                if (deactivatingApartment) {
+                                    handleToggle(deactivatingApartment);
+                                    setShowDeactivateModal(false);
+                                    setDeactivatingApartment(null);
+                                }
+                            }}
+                            className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors duration-200"
+                        >
+                            Deactivate
+                        </button>
+                    </div>
+                    </div>
+                </div>
             )}
+            <ToastContainer position="top-center" autoClose={3000} />
         </div>
     );
 }

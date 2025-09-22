@@ -3,11 +3,12 @@ const pool = require('../db');
 
 class Floor {
     static async create(floorData) {
-        const { company_id, apartment_id, floor_no, house_count  } = floorData;
+        const { company_id, apartment_id, floor_id, house_count  } = floorData;
+        const id = uuidv4().replace(/-/g, '').substring(0, 10);
 
         const [result] = await pool.execute(
-            'INSERT INTO floors (id, company_id, apartment_id, floor_no,  house_count) VALUES (?, ?, ?, ?, ?)',
-            [company_id, apartment_id, floor_no, house_count]
+            'INSERT INTO floors (id, company_id, apartment_id, floor_id,  house_count) VALUES (?, ?, ?, ?, ?)',
+            [id,company_id, apartment_id, floor_id, house_count]
         );
         return { id, ...floorData };
     }
@@ -30,7 +31,7 @@ class Floor {
 
     static async findByApartmentId(apartment_id){
         const [rows] = await pool.execute(
-            'SELECT 8 FROM floors WHERE apartment_id=? ORDER BY created_at DESC',
+            'SELECT * FROM floors WHERE apartment_id=? ORDER BY created_at DESC',
             [apartment_id]
         );
         return rows;
@@ -45,10 +46,10 @@ class Floor {
 
     //UPdate Floors
     static async update(id, floorData) {
-        const { floor_no, house_count } = floorData;
+        const { house_count } = floorData;
         await pool.execute(
-            'UPDATE floors SET floor_no = ?, house_count = ? WHERE id = ?',
-            [floor_no,house_count,id]
+            'UPDATE floors SET house_count = ? WHERE id = ?',
+            [house_count,id]
         );
         return { id, ...floorData };
     }

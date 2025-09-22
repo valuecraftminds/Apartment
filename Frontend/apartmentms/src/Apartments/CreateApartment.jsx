@@ -70,8 +70,8 @@ const handleSubmit = async (e) => {
     if (onCreated) onCreated(); // refresh the list
     if (onClose) onClose(); // close the modal
   } catch (err) {
+    toast.error('Failed to create apartment');
     console.error(err);
-    toast.error('Failed to create apartment')
     setLoading(false);
   }
 };
