@@ -1,5 +1,5 @@
 const pool = require('../db');
-
+const { v4: uuidv4 } = require('uuid');
 
 class Floor {
     static async create(floorData) {

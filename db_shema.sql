@@ -85,7 +85,7 @@ CREATE TABLE floors(
     apartment_id VARCHAR(255), 
     floor_id VARCHAR(255) NOT NULL,
     house_count INT DEFAULT 1,
-    status ENUM('active', 'maintenance') DEFAULT 'active',
+    status ENUM('active', 'maintenance','partial') DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
@@ -97,11 +97,11 @@ CREATE TABLE floors(
 drop table floors;
 
 CREATE TABLE houses(
-	id INT Auto_INCREMENT PRIMARY KEY,
+	id varchar(255) PRIMARY KEY,
     company_id VARCHAR(255),
     apartment_id VARCHAR(255), 
-    floor_id INT,
-    house_no VARCHAR(255) NOT NULL,
+    floor_id varchar(255),
+    house_id VARCHAR(255) NOT NULL,
     type ENUM('Bachelor','family'),
     sqrfeet float,
     rooms INT,
@@ -119,8 +119,15 @@ CREATE TABLE houses(
     INDEX idx_floor_id (floor_id)
 );
 
-drop table house;
+drop table houses;
 
--- CREATE TABLE family(
--- 	
--- );
+CREATE TABLE houseowner(
+	id varchar(255) primary key,
+    house_id varchar(255) not null,
+    name varchar(255) not null,
+    NIC varchar(255) not null,
+    marital_status varchar(255),
+    country	varchar(255) not null,
+    mobile varchar(100) not null,
+    family_members varchar(255)
+);
