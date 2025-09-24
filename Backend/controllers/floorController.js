@@ -37,13 +37,19 @@ const floorController = {
     async getAllFloors(req, res) {
     try {
         const company_id = req.user.company_id;
-        const { apartment_id } = req.query; // ✅ take from query params
+        const { apartment_id } = req.query; // take from query params
 
         if (!company_id) {
-            return res.status(400).json({ success: false, message: 'Company Id is required' });
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Company Id is required' 
+            });
         }
         if (!apartment_id) {
-            return res.status(400).json({ success: false, message: 'Apartment Id is required' });
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Apartment Id is required' 
+            });
         }
 
         const floors = await Floor.findByApartmentId(apartment_id);

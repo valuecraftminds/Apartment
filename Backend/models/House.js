@@ -3,12 +3,12 @@ const { v4: uuidv4 } = require('uuid');
 
 class House{
     static async create(houseData){
-        const [company_id,apartment_id,floor_id,house_id,type, rooms,bathrooms,status,occupied_way]=houseData;
+        const [company_id,apartment_id,floor_id,house_id,type, sqrfeet,rooms,bathrooms,status,occupied_way]=houseData;
         const id = uuidv4().replace(/-/g, '').substring(0, 10);
 
         const [result] = await pool.execute(
-            'INSERT INTO house (id, company_id, apartment_id, floor_id, house_id,type, rooms,bathrooms,status,occupied_way) VALUES (?, ?, ?, ?, ?, ?,?,?,?,?)',
-            [company_id, apartment_id, apartment_id, floor_id, house_id,type, rooms,bathrooms,status,occupied_way,id]
+            'INSERT INTO houses (id, company_id, apartment_id, floor_id, house_id,type, sqrfeet,rooms,bathrooms,status,occupied_way) VALUES (?, ? ,?, ?, ?, ?, ?,?,?,?,?)',
+            [id,company_id, apartment_id, floor_id, house_id,type,sqrfeet, rooms,bathrooms,status,occupied_way]
         );
         return { id, ...houseData };
     }
@@ -23,7 +23,7 @@ class House{
 
     static async findByCompanyId(company_id){
         const [rows] = await pool.execute(
-            'SELECT * FROM houses WHERE company_id=? ORDER BY created_at DESC',
+            'SELECT * FROM houses WHERE company_id=? ORDER BY registered_at DESC',
             [company_id]
         );
         return rows;
@@ -31,7 +31,7 @@ class House{
 
     static async findByApartmentId(apartment_id){
         const [rows] = await pool.execute(
-            'SELECT * FROM houses WHERE apartment_id=? ORDER BY created_at DESC',
+            'SELECT * FROM houses WHERE apartment_id=? ORDER BY registered_at DESC',
             [apartment_id]
         );
         return rows;
@@ -39,7 +39,7 @@ class House{
 
     static async findByFloorId(floor_id){
         const [rows] = await pool.execute(
-            'SELECT * FROM houses WHERE floor_id=? ORDER BY created_at DESC',
+            'SELECT * FROM houses WHERE floor_id=? ORDER BY registered_at DESC',
             [floor_id]
         );
         return rows;
@@ -47,16 +47,16 @@ class House{
 
     static async findAll() {
         const [rows] = await pool.execute(
-            'SELECT * FROM houses ORDER BY created_at DESC'
+            'SELECT * FROM houses ORDER BY registered_at DESC'
         );
         return rows; 
     }
 
     static async update(id, houseData) {
-        const { house_no,status } = houseData;
+        const { house_id,type,sqrfeet,rooms,bathrooms,status,occupied_way } = houseData;
         await pool.execute(
-            'UPDATE houses SET house_id=?,type=?, rooms=?,bathrooms=?,status=?,occupied_way=? WHERE id = ?',
-            [ house_no, status, id]
+            'UPDATE houses SET house_id=?,type=?, sqrfeet = ?,rooms=?,bathrooms=?,status=?,occupied_way=? WHERE id = ?',
+            [ house_id,type,sqrfeet,rooms,bathrooms,status,occupied_way,id]
         );
         return { id, ...houseData };
     }

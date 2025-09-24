@@ -63,3 +63,7 @@ app.use('/api/countries', countryRoutes);
 const floorRoutes = require('./routes/floors');
 app.use('/api/floors', authenticateToken, floorRoutes);
 
+//Routes the houses
+const houseRoutes = require('./routes/houses');
+app.use('/api/houses',authenticateToken,houseRoutes);
+
