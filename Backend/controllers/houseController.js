@@ -1,3 +1,4 @@
+const e = require('express');
 const House = require('../models/House');
 
 const houseController = {
@@ -7,6 +8,7 @@ const houseController = {
             const company_id = req.user.company_id;
             const apartment_id=req.apartment.id;
             const floor_id=req.floor.id;
+            const house_owner_id = req.house_owner.id;
 
             if (!house_id || !type || sqrfeet === undefined || rooms === undefined || bathrooms === undefined || !status || !occupied_way === undefined) {
                 return res.status(400).json({
@@ -25,7 +27,8 @@ const houseController = {
                     occupied_way,
                     company_id,
                     apartment_id,
-                    floor_id
+                    floor_id,
+                    house_owner_id
             });
             res.status(201).json({
             success: true,
@@ -76,10 +79,10 @@ const houseController = {
             });
         }
 
-            const house = await House.findByFloorId(floor_id)
+            const houses = await House.findByApartmentAndFloor(apartment_id, floor_id);
             res.json({
                 success: true,
-                data: house // This should now be an array
+                data: houses
             });
         } catch (err) {
             console.error('Get house error', err);
@@ -132,8 +135,13 @@ const houseController = {
             }
 
             const updateHouse= await House.update(id,{
-                house_no: house_no || existingHouse.house_no,
+                house_id: house_id || existingHouse.house_id,
+                type: type || existingHouse.type,
+                sqrfeet:sqrfeet ?parseFloat(sqrfeet): existingHouse.sqrfeet,
+                rooms:rooms ? parseInt(rooms):existingHouse.rooms,
+                bathrooms:bathrooms ?parseInt(bathrooms): existingHouse.bathrooms,
                 status: status || existingHouse.status,
+                occupied_way: occupied_way || existingHouse.occupied_way
             });
 
             res.json({

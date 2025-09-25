@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
-import { Building, Building2, ChevronLeft, Edit, Image, Loader, Plus, Trash2 } from 'lucide-react';
+import { Building, Building2, ChevronLeft, Edit, Image, Loader, Plus, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../api/axios';
 
@@ -14,10 +14,8 @@ export default function Floors() {
     const [floors, setFloors] = useState([]);
     // const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [houses,setHouses] = useState([]);
-    const [selectedFloor, setSelectedFloor] = useState(null);
     const [loadingFloors, setLoadingFloors] = useState(true);
-    const [loadingHouses, setLoadingHouses] = useState(false);
+    
 
     useEffect(() => {
         const fetchApartment = async () => {
@@ -63,32 +61,29 @@ export default function Floors() {
         loadFloors();
     }, [id]);
 
-    // Fetch houses by floor
-  const loadHouses = async (floor_id) => {
-    try {
-      setLoadingHouses(true);
-      setError(null);
-      const result = await api.get(`/houses?floor_id=${floor_id}`);
-      if (result.data.success && Array.isArray(result.data.data)) {
-        setHouses(result.data.data);
-      } else {
-        setHouses([]);
-      }
-    } catch (err) {
-      console.error('Error loading houses:', err);
-      setError('Failed to load houses. Please try again.');
-    } finally {
-      setLoadingHouses(false);
+  const handleHouseView = (floor) => {
+  navigate(`/houses/${id}/${floor.id}`); // pass both apartment id and floor id
+};
+
+const confirmDeactivate = (floor) => {
+        setDeactivatingApartment(floor);
+        setShowDeactivateModal(true);
+    };
+
+    const cancelDeactivate = () => {
+        setShowDeactivateModal(false);
     }
-  };
 
-  // Handle floor row click
-  const handleFloorClick = (floor) => {
-    console.log('Selected floor:', floor);
-    setSelectedFloor(floor);
-    loadHouses(floor.floor_id);
-  };
-
+    const handleToggle = async (floor) => {
+    try {
+        const result = await api.patch(`/floors/${floor.id}/toggle`);
+        toast.success(result.data.message);
+        loadApartments(); // refresh list
+    } catch (err) {
+        console.error('Error toggling apartment:', err);
+        toast.error('Failed to toggle apartment status');
+    }
+};
 
   return (    
     <div className='flex h-screen bg-gray-100 dark:bg-gray-900 w-screen transition-colors duration-200'>
@@ -98,19 +93,14 @@ export default function Floors() {
             <div className="flex-1 overflow-y-auto p-6">
                 <div className="mx-auto max-w-7xl">
                     <div className='flex items-center justify-between bg-white dark:bg-gray-800 rounded-2xl p-4 mb-6'>
-                        <div className='flex items-center'>
+                        <div className='flex flex-col'>
+                            <div className='flex items-center'>
                                 <button onClick ={handleBack} className='p-1 rounded-md hover:bg-gray-100 transition-colors duration-200 text-purple-700'>
                                     <ChevronLeft size={25} />
                                 </button>
                                 <Building size={40} className='text-purple-600 dark:text-purple-400 mr-3 ml-3'/>
                                 <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Floors</h1>
-                        </div>
-                                <button className='flex items-center gap-2 px-4 py-2 rounded-lg font-semibold shadow-md transition-all duration-300 text-white bg-purple-600 hover:bg-purple-700 hover:scale-105'>
-                                    <Plus size={20}/>
-                                    <span>Add New</span>
-                                </button>
-                        </div>
-                        <div className='flex-col'>
+                            </div>
                             {/* Apartment name below the title */}
                             {apartment && (
                                 <div className='mt-1 text-gray-700 dark:text-gray-300 font-semibold ml-12'>
@@ -118,6 +108,11 @@ export default function Floors() {
                                 </div>
                             )}
                         </div>
+                        <button className='flex items-center gap-2 px-4 py-2 rounded-lg font-semibold shadow-md transition-all duration-300 text-white bg-purple-600 hover:bg-purple-700 hover:scale-105'>
+                            <Plus size={20}/>
+                            <span>Add New</span>
+                        </button>
+                    </div>
                         <div className='bg-white dark:bg-gray-800 rounded-2xl p-6'>
                             {loadingFloors ? (
                                     <div className="flex justify-center items-center py-12">
@@ -153,11 +148,13 @@ export default function Floors() {
                                             </thead>
                                             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                                 {floors.map((floor, index) => (
-                                                    <tr
-                                                        key={floor.id}
-                                                        onClick={() => handleFloorClick(floor)}
-                                                        className={`cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                                                        selectedFloor?.id === floor.id ? 'bg-purple-100 dark:bg-purple-700' : ''
+                                                    <tr 
+                                                        key={floor.id || index} 
+                                                        onClick={() => floor.is_active && handleHouseView(floor)} 
+                                                        className={`transition-colors cursor-pointer ${
+                                                            floor.is_active 
+                                                                ? 'hover:bg-gray-50 dark:hover:bg-gray-700' 
+                                                                : 'opacity-50 cursor-not-allowed'
                                                         }`}
                                                     >
                                                         <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
@@ -178,10 +175,16 @@ export default function Floors() {
                                                                     <Edit size={20} />
                                                                 </button>
                                                                 <button
-                                                                    className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"    
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation(); // prevent row click
+                                                                    confirmDeactivate(floor);
+                                                                    // handleToggle(floor);
+                                                                }}
+                                                                className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                                                title={floor.is_active ? 'Deactivate' : 'Activate'}
                                                                 >
-                                                                    <Trash2 size={20} />
-                                                                </button>
+                                                                {floor.is_active ? <ToggleRight size={25} /> : <ToggleLeft size={25} />}
+                                                            </button>
                                                             </div>
                                                         </td>
                                                     </tr>

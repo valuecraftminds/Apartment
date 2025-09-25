@@ -2,17 +2,19 @@ const pool = require('../db');
 const { v4: uuidv4 } = require('uuid');
 
 class House{
-    static async create(houseData){
-        const [company_id,apartment_id,floor_id,house_id,type, sqrfeet,rooms,bathrooms,status,occupied_way]=houseData;
-        const id = uuidv4().replace(/-/g, '').substring(0, 10);
+    static async create(houseData) {
+    const { company_id, apartment_id, floor_id, house_owner_id, house_id, type, sqrfeet, rooms, bathrooms, status, occupied_way } = houseData;
+    const id = uuidv4().replace(/-/g, '').substring(0, 10);
 
-        const [result] = await pool.execute(
-            'INSERT INTO houses (id, company_id, apartment_id, floor_id, house_id,type, sqrfeet,rooms,bathrooms,status,occupied_way) VALUES (?, ? ,?, ?, ?, ?, ?,?,?,?,?)',
-            [id,company_id, apartment_id, floor_id, house_id,type,sqrfeet, rooms,bathrooms,status,occupied_way]
-        );
-        return { id, ...houseData };
-    }
+    const [result] = await pool.execute(
+        `INSERT INTO houses 
+        (id, company_id, apartment_id, floor_id, house_id, type, sqrfeet, rooms, bathrooms, status, occupied_way, house_owner_id) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, company_id, apartment_id, floor_id, house_id, type, sqrfeet, rooms, bathrooms, status, occupied_way, house_owner_id]
+    );
 
+    return { id, ...houseData };
+}
     static async findById(id) {
         const [rows] = await pool.execute(
             'SELECT * FROM houses WHERE id = ?',
@@ -29,21 +31,13 @@ class House{
         return rows;
     }
 
-    static async findByApartmentId(apartment_id){
-        const [rows] = await pool.execute(
-            'SELECT * FROM houses WHERE apartment_id=? ORDER BY registered_at DESC',
-            [apartment_id]
-        );
-        return rows;
-    }
-
-    static async findByFloorId(floor_id){
-        const [rows] = await pool.execute(
-            'SELECT * FROM houses WHERE floor_id=? ORDER BY registered_at DESC',
-            [floor_id]
-        );
-        return rows;
-    }
+    static async findByApartmentAndFloor(apartment_id, floor_id) {
+    const [rows] = await pool.execute(
+        'SELECT * FROM houses WHERE apartment_id=? AND floor_id=? ORDER BY registered_at DESC',
+        [apartment_id, floor_id]
+    );
+    return rows;
+}
 
     static async findAll() {
         const [rows] = await pool.execute(

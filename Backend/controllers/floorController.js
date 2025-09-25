@@ -149,6 +149,42 @@ const floorController = {
                 message:'Server error while deleting floor'
             });
         }
+    },
+
+    // Deactivate / Activate Floor
+    async toggleFloorStatus(req, res) {
+        try {
+            const { id } = req.params;
+
+            const floor = await Floor.findById(id);
+            if (!floor) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Floor not found'
+                });
+            }
+
+            let updatedFloor;
+            if (floor.is_active) {
+                await Floor.deactivate(id);
+                updatedFloor = { ...floor, is_active: 0 };
+            } else {
+                await Floor.activate(id);
+                updatedFloor = { ...floor, is_active: 1 };
+            }
+
+            res.json({
+                success: true,
+                message: floor.is_active ? 'Floor deactivated' : 'Floor activated',
+                data: updatedFloor
+            });
+        } catch (err) {
+            console.error('Toggle floor status error:', err);
+            res.status(500).json({
+                success: false,
+                message: 'Server error while toggling floor status'
+            });
+        }
     }
 }
 

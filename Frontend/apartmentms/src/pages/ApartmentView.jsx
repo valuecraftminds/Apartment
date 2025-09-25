@@ -111,27 +111,7 @@ export default function ApartmentView() {
 
     useEffect(() => {
         loadApartments();
-        //deactivateApartments();
     }, []);
-
-    // const handleEdit = (apartment) => console.log('Edit apartment:', apartment);
-    //const handleDeactivate = (apartment) => console.log('Delete apartment:', apartment);
-    //const handleView = (apartment) => console.log('View apartment:', apartment);
-
-    // const deactivateApartments = async() => {
-    //     try{
-    //         const result = await api.delete(`/apartments/${apartments.id}`);
-    //         console.log('API Response', result.data);
-    //         if(result.data.success){
-    //             toast.success('Apartment deactivated...!');
-    //         }
-    //         else{
-    //             toast.error('Failed to deactivate Apartment ')
-    //         }
-    //     }catch(err){
-    //         console.log('Error deactivating Apartment')
-    //     }
-    // }
 
     const handleToggle = async (apartment) => {
     try {
@@ -144,7 +124,6 @@ export default function ApartmentView() {
     }
 };
     
-
     return (
         <div className="flex h-screen bg-gray-100 dark:bg-gray-900 w-screen transition-colors duration-200">
             <Sidebar onCollapse={setIsSidebarCollapsed} />
@@ -267,7 +246,7 @@ export default function ApartmentView() {
                                                                 title={apartment.is_active ? 'Deactivate' : 'Activate'}
                                                                 >
                                                                 {apartment.is_active ? <ToggleRight size={25} /> : <ToggleLeft size={25} />}
-                                                                </button>
+                                                            </button>
                                                         </div>
                                                     </td>
                                                 </tr>

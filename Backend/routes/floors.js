@@ -12,6 +12,6 @@ router.get('/', floorController.getAllFloors);
 router.get('/:id', floorController.getFloorById);
 router.put('/:id', floorController.updateFloors);
 router.delete('/:id', floorController.deleteFloors);
-
+router.patch('/:id/toggle', floorController.toggleFloorStatus);
 
 module.exports = router;

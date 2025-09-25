@@ -54,6 +54,24 @@ class Floor {
         return { id, ...floorData };
     }
 
+    // Deactivate floor (set status to 'inactive')
+    static async deactivate(id) {
+    await pool.execute(
+        'UPDATE floors SET is_active = 0 WHERE id = ?',
+        [id]
+    );
+    return true;
+    
+}
+    //Activate floor
+    static async activate(id) {
+        await pool.execute(
+            'UPDATE floors SET is_active = 1 WHERE id = ?',
+            [id]
+        );
+        return true;
+    }
+
     static async delete(id) {
         await pool.execute(
             'DELETE FROM floors WHERE id = ?',
