@@ -8,6 +8,7 @@ router.use(authenticateToken);
 
 // Routes
 router.post('/', floorController.createFloors);
+router.post('/batch', floorController.createFloorsBatch);
 router.get('/', floorController.getAllFloors);
 router.get('/:id', floorController.getFloorById);
 router.put('/:id', floorController.updateFloors);

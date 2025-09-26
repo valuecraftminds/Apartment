@@ -24,7 +24,7 @@ class Apartment {
 
     static async findByCompanyId(company_id){
         const [rows] = await pool.execute(
-            'SELECT * FROM apartments WHERE company_id=? ORDER BY created_at DESC',
+            'SELECT * FROM apartments WHERE company_id=? ORDER BY CAST(SUBSTRING(company_id, 2) AS UNSIGNED) ASC',
             [company_id]
         );
         return rows;

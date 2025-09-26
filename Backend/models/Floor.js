@@ -8,7 +8,7 @@ class Floor {
 
         const [result] = await pool.execute(
             'INSERT INTO floors (id, company_id, apartment_id, floor_id,  house_count) VALUES (?, ?, ?, ?, ?)',
-            [id,company_id, apartment_id, floor_id, house_count]
+            [id,company_id, apartment_id, floor_id, null]
         );
         return { id, ...floorData };
     }
@@ -31,8 +31,8 @@ class Floor {
 
     static async findByApartmentId(apartment_id){
         const [rows] = await pool.execute(
-            'SELECT * FROM floors WHERE apartment_id=? ORDER BY created_at DESC',
-            [apartment_id]
+            'SELECT * FROM floors WHERE apartment_id=? ORDER BY CAST(SUBSTRING(floor_id, 2) AS UNSIGNED) ASC',
+        [apartment_id]
         );
         return rows;
     }

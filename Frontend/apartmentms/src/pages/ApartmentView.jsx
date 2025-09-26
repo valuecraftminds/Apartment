@@ -312,12 +312,16 @@ export default function ApartmentView() {
             {showDeactivateModal && (
                 <div className="fixed inset-0 bg-white/0 backdrop-blur-lg flex items-center justify-center z-50">
                     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm relative">
-                        <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-                        Confirm Deactivation of Apartment
-                        </h2>
-                        <p className="text-gray-600 dark:text-gray-300 mb-6">
-                        Are you sure you want to deactivate the apartment?
-                        </p>
+                    <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                        {deactivatingApartment?.is_active 
+                        ? "Confirm Deactivation of Apartment" 
+                        : "Confirm Activation of Apartment"}
+                    </h2>
+                    <p className="text-gray-600 dark:text-gray-300 mb-6">
+                        {deactivatingApartment?.is_active 
+                        ? "Are you sure you want to deactivate the apartment?" 
+                        : "Are you sure you want to activate the apartment?"}
+                    </p>
                     <div className="flex justify-end space-x-3">
                         <button
                         onClick={cancelDeactivate}
@@ -326,21 +330,26 @@ export default function ApartmentView() {
                         Cancel
                         </button>
                         <button
-                            onClick={() => {
-                                if (deactivatingApartment) {
-                                    handleToggle(deactivatingApartment);
-                                    setShowDeactivateModal(false);
-                                    setDeactivatingApartment(null);
-                                }
-                            }}
-                            className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors duration-200"
+                        onClick={() => {
+                            if (deactivatingApartment) {
+                            handleToggle(deactivatingApartment);
+                            setShowDeactivateModal(false);
+                            setDeactivatingApartment(null);
+                            }
+                        }}
+                        className={`px-4 py-2 rounded-md text-white transition-colors duration-200 ${
+                            deactivatingApartment?.is_active 
+                            ? "bg-red-600 hover:bg-red-700" 
+                            : "bg-green-600 hover:bg-green-700"
+                        }`}
                         >
-                            Deactivate
+                        {deactivatingApartment?.is_active ? "Deactivate" : "Activate"}
                         </button>
                     </div>
                     </div>
                 </div>
-            )}
+                )}
+
             <ToastContainer position="top-center" autoClose={3000} />
         </div>
     );

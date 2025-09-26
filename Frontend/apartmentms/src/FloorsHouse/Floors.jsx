@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar';
 import { Building, Building2, ChevronLeft, Edit, Image, Loader, Plus, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../api/axios';
+import CreateFloors from './CreateFloors';
 
 export default function Floors() {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -12,9 +13,9 @@ export default function Floors() {
     const [apartment, setApartment] = useState(null);
     const navigate = useNavigate();
     const [floors, setFloors] = useState([]);
-    // const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [loadingFloors, setLoadingFloors] = useState(true);
+    const [showCreateModal, setShowCreateModal] = useState(false);
     
 
     useEffect(() => {
@@ -56,7 +57,6 @@ export default function Floors() {
     }
 };
 
-
     useEffect(() => {
         loadFloors();
     }, [id]);
@@ -75,15 +75,31 @@ const confirmDeactivate = (floor) => {
     }
 
     const handleToggle = async (floor) => {
-    try {
-        const result = await api.patch(`/floors/${floor.id}/toggle`);
-        toast.success(result.data.message);
-        loadApartments(); // refresh list
-    } catch (err) {
-        console.error('Error toggling apartment:', err);
-        toast.error('Failed to toggle apartment status');
+        try {
+            const result = await api.patch(`/floors/${floor.id}/toggle`);
+            toast.success(result.data.message);
+            loadApartments(); // refresh list
+        } catch (err) {
+            console.error('Error toggling apartment:', err);
+            toast.error('Failed to toggle apartment status');
+        }
+    };
+
+    //Add floors
+    const handleAddNew = () =>{
+        setShowCreateModal(true);
     }
-};
+
+    const handleCloseModal = () => {
+    setShowCreateModal(false);
+  };
+
+  const handleFloorsCreated = () => {
+          loadFloors();
+          setShowCreateModal(false);
+          toast.success('Floor created successfully!');
+      };
+
 
   return (    
     <div className='flex h-screen bg-gray-100 dark:bg-gray-900 w-screen transition-colors duration-200'>
@@ -108,7 +124,7 @@ const confirmDeactivate = (floor) => {
                                 </div>
                             )}
                         </div>
-                        <button className='flex items-center gap-2 px-4 py-2 rounded-lg font-semibold shadow-md transition-all duration-300 text-white bg-purple-600 hover:bg-purple-700 hover:scale-105'>
+                        <button onClick={handleAddNew} className='flex items-center gap-2 px-4 py-2 rounded-lg font-semibold shadow-md transition-all duration-300 text-white bg-purple-600 hover:bg-purple-700 hover:scale-105'>
                             <Plus size={20}/>
                             <span>Add New</span>
                         </button>
@@ -197,6 +213,26 @@ const confirmDeactivate = (floor) => {
                 </div>
             </div>
         </div>
+        {showCreateModal && (
+            <div className="fixed inset-0 bg-white/0 backdrop-blur-lg flex items-center justify-center z-50">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md relative">
+                    <button
+                        onClick={handleCloseModal}
+                        className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 dark:hover:text-white"
+                    >
+                    ✖
+                    </button>
+                    <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
+                        Create Floors
+                    </h2>
+                    <CreateFloors
+                        onClose={handleCloseModal} 
+                        onCreated={handleFloorsCreated}
+                        apartment_id={id}
+                    />
+                </div>
+            </div>
+        )}
     </div>
   )
 }

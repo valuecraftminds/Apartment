@@ -1,4 +1,5 @@
 const Floor = require('../models/Floor');
+const pool = require('../db')
 
 const floorController = {
     async createFloors(req, res) {
@@ -33,6 +34,56 @@ const floorController = {
         });
     }
 },
+
+    //create floors via array
+    async createFloorsBatch(req, res) {
+  const conn = await pool.getConnection();
+  try {
+    const company_id = req.user.company_id;
+    const { floors, apartment_id } = req.body;
+
+    if (!Array.isArray(floors) || floors.length === 0) {
+      return res.status(400).json({ success: false, message: "No floors provided" });
+    }
+    if (!apartment_id) {
+  return res.status(400).json({ success: false, message: "apartment_id is required" });
+}
+if (!floors || !Array.isArray(floors) || floors.length === 0) {
+  return res.status(400).json({ success: false, message: "floors array is required" });
+}
+
+    await conn.beginTransaction();
+    const created = [];
+
+    for (const floor of floors) {
+      const newFloor = await Floor.create({
+        floor_id: floor.floor_id,
+        // house_count: parseInt(floor.house_count) || 1,
+        company_id,
+        apartment_id
+      });
+      created.push(newFloor);
+    }
+
+    await conn.commit();
+
+    res.status(201).json({
+      success: true,
+      message: `${created.length} floors added successfully`,
+      data: created
+    });
+  } catch (err) {
+    if (conn) await conn.rollback();
+    console.error("Batch create floors error", err);
+    res.status(500).json({ 
+        success: false, 
+        message: "Server error while creating floors" 
+    });
+  } finally {
+    if (conn) conn.release();
+  }
+},
+
     // Get all floors
     async getAllFloors(req, res) {
     try {
