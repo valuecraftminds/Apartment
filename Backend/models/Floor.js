@@ -44,6 +44,14 @@ class Floor {
         return rows; 
     }
 
+    static async findByApartment(apartment_id) {
+    const [rows] = await pool.execute(
+      "SELECT * FROM floors WHERE apartment_id = ? ORDER BY created_at ASC",
+      [apartment_id]
+    );
+    return rows;
+  }
+
     //UPdate Floors
     static async update(id, floorData) {
         const { house_count } = floorData;

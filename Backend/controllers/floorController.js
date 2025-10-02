@@ -141,6 +141,17 @@ if (!floors || !Array.isArray(floors) || floors.length === 0) {
         }
     },
 
+    async getByApartment(req, res) {
+    try {
+      const { apartment_id } = req.params;
+      const floors = await Floor.findByApartment(apartment_id);
+      res.json(floors);
+    } catch (err) {
+      console.error("Error fetching floors:", err);
+      res.status(500).json({ message: "Server error" });
+    }
+  },
+
      //update floors
     async updateFloors(req,res){
         try{
