@@ -5,6 +5,8 @@ import { Building, Building2, ChevronLeft, Edit, Image, Loader, Plus, ToggleLeft
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../api/axios';
 import CreateFloors from './CreateFloors';
+import EditFloors from './EditFloors';
+import { toast, ToastContainer } from 'react-toastify';
 
 export default function Floors() {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -16,6 +18,11 @@ export default function Floors() {
     const [error, setError] = useState(null);
     const [loadingFloors, setLoadingFloors] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [selectedFloor, setSelectedFloor] = useState(null);
+    const [showDeactivateModal, setShowDeactivateModal] = useState(false);
+    const [deactivatingFloor, setDeactivatingFloor] = useState(null);
+
     
 
     useEffect(() => {
@@ -66,22 +73,23 @@ export default function Floors() {
 };
 
 const confirmDeactivate = (floor) => {
-        setDeactivatingApartment(floor);
+        setDeactivatingFloor(floor);
         setShowDeactivateModal(true);
     };
 
     const cancelDeactivate = () => {
         setShowDeactivateModal(false);
+        setDeactivatingFloor(null);
     }
 
     const handleToggle = async (floor) => {
         try {
             const result = await api.patch(`/floors/${floor.id}/toggle`);
             toast.success(result.data.message);
-            loadApartments(); // refresh list
+            loadFloors(); 
         } catch (err) {
-            console.error('Error toggling apartment:', err);
-            toast.error('Failed to toggle apartment status');
+            console.error('Error toggling floor:', err);
+            toast.error('Failed to toggle floor status');
         }
     };
 
@@ -100,6 +108,24 @@ const confirmDeactivate = (floor) => {
           toast.success('Floor created successfully!');
       };
 
+      // inside Floors component
+
+
+    const handleEdit = (floor) => {
+    setSelectedFloor(floor);
+    setShowEditModal(true);
+    };
+
+    const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setSelectedFloor(null);
+    };
+
+    const handleFloorUpdated = () => {
+    loadFloors();
+    setShowEditModal(false);
+    toast.success('Floor updated successfully!');
+    };
 
   return (    
     <div className='flex h-screen bg-gray-100 dark:bg-gray-900 w-screen transition-colors duration-200'>
@@ -198,11 +224,15 @@ const confirmDeactivate = (floor) => {
                                                         <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                                                             <div className="flex space-x-2">
                                                                 <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleEdit(floor);
+                                                                    }}
                                                                     className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
                                                                     title="Edit"
-                                                                >
+                                                                    >
                                                                     <Edit size={20} />
-                                                                </button>
+                                                                    </button>
                                                                 <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation(); // prevent row click
@@ -246,6 +276,67 @@ const confirmDeactivate = (floor) => {
                 </div>
             </div>
         )}
+        {showEditModal && selectedFloor && (
+            <div className="fixed inset-0 bg-white/0 backdrop-blur-lg flex items-center justify-center z-50">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md relative">
+                <button
+                    onClick={handleCloseEditModal}
+                    className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 dark:hover:text-white"
+                >
+                    ✖
+                </button>
+                <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
+                    Edit Floor
+                </h2>
+                <EditFloors
+                    onClose={handleCloseEditModal}
+                    onUpdated={handleFloorUpdated}
+                    floor={selectedFloor}
+                />
+                </div>
+            </div>
+        )}
+        {showDeactivateModal && (
+            <div className="fixed inset-0 bg-white/0 backdrop-blur-lg flex items-center justify-center z-50">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm relative">
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                    {deactivatingFloor?.is_active
+                    ? "Confirm Deactivation of Floor"
+                    : "Confirm Activation of Floor"}
+                </h2>
+                <p className="text-gray-600 dark:text-gray-300 mb-6">
+                    {deactivatingFloor?.is_active
+                    ? "Are you sure you want to deactivate this floor?"
+                    : "Are you sure you want to activate this floor?"}
+                </p>
+                <div className="flex justify-end space-x-3">
+                    <button
+                    onClick={cancelDeactivate}
+                    className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200"
+                    >
+                    Cancel
+                    </button>
+                    <button
+                    onClick={() => {
+                        if (deactivatingFloor) {
+                        handleToggle(deactivatingFloor);
+                        setShowDeactivateModal(false);
+                        setDeactivatingFloor(null);
+                        }
+                    }}
+                    className={`px-4 py-2 rounded-md text-white transition-colors duration-200 ${
+                        deactivatingFloor?.is_active
+                        ? "bg-red-600 hover:bg-red-700"
+                        : "bg-green-600 hover:bg-green-700"
+                    }`}
+                    >
+                    {deactivatingFloor?.is_active ? "Deactivate" : "Activate"}
+                    </button>
+                </div>
+                </div>
+            </div>
+        )}
+        <ToastContainer position="top-center" autoClose={3000} />
     </div>
   )
 }

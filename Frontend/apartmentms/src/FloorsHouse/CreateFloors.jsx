@@ -97,7 +97,7 @@ export default function CreateFloors({ onClose, apartment_id }) {
           value={numFloors}
           min="1"
           onChange={(e) => setNumFloors(parseInt(e.target.value))}
-          className="border rounded p-2 ml-2"
+          className="border rounded p-2 text-black dark:text-white border-purple-600"
         />
       </label>
 
@@ -112,7 +112,7 @@ export default function CreateFloors({ onClose, apartment_id }) {
       {/* Scrollable floor list */}
       <div className="flex-1 overflow-y-auto border rounded p-2 max-h-64">
         {floors.map((floor, idx) => (
-          <div key={idx} className="border p-2 rounded mb-2">
+          <div key={idx} className="border rounded p-2 text-black dark:text-white border-purple-600">
             <p>Floor {lastFloorNumber + idx + 1}</p>
             <input
               type="text"
@@ -127,7 +127,7 @@ export default function CreateFloors({ onClose, apartment_id }) {
       </div>
 
       {/* Sticky buttons */}
-      <div className="flex justify-end gap-2 sticky bottom-0 bg-white p-2 border-t">
+      <div className="flex justify-end gap-2 sticky bottom-0 p-2 border-t">
         <button
           type="button"
           onClick={onClose}

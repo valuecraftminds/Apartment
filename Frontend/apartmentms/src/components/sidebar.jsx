@@ -8,7 +8,8 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  Building2
+  Building2,
+  BanknoteArrowDown
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -19,6 +20,7 @@ export default function Sidebar() {
     { name: 'Dashboard', path: '/admindashboard', icon: Home},
     { name: 'Users', path: '/userview', icon: Users },
     { name: 'Apartments', path: '/apartmentview', icon: Building2 },
+    { name: 'Expenses', path: '/bills', icon: BanknoteArrowDown},
     { name: 'Reports', path: '/reports', icon: FileText },
     { name: 'Settings', path: '/settings', icon: Settings }
   ];
