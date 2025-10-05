@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import api from '../api/axios';
 import { useNavigate } from 'react-router-dom';
 import { ToastContainer, toast } from "react-toastify";
@@ -8,7 +8,10 @@ import { Eye, EyeOff, ChevronLeft, ChevronRight, Check, X } from "lucide-react";
 export default function CombinedRegistration() {
   // User data state
   const [userData, setUserData] = useState({
-    username: '',
+    firstname:'',
+    lastname:'',
+    country:'',
+    mobile:'',
     email: '',
     password: '',
     confirmPassword: ''
@@ -16,34 +19,69 @@ export default function CombinedRegistration() {
 
   // Company data state
   const [companyData, setCompanyData] = useState({
+    regNo: '',
     name: '',
-    businessInfo: '',
+    address: '',
     employees: ''
   });
 
   const [errors, setErrors] = useState({
-    username: '',
+    firstname:'',
+    lastname:'',
+    country:'',
+    mobile:'',
     email: '',
     password: '',
     confirmPassword: '',
+    regNo:'',
     name: '',
-    businessInfo: '',
+    address: '',
     employees: ''
   });
 
   const [touched, setTouched] = useState({
-    username: false,
+    firstname:false,
+    lastname:false,
+    country:false,
+    mobile:false,
     email: false,
     password: false,
     confirmPassword: false,
+    regNo:false,
     name: false,
-    businessInfo: false,
+    address: false,
     employees: false
   });
 
   const [currentStep, setCurrentStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
+  const [countries, setCountries] = useState([]);
+
+  useEffect(() => {
+    const fetchCountries = async () => {
+      try {
+        const res = await api.get('/countries');
+        setCountries(res.data.data);
+      } catch (err) {
+        console.error("Error fetching countries:", err);
+      }
+    };
+    fetchCountries();
+  }, []);
+
+  const handleCountryChange = (e) => {
+    const countryId = e.target.value;
+    const selectedCountry = countries.find(c => c.id.toString() === countryId);
+
+    if (selectedCountry) {
+      setUserData(prev => ({
+        ...prev,
+        country: selectedCountry.country_name, //set country
+        mobile: selectedCountry.phone_code // auto set phone code
+      }));
+    }
+  };
   
   const navigate = useNavigate();
   const totalSteps = 3;
@@ -54,12 +92,30 @@ export default function CombinedRegistration() {
     
     switch (name) {
       // User validation
-      case 'username':
-        if (!value.trim()) error = 'Username is required';
-        else if (value.length < 3) error = 'Username must be at least 3 characters';
-        else if (!/^[a-zA-Z0-9]+$/.test(value)) error = 'Username can only contain letters, and numbers';
-        else if (value.length > 20) error = 'Username cannot exceed 20 characters';
+      case 'firstname':
+        if (!value.trim()) error = 'First name is required';
+        else if (value.length < 3) error = 'First name must be at least 3 characters';
+        else if (!/^[a-zA-Z0-9]+$/.test(value)) error = 'First name can only contain letters, and numbers';
+        else if (value.length > 20) error = 'First name cannot exceed 20 characters';
         break;
+
+      case 'lastname':
+        if (!value.trim()) error = 'Last name is required';
+        else if (value.length < 3) error = 'Last name must be at least 3 characters';
+        else if (!/^[a-zA-Z0-9]+$/.test(value)) error = 'Last name can only contain letters, and numbers';
+        else if (value.length > 20) error = 'Last name cannot exceed 20 characters';
+        break;
+
+      case 'country':
+        if (!value.trim()) error = 'Country is required';
+        break;
+
+      case 'mobile':
+        if (!value.trim()) error = 'Mobile Number is required';
+        else if (!/^\+\d{2} \d{9}$/.test(value)) error = 'Mobile must be in format +XX XXXXXXXXX';
+        else if (value.length > 15) error = 'Mobile cannot exceed 15 digits';
+        break;
+
         
       case 'email':
         if (!value.trim()) error = 'Email is required';
@@ -81,14 +137,19 @@ export default function CombinedRegistration() {
         break;
 
       // Company validation
+      case 'regNo':
+        if (!value.trim()) error = 'Business Registration No is required';
+        else if (value.length < 2) error = 'Business REgistration No must be at least 2 characters';
+        break;
+
       case 'name':
         if (!value.trim()) error = 'Company name is required';
         else if (value.length < 2) error = 'Company name must be at least 2 characters';
         break;
         
-      case 'businessInfo':
-        if (!value.trim()) error = 'Business information is required';
-        else if (value.length < 3) error = 'Business information must be at least 3 characters';
+      case 'address':
+        if (!value.trim()) error = 'Company address is required';
+        else if (value.length < 3) error = 'Company address must be at least 3 characters';
         break;
 
       case 'employees':
@@ -152,9 +213,9 @@ export default function CombinedRegistration() {
 
     // Mark all fields in current step as touched and validate them
     const stepFields = {
-      1: ['username', 'email'], // User details
-      2: ['name', 'businessInfo', 'employees'], // Company details
-      3: ['password', 'confirmPassword'] // Security
+      1: ['regNo','name', 'address', 'employees'], // Company details
+      2: ['firstname','lastname','country','mobile','email'], // User details
+      3: ['password', 'confirmPassword'], // Security
     }[step];
 
     stepFields.forEach(field => {
@@ -206,8 +267,9 @@ export default function CombinedRegistration() {
   try {
     // Prepare company data
     const companyPayload = {
+      regNo: companyData.regNo,
       name: companyData.name,
-      businessInfo: companyData.businessInfo,
+      address: companyData.address,
       employees: parseInt(companyData.employees, 10)
     };
 
@@ -219,7 +281,10 @@ export default function CombinedRegistration() {
 
     // Then register the user with the company ID
     const userResponse = await api.post('/auth/register', {
-      username: userData.username,
+      firstname: userData.firstname,
+      lastname: userData.lastname,
+      country: userData.country,
+      mobile:userData.mobile,
       email: userData.email,
       password: userData.password,
       company_id: companyResponse.data.data.id // Send as company_id (not companyId)
@@ -252,8 +317,8 @@ export default function CombinedRegistration() {
 
   // Progress steps
   const steps = [
-    { number: 1, title: "User Details" },
-    { number: 2, title: "Company Info" },
+    { number: 1, title: "Company Info" },
+    { number: 2, title: "User Info" },
     { number: 3, title: "Security" }
   ];
 
@@ -299,61 +364,32 @@ export default function CombinedRegistration() {
           </div>
 
           <form onSubmit={submit} className="loginForm">
-            {/* Step 1: User Details */}
+            {/* Step 1: Company Details */}
             {currentStep === 1 && (
-              <div className="space-y-4 animate-fadeIn">
-                <h2 className="text-lg font-semibold mb-4">User Information</h2>
-                
-                <div>
-                  <input 
-                    name="username" 
-                    value={userData.username} 
-                    onChange={(e) => handleInputChange(e, false)}
-                    onBlur={(e) => handleBlur(e, false)}
-                    placeholder="Username *" 
-                    className={`loginInput ${errors.username ? 'border-red-500' : touched.username && 'border-green-500'}`}
-                  />
-                  {touched.username && errors.username && (
-                    <div className="text-red-500 text-sm mt-1 flex items-center">
-                      <X size={14} className="mr-1" /> {errors.username}
-                    </div>
-                  )}
-                  {touched.username && !errors.username && (
-                    <div className="text-green-500 text-sm mt-1 flex items-center">
-                      <Check size={14} className="mr-1" /> Good!
-                    </div>
-                  )}
-                </div>
-                
-                <div>
-                  <input 
-                    name="email" 
-                    type="email"
-                    value={userData.email} 
-                    onChange={(e) => handleInputChange(e, false)}
-                    onBlur={(e) => handleBlur(e, false)}
-                    placeholder="Email *" 
-                    className={`loginInput ${errors.email ? 'border-red-500' : touched.email && 'border-green-500'}`}
-                  />
-                  {touched.email && errors.email && (
-                    <div className="text-red-500 text-sm mt-1 flex items-center">
-                      <X size={14} className="mr-1" /> {errors.email}
-                    </div>
-                  )}
-                  {touched.email && !errors.email && (
-                    <div className="text-green-500 text-sm mt-1 flex items-center">
-                      <Check size={14} className="mr-1" /> Valid email
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Step 2: Company Details */}
-            {currentStep === 2 && (
               <div className="space-y-4 animate-fadeIn">
                 <h2 className="text-lg font-semibold mb-4">Company Information</h2>
                 
+                <div>
+                  <input 
+                    name="regNo" 
+                    value={companyData.regNo} 
+                    onChange={(e) => handleInputChange(e, true)}
+                    onBlur={(e) => handleBlur(e, true)}
+                    placeholder="Company Registration No *" 
+                    className={`loginInput ${errors.regNo ? 'border-red-500' : touched.regNo && 'border-green-500'}`}
+                  />
+                  {touched.regNo && errors.regNo && (
+                    <div className="text-red-500 text-sm mt-1 flex items-center">
+                      <X size={14} className="mr-1" /> {errors.regNo}
+                    </div>
+                  )}
+                  {/* {touched.regNo && !errors.regNo && (
+                    <div className="text-green-500 text-sm mt-1 flex items-center">
+                      <Check size={14} className="mr-1" />
+                    </div>
+                  )} */}
+                </div>
+
                 <div>
                   <input 
                     name="name" 
@@ -368,32 +404,32 @@ export default function CombinedRegistration() {
                       <X size={14} className="mr-1" /> {errors.name}
                     </div>
                   )}
-                  {touched.name && !errors.name && (
+                  {/* {touched.name && !errors.name && (
                     <div className="text-green-500 text-sm mt-1 flex items-center">
-                      <Check size={14} className="mr-1" /> Good!
+                      <Check size={14} className="mr-1" />
                     </div>
-                  )}
+                  )} */}
                 </div>
                 
                 <div>
                   <input 
-                    name="businessInfo" 
-                    value={companyData.businessInfo} 
+                    name="address" 
+                    value={companyData.address} 
                     onChange={(e) => handleInputChange(e, true)}
                     onBlur={(e) => handleBlur(e, true)}
-                    placeholder="Business Information *" 
-                    className={`loginInput ${errors.businessInfo ? 'border-red-500' : touched.businessInfo && 'border-green-500'}`}
+                    placeholder="Company Address *" 
+                    className={`loginInput ${errors.address ? 'border-red-500' : touched.address && 'border-green-500'}`}
                   />
                   {touched.businessInfo && errors.businessInfo && (
                     <div className="text-red-500 text-sm mt-1 flex items-center">
                       <X size={14} className="mr-1" /> {errors.businessInfo}
                     </div>
                   )}
-                  {touched.businessInfo && !errors.businessInfo && (
+                  {/* {touched.businessInfo && !errors.businessInfo && (
                     <div className="text-green-500 text-sm mt-1 flex items-center">
-                      <Check size={14} className="mr-1" /> Good!
+                      <Check size={14} className="mr-1" />
                     </div>
-                  )}
+                  )} */}
                 </div>
 
                 <div>
@@ -410,11 +446,120 @@ export default function CombinedRegistration() {
                       <X size={14} className="mr-1" /> {errors.employees}
                     </div>
                   )}
-                  {touched.employees && !errors.employees && (
+                  {/* {touched.employees && !errors.employees && (
                     <div className="text-green-500 text-sm mt-1 flex items-center">
-                      <Check size={14} className="mr-1" /> Good!
+                      <Check size={14} className="mr-1" />
+                    </div>
+                  )} */}
+                </div>
+              </div>
+            )}
+            {/* Step 2: User email */}
+            {currentStep === 2 && (
+              <div className="space-y-4 animate-fadeIn">
+                <h2 className="text-lg font-semibold mb-4">User Info</h2>
+                                
+                <div>
+                  <input 
+                    name="firstname" 
+                    value={userData.firstname} 
+                    onChange={(e) => handleInputChange(e, false)}
+                    onBlur={(e) => handleBlur(e, false)}
+                    placeholder="First Name *" 
+                    className={`loginInput ${errors.firstname ? 'border-red-500' : touched.firstname && 'border-green-500'}`}
+                  />
+                  {touched.firstname && errors.firstname && (
+                    <div className="text-red-500 text-sm mt-1 flex items-center">
+                      <X size={14} className="mr-1" /> {errors.firstname}
                     </div>
                   )}
+                  {/* {touched.firstname && !errors.firstname && (
+                    <div className="text-green-500 text-sm mt-1 flex items-center">
+                      <Check size={14} className="mr-1" />
+                    </div>
+                  )} */}
+                </div>
+
+                <div>
+                  <input 
+                    name="lastname" 
+                    value={userData.lastname} 
+                    onChange={(e) => handleInputChange(e, false)}
+                    onBlur={(e) => handleBlur(e, false)}
+                    placeholder="Last Name *" 
+                    className={`loginInput ${errors.lastname ? 'border-red-500' : touched.lastname && 'border-green-500'}`}
+                  />
+                  {touched.lastname && errors.lastname && (
+                    <div className="text-red-500 text-sm mt-1 flex items-center">
+                      <X size={14} className="mr-1" /> {errors.lastname}
+                    </div>
+                  )}
+                  {/* {touched.lastname && !errors.lastname && (
+                    <div className="text-green-500 text-sm mt-1 flex items-center">
+                      <Check size={14} className="mr-1" />
+                    </div>
+                  )} */}
+                </div>
+
+                <div>
+                  <select
+                    name="country"
+                    value={countries.find(c => c.country_name === userData.country)?.id || ''}
+                    onChange={handleCountryChange}
+                    onBlur={(e) => handleBlur(e, false)}
+                    className={`loginInput ${errors.country ? 'border-red-500' : touched.country && 'border-green-500'}`}
+                  >
+                    <option value="">Select country *</option>
+                    {countries.map(country => (
+                      <option key={country.id} value={country.id}>
+                        {country.country_name}
+                      </option>
+                    ))}
+                  </select>
+                  {touched.country && errors.country && (
+                    <div className="text-red-500 text-sm mt-1 flex items-center">
+                      <X size={14} className="mr-1" /> {errors.country}
+                    </div>
+                  )}
+                </div>
+
+
+                <div>
+                  <input
+                    name="mobile"
+                    value={userData.mobile}
+                    onChange={(e) => handleInputChange(e, false)}
+                    onBlur={(e) => handleBlur(e, false)}
+                    placeholder="Mobile *"
+                    className={`loginInput ${errors.mobile ? 'border-red-500' : touched.mobile && 'border-green-500'}`}
+                  />
+                  {touched.mobile && errors.mobile && (
+                    <div className="text-red-500 text-sm mt-1 flex items-center">
+                      <X size={14} className="mr-1" /> {errors.mobile}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <input 
+                    name="email" 
+                    type="email"
+                    value={userData.email} 
+                    onChange={(e) => handleInputChange(e, false)}
+                    onBlur={(e) => handleBlur(e, false)}
+                    placeholder="Email *" 
+                    className={`loginInput ${errors.email ? 'border-red-500' : touched.email && 'border-green-500'}`}
+                  />
+                  {touched.email && errors.email && (
+                    <div className="text-red-500 text-sm mt-1 flex items-center">
+                      <X size={14} className="mr-1" /> {errors.email}
+                    </div>
+                  )}
+                  {/* {touched.email && !errors.email && (
+                    <div className="text-green-500 text-sm mt-1 flex items-center">
+                      <Check size={14} className="mr-1" /> Valid email
+                    </div>
+                  )} */}
                 </div>
               </div>
             )}
@@ -468,11 +613,11 @@ export default function CombinedRegistration() {
                   </div>
                 )}
                 
-                {touched.password && !errors.password && (
+                {/* {touched.password && !errors.password && (
                   <div className="text-green-500 text-sm mt-1 flex items-center">
                     <Check size={14} className="mr-1" /> Strong password!
                   </div>
-                )}
+                )} */}
                 
                 <div className='passwordField'>
                   <input 
@@ -505,7 +650,7 @@ export default function CombinedRegistration() {
                   </div>
                 )}
               </div>
-            )}
+            )}            
 
             {/* Navigation Buttons */}
             <div className='loginButtonGroup mt-6'>
@@ -534,7 +679,7 @@ export default function CombinedRegistration() {
                   type="submit" 
                   className="loginButton loginButton--submit"
                 >
-                  Complete Registration
+                  Register
                 </button>
               )}
               

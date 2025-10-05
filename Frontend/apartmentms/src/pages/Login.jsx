@@ -103,7 +103,7 @@ export default function Login() {
               alt="AptSync Logo"
               className="w-10 h-10"
             />
-            <h1 className="font-bold text-xl">Sign In</h1>
+            <h1 className="font-bold text-xl">Log In</h1>
           </div>
       {/* Show a loading message only while verifying */}
           {isVerifying && <div className="mb-4 text-purple-600">Verifying your email...</div>}

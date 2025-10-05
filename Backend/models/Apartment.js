@@ -1,0 +1,75 @@
+const pool = require('../db');
+const { v4: uuidv4 } = require('uuid');
+
+class Apartment {
+    static async create(apartmentData) {
+        const { apartment_id,name, address, city, picture,company_id } = apartmentData;
+        const id = uuidv4().replace(/-/g, '').substring(0, 10);
+
+        const [result] = await pool.execute(
+            'INSERT INTO apartments (id,apartment_id, name, address, city,  picture, is_active, company_id) VALUES (?, ?, ?, ?, ?, ?, 1, ?)',
+            [id,apartment_id, name, address, city, picture, company_id]
+
+        );
+        return {id, ...apartmentData };
+    }
+
+    static async findById(id) {
+        const [rows] = await pool.execute(
+            'SELECT * FROM apartments WHERE id= ?',
+            [id]
+        );
+        return rows[0];
+    }
+
+    static async findByCompanyId(company_id){
+        const [rows] = await pool.execute(
+            'SELECT * FROM apartments WHERE company_id=? ORDER BY CAST(SUBSTRING(company_id, 2) AS UNSIGNED) ASC',
+            [company_id]
+        );
+        return rows;
+    }
+
+    static async findAll() {
+        const [rows] = await pool.execute(
+            'SELECT * FROM apartments ORDER BY created_at DESC'
+        );
+        return rows; 
+    }
+
+    // Deactivate apartment (set status to 'inactive')
+    static async deactivate(id) {
+    await pool.execute(
+        'UPDATE apartments SET is_active = 0 WHERE id = ?',
+        [id]
+    );
+    return true;
+}
+    //Activate Apartment
+    static async activate(id) {
+        await pool.execute(
+            'UPDATE apartments SET is_active = 1 WHERE id = ?',
+            [id]
+        );
+        return true;
+    }
+
+    static async update(id, apartmentData) {
+        const { name, address, city, floors, houses, picture} = apartmentData;
+        await pool.execute(
+            'UPDATE apartments SET name = ?, address = ?, city = ?, floors = ?, houses = ?, picture = ? WHERE id = ?',
+            [name, address, city, floors, houses, picture,id]
+        );
+        return {id, ...apartmentData };
+    }
+
+    static async delete(id) {
+        await pool.execute(
+            'DELETE FROM apartments WHERE id = ?',
+            [id]
+        );
+        return true;
+    }
+}
+
+module.exports = Apartment;

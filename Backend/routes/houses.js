@@ -1,0 +1,17 @@
+const express = require('express');
+const router = express.Router();
+const { authenticateToken } = require('../middleware/auth');
+const houseController = require('../controllers/houseController');
+
+// Apply authentication to ALL apartment routes
+router.use(authenticateToken);
+
+// Routes
+router.post('/', houseController.createHouse);
+router.get('/', houseController.getAllHouses);
+router.get('/:id', houseController.getHouseById);
+router.put('/:id', houseController.updateHouse);
+router.delete('/:id', houseController.deleteHouse);
+
+
+module.exports = router;

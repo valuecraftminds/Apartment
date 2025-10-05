@@ -8,9 +8,12 @@ import Verify from './pages/Verify'
 import AdminDashboard from './pages/AdminDashboard'
 import NavBar from './components/Navbar'
 import CompanyRegistration from './pages/CompanyRegistration'
-import { Sidebar } from 'lucide-react'
+import { House, Sidebar } from 'lucide-react'
 import ApartmentView from './pages/ApartmentView'
 import UserView from './pages/UserView'
+import Layout from './pages/Layout'
+import Floors from './FloorsHouse/Floors'
+import Houses from './FloorsHouse/Houses'
 
 export default function App() {
   return (
@@ -26,6 +29,8 @@ export default function App() {
         <Route path='/admindashboard' element={<AdminDashboard />}/>
         <Route path='/apartmentview' element={<ApartmentView/>}/>
         <Route path='/userview' element={<UserView/>}/>
+        <Route path='/floors/:id' element={<Floors/>}/>
+        <Route path='/houses/:apartment_id/:floor_id' element={<Houses/>}/>
       </Routes>
     </BrowserRouter>
   )
