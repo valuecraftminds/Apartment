@@ -102,6 +102,9 @@ export default function Houses() {
                                 </div>
                             )}
                         </div>
+                        <button className='flex gap-2 px-4 py-2 rounded-lg font-semibold shadow-md transition-all duration-300 text-white bg-purple-600 hover:bg-purple-700 hover:scale-105'>
+                                    <span>House Types</span>
+                        </button>
                         <button className='flex items-center gap-2 px-4 py-2 rounded-lg font-semibold shadow-md transition-all duration-300 text-white bg-purple-600 hover:bg-purple-700 hover:scale-105'>
                                     <Plus size={20}/>
                                     <span>Add New</span>

@@ -12,11 +12,17 @@ export default function EditFloors({ floor, onClose, onUpdated }) {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
-
+  const token = localStorage.getItem("token"); 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const result = await api.put(`/floors/${floor.id}`, formData);
+      const result = await api.put(`/floors/${floor.id}`, formData ,{
+          headers: {
+          Authorization: `Bearer ${token}`,
+          }
+      });
+       
+  
       if (result.data.success) {
         onUpdated();
       } else {

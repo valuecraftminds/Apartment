@@ -108,9 +108,6 @@ const confirmDeactivate = (floor) => {
           toast.success('Floor created successfully!');
       };
 
-      // inside Floors component
-
-
     const handleEdit = (floor) => {
     setSelectedFloor(floor);
     setShowEditModal(true);

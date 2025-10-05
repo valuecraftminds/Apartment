@@ -54,13 +54,13 @@ class Floor {
 
     //UPdate Floors
     static async update(id, floorData) {
-        const { house_count } = floorData;
-        await pool.execute(
-            'UPDATE floors SET house_count = ? WHERE id = ?',
-            [house_count,id]
-        );
-        return { id, ...floorData };
-    }
+    const { status, floor_id } = floorData;
+    await pool.execute(
+        'UPDATE floors SET status = ?, floor_id = ? WHERE id = ?',
+        [status, floor_id, id]
+    );
+    return { id, ...floorData };
+}
 
     // Deactivate floor (set status to 'inactive')
     static async deactivate(id) {

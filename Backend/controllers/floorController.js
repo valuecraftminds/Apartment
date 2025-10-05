@@ -156,7 +156,7 @@ if (!floors || !Array.isArray(floors) || floors.length === 0) {
     async updateFloors(req,res){
         try{
             const {id}=req.params;
-            const {house_count}=req.body;
+            const {floor_id,status}=req.body;
 
             //check tenant exist
             const existingFloors= await Floor.findById(id);
@@ -168,7 +168,8 @@ if (!floors || !Array.isArray(floors) || floors.length === 0) {
             }
 
             const updateFloors= await Floor.update(id,{
-                house_count: house_count ? parseInt(house_count): existingFloors.house_count,
+                status: status || existingFloors.status,
+                floor_id: floor_id || existingFloors.floor_id,
             });
 
             res.json({
