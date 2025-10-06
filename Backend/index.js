@@ -67,3 +67,6 @@ app.use('/api/floors', authenticateToken, floorRoutes);
 const houseRoutes = require('./routes/houses');
 app.use('/api/houses',authenticateToken,houseRoutes);
 
+//Routes the house types
+const houseTypeRoutes = require ('./routes/houseType');
+app.use('/api/housetype',authenticateToken,houseTypeRoutes);
