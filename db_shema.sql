@@ -103,21 +103,19 @@ CREATE TABLE houses(
     apartment_id VARCHAR(255), 
     floor_id varchar(255),
     house_id VARCHAR(255) NOT NULL,
-    type ENUM('Bachelor','family'),
-    sqrfeet float,
-    rooms INT,
-    bathrooms INT,
+    housetype_id VARCHAR(255) NOT NULL,
 	status ENUM('vacant', 'occupied', 'maintenance') DEFAULT 'vacant',
-    occupied_way ENUM('For rent','own'),
+    family_id VARCHAR(255),
     house_owner_id VARCHAR(255),
 	is_active TINYINT(1) DEFAULT 1,
-    registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
     FOREIGN KEY (company_id) REFERENCES tenants(id) ON DELETE CASCADE,
     FOREIGN KEY (apartment_id) REFERENCES apartments(id) ON DELETE CASCADE,
     FOREIGN KEY (floor_id) REFERENCES floors(id) ON DELETE CASCADE,
     FOREIGN KEY (house_owner_id) REFERENCES houseowner(id) ON DELETE CASCADE,
+    FOREIGN KEY (housetype_id) REFERENCES housetype(id) ON DELETE CASCADE,
+    FOREIGN KEY (family_id) REFERENCES family(id) ON DELETE CASCADE,
     INDEX idx_company_id (company_id),
     INDEX idx_apartment_id (apartment_id),
     INDEX idx_floor_id (floor_id)
@@ -126,15 +124,42 @@ CREATE TABLE houses(
 drop table houses;
 
 create table housetype(
+	id varchar(255) primary key,
+    company_id VARCHAR(255),
+    apartment_id VARCHAR(255), 
+    name VARCHAR(255) not null,
+    members INT not null,
+    sqrfeet float not null,
+    rooms INT not null,
+    bathrooms INT not null,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (company_id) REFERENCES tenants(id) ON DELETE CASCADE,
+    FOREIGN KEY (apartment_id) REFERENCES apartments(id) ON DELETE CASCADE
+    -- FOREIGN KEY (floor_id) REFERENCES floors(id) ON DELETE CASCADE
 );
+drop table housetype;
 
 CREATE TABLE houseowner(
 	id varchar(255) primary key,
     name varchar(255) not null,
     NIC varchar(255) not null,
     marital_status varchar(255),
+    occupation varchar(255) not null,
     country	varchar(255) not null,
     mobile varchar(100) not null,
-    family_members varchar(255),
-    picture VARCHAR(255)
+    occupied_way ENUM('For rent','own'),
+    proof VARCHAR(255)
+);
+drop table houseowner;
+
+CREATE TABLE family(
+	id varchar(255) primary key,
+    houseowner_id varchar(255),
+    members int not null,
+	dob date not null,
+    details varchar(255),
+    proof varchar(255),
+    
+    FOREIGN KEY (houseowner_id) REFERENCES houseowner(id) ON DELETE CASCADE
 );

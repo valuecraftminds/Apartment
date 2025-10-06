@@ -4,13 +4,15 @@ const House = require('../models/House');
 const houseController = {
     async createHouse(req, res) {
         try {
-            const { house_id,type, rooms,sqrfeet,bathrooms,status,occupied_way } = req.body;
+            const { house_id,status } = req.body;
             const company_id = req.user.company_id;
             const apartment_id=req.apartment.id;
             const floor_id=req.floor.id;
             const house_owner_id = req.house_owner.id;
+            const housetype_id=req.housetype_id;
+            const family_id=req.family_id;
 
-            if (!house_id || !type || sqrfeet === undefined || rooms === undefined || bathrooms === undefined || !status || !occupied_way === undefined) {
+            if (!house_id || !status === undefined) {
                 return res.status(400).json({
                     success: false,
                     message: 'All fields are required'
@@ -19,16 +21,13 @@ const houseController = {
 
             const newHouse = await House.create({
                     house_id,
-                    type,
-                    sqrfeet:parseFloat(sqrfeet),
-                    rooms:parseInt(rooms),
-                    bathrooms:parseInt(bathrooms),
                     status,
-                    occupied_way,
                     company_id,
                     apartment_id,
                     floor_id,
-                    house_owner_id
+                    house_owner_id,
+                    housetype_id,
+                    family_id,
             });
             res.status(201).json({
             success: true,
@@ -51,6 +50,9 @@ const houseController = {
             const company_id = req.user.company_id; // Assuming you store company_id in JWT
             const { apartment_id } = req.query; // take from query params
             const { floor_id } = req.query; // take from query params
+            // const {housetype_id} = req.query;
+            // const {house_owner_id} = req.query;
+            // const {family_id} = req.query;
 
             if(!company_id){
                 return res.status(400).json({
@@ -123,7 +125,7 @@ const houseController = {
     async updateHouse(req,res){
         try{
             const {id}=req.params;
-            const {house_id, type,sqrfeet, rooms, bathrooms, status, occupied_way}=req.body;
+            const {house_id, status}=req.body;
 
             //check house exist
             const existingHouse= await House.findById(id);
@@ -136,12 +138,7 @@ const houseController = {
 
             const updateHouse= await House.update(id,{
                 house_id: house_id || existingHouse.house_id,
-                type: type || existingHouse.type,
-                sqrfeet:sqrfeet ?parseFloat(sqrfeet): existingHouse.sqrfeet,
-                rooms:rooms ? parseInt(rooms):existingHouse.rooms,
-                bathrooms:bathrooms ?parseInt(bathrooms): existingHouse.bathrooms,
                 status: status || existingHouse.status,
-                occupied_way: occupied_way || existingHouse.occupied_way
             });
 
             res.json({
