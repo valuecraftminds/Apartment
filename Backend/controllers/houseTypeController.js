@@ -4,12 +4,11 @@ const HouseType = require('../models/HouseType');
 const houseTypeController = {
     async createHouseType(req, res) {
         try {
-            const { members, rooms,sqrfeet,bathrooms } = req.body;
+            const { name, members, rooms, sqrfeet, bathrooms,apartment_id } = req.body;
             const company_id = req.user.company_id;
-            const apartment_id=req.apartment.id;
-            // const floor_id=req.floor.id;
+            // const apartment_id=req.apartment.id;
 
-            if (members === undefined || sqrfeet === undefined || rooms === undefined || bathrooms === undefined) {
+            if (!name || members === undefined || sqrfeet === undefined || rooms === undefined || bathrooms === undefined) {
                 return res.status(400).json({
                     success: false,
                     message: 'All fields are required'
@@ -17,6 +16,7 @@ const houseTypeController = {
             }
 
             const newHouseType = await HouseType.create({
+                    name,
                     members,
                     sqrfeet:parseFloat(sqrfeet),
                     rooms:parseInt(rooms),
@@ -139,7 +139,7 @@ const houseTypeController = {
                 });
             }
 
-            const updateHouseType= await House.update(id,{
+            const updateHouseType= await HouseType.update(id,{
                 members: members ? parseInt(members):existingHouseType.members,
                 sqrfeet:sqrfeet ?parseFloat(sqrfeet): existingHouseType.sqrfeet,
                 rooms:rooms ? parseInt(rooms):existingHouseType.rooms,
@@ -184,6 +184,42 @@ const houseTypeController = {
             res.status(500).json({
                 success:false,
                 message:'Server error while deleting house type'
+            });
+        }
+    },
+
+    // Deactivate / Activate House type
+    async toggleHouseTypeStatus(req, res) {
+        try {
+            const { id } = req.params;
+
+            const housetype = await HouseType.findById(id);
+            if (!housetype) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'House type not found'
+                });
+            }
+
+            let updateHouseType;
+            if (housetype.is_active) {
+                await HouseType.deactivate(id);
+                updateHouseType = { ...housetype, is_active: 0 };
+            } else {
+                await HouseType.activate(id);
+                updateHouseType = { ...housetype, is_active: 1 };
+            }
+
+            res.json({
+                success: true,
+                message: housetype.is_active ? 'House Type deactivated' : 'House Type activated',
+                data: updateHouseType
+            });
+        } catch (err) {
+            console.error('Toggle house type status error:', err);
+            res.status(500).json({
+                success: false,
+                message: 'Server error while toggling house type status'
             });
         }
     }

@@ -5,10 +5,13 @@ import { ChevronLeft, Edit, House, Image, Loader, Plus, Trash2 } from 'lucide-re
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../api/axios';
 import HouseTypes from './HouseTypes';
+import ViewHouse from './ViewHouse';
 
 export default function Houses() {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const { apartment_id, floor_id } = useParams();
+    console.log('Apartment ID:', apartment_id);
+    console.log('Floor Id: ',floor_id);
     const [apartment, setApartment] = useState(null);
     const [floor, setFloor] = useState(null);
     const [houses, setHouses] = useState([]);
@@ -19,6 +22,8 @@ export default function Houses() {
     const [loadingHouseTypes,setLoadingHouseTypes] = useState(false);
 
     const [activeTab, setActiveTab] = useState("houses"); // NEW: tab state
+
+   const [selectedHouse, setSelectedHouse] = useState(null);
 
     useEffect(() => {
         const fetchApartment = async () => {
@@ -48,6 +53,28 @@ export default function Houses() {
         if (floor_id) fetchFloor();
     }, [floor_id]);
 
+    const loadHouseTypes = async () => {
+        try {
+            setLoadingHouseTypes(true);
+            setError(null);
+            const result = await api.get(`/housetype?apartment_id=${apartment_id}`);
+            if (result.data.success && Array.isArray(result.data.data)) {
+                setHouseType(result.data.data);
+            } else {
+                setHouseType([]);
+            }
+        } catch (err) {
+            console.error('Error loading houses:', err);
+            setError('Failed to load houses. Please try again.');
+        } finally {
+            setLoadingHouseTypes(false);
+        }
+    };
+
+    useEffect(()=>{
+        loadHouseTypes();
+    },[apartment_id]);
+
     const handleBack = () => {
         navigate(`/floors/${apartment.id}`);
     };
@@ -70,33 +97,17 @@ export default function Houses() {
         }
     };
 
-    const loadHouseTypes = async () => {
-        try {
-            setLoadingHouseTypes(true);
-            setError(null);
-            const result = await api.get(`/housetype?apartment_id=${apartment_id}`);
-            if (result.data.success && Array.isArray(result.data.data)) {
-                setHouseType(result.data.data);
-            } else {
-                setHouseType([]);
-            }
-        } catch (err) {
-            console.error('Error loading houses:', err);
-            setError('Failed to load houses. Please try again.');
-        } finally {
-            setLoadingHouseTypes(false);
-        }
-    };
-
     useEffect(() => {
         if (floor_id && apartment_id) {
             loadHouses(floor_id);
         }
     }, [floor_id, apartment_id]);
 
-    useEffect(()=>{
-        loadHouseTypes();
-    },[apartment_id]);
+    const handleHouseView = (house) => {
+        navigate(`/viewhouse/${apartment_id}/${floor_id}/${house.id}`);
+    };
+    //Add new house
+
 
     return (
         <div className='flex h-screen bg-gray-100 dark:bg-gray-900 w-screen transition-colors duration-200'>
@@ -190,12 +201,20 @@ export default function Houses() {
                                             </thead>
                                             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                                 {houses.map((houses) => (
-                                                    <tr key={houses.id}>
+                                                    <tr
+                                                        key={houses.id}
+                                                        onClick={() => houses.is_active && handleHouseView(houses)}
+                                                        className={`transition-colors cursor-pointer ${
+                                                            houses.is_active 
+                                                            ? 'hover:bg-gray-50 dark:hover:bg-gray-700' 
+                                                            : 'opacity-50 cursor-not-allowed'
+                                                        }`}
+                                                        >
                                                         <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                                                             {houses.house_id}
                                                         </td>
                                                         <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                                            {houses.type}
+                                                            {housetype.find(ht => ht.id === houses.housetype_id)?.name || "N/A"}
                                                         </td>
                                                         <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                                                             {houses.status}
@@ -226,85 +245,7 @@ export default function Houses() {
                                 )}
                             </div>
                             ) : (
-                            <div className='bg-white dark:bg-gray-800 rounded-2xl p-6 text-gray-700 dark:text-gray-300'>
-                                <button className='flex items-center gap-2 mb-3 px-4 py-2 rounded-lg font-semibold shadow-md transition-all duration-300 text-white bg-purple-600 hover:bg-purple-700 hover:scale-105'>
-                                <Plus size={20} />
-                                <span>New House Type</span>
-                                </button>
-                                {loadingHouseTypes ? (
-                                    <div className="flex justify-center items-center py-12">
-                                        <Loader size={32} className="animate-spin text-purple-600" />
-                                        <span className="ml-2 text-gray-600 dark:text-gray-300">Loading House types...</span>
-                                    </div>
-                                    ) : error ? (
-                                    <div className="text-center py-12 text-red-600 dark:text-red-400">
-                                        {error}
-                                        <button
-                                            onClick={loadHouses}
-                                            className="ml-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                                        >
-                                            Retry
-                                        </button>
-                                    </div>
-                                    ) : housetype.length === 0 ? (
-                                    <div className="text-center py-12 text-gray-600 dark:text-gray-300">
-                                        <Image size={48} className="mx-auto mb-4 text-gray-400" />
-                                        <p className="text-lg">No house types found</p>
-                                        <p className="text-sm">Get started by adding house types</p>
-                                    </div>
-                                    ) : (
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full table-auto">
-                                            <thead className="bg-gray-50 dark:bg-gray-700">
-                                                <tr>
-                                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Name</th>
-                                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Members</th>
-                                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">SQR Feet</th>
-                                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">No of Rooms</th>
-                                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">No of Bathrooms</th>
-                                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                                {housetype.map((housetype) => (
-                                                    <tr key={housetype.id}>
-                                                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                                            {housetype.name}
-                                                        </td>
-                                                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                                            {housetype.members}
-                                                        </td>
-                                                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                                            {housetype.sqrfeet}
-                                                        </td>
-                                                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                                            {housetype.rooms}
-                                                        </td>
-                                                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                                            {housetype.bathrooms}
-                                                        </td>
-                                                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
-                                                            <div className="flex space-x-2">
-                                                                <button
-                                                                    className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
-                                                                    title="Edit"
-                                                                >
-                                                                    <Edit size={20} />
-                                                                </button>
-                                                                <button
-                                                                    className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                                                                >
-                                                                    <Trash2 size={20} />
-                                                                </button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                )}
-                            </div>
+                            <HouseTypes/>
                         )}
                     </div>
                 </div>

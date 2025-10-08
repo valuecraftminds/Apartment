@@ -15,6 +15,7 @@ import Layout from './pages/Layout'
 import Floors from './FloorsHouse/Floors'
 import Houses from './FloorsHouse/Houses'
 import HouseTypes from './FloorsHouse/HouseTypes'
+import ViewHouse from './FloorsHouse/ViewHouse'
 
 export default function App() {
   return (
@@ -32,7 +33,8 @@ export default function App() {
         <Route path='/userview' element={<UserView/>}/>
         <Route path='/floors/:id' element={<Floors/>}/>
         <Route path='/houses/:apartment_id/:floor_id' element={<Houses/>}/>
-        <Route path='/housetype/:id' element={<HouseTypes/>}/>
+        <Route path='/housetype/:apartment_id' element={<HouseTypes/>}/>
+        <Route path='/viewhouse/:apartment_id/:floor_id/:id' element={<ViewHouse/>}/>
       </Routes>
     </BrowserRouter>
   )

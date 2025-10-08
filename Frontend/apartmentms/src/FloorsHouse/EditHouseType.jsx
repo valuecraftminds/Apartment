@@ -1,19 +1,35 @@
-import React, { useState, useEffect } from "react";
-import api from "../api/axios";
+import React from 'react'
+import { useEffect } from 'react';
+import { useState } from 'react';
+import api from '../api/axios';
 
-export default function CreateHouseType({ onClose, apartment_id,onCreated }) {
-  const [formData, setFormData] = useState({
-    name: "",
-    members: "",
-    sqrfeet: "",
-    rooms: "",
-    bathrooms: "",
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+export default function EditHouseType({housetype,onClose,onUpdated}) {
+    const [formData, setFormData] = useState({
+        name: "",
+        members: "",
+        sqrfeet: "",
+        rooms: "",
+        bathrooms: "",
+    });
 
-  // Handle input change
-  const handleChange = (e) => {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const token = localStorage.getItem("token"); 
+    
+    useEffect(() => {
+    if (housetype) {
+      setFormData({
+        name: housetype.name || "",
+        members: housetype.members || "",
+        sqrfeet: housetype.sqrfeet || "",
+        rooms: housetype.rooms || "",
+        bathrooms: housetype.bathrooms || "",
+      });
+      
+    }
+  }, [housetype]);
+
+   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -21,58 +37,28 @@ export default function CreateHouseType({ onClose, apartment_id,onCreated }) {
     }));
   };
 
-  // Fetch last house type and auto-increment ID
-  const fetchLastTypeId = async () => {
-    try {
-      const result = await api.get(`/housetype?apartment_id=${apartment_id}`);
-      const ty = result.data.data || [];
-      const lastType = ty.length > 0 ? ty[ty.length - 1] : null;
-
-      const lastTypeId = lastType ? parseInt(lastType.name.replace("Type", "")) : 0;
-      const newTypeId = `Type ${String(lastTypeId + 1).padStart(2, "0")}`;
-
-      setFormData((prev) => ({
-        ...prev,
-        name: newTypeId,
-      }));
-    } catch (error) {
-      console.error("Error fetching last type:", error);
-      setError("Failed to generate Type ID");
-    }
-  };
-
-  useEffect(() => {
-    fetchLastTypeId();
-  }, []);
-
-  // Handle form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
     try {
-      const result = await api.post("/housetype", {
-        ...formData,
-        apartment_id:apartment_id,
-      },
-      {
+      const res = await api.put(`/housetype/${housetype.id}`, 
+        formData ,{
           headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-    );
+          Authorization: `Bearer ${token}`,
+          }
+    });
 
-      if (result.data.success) {
-        onCreated?.(result.data.data); // callback for parent
-        onClose();
+      if (res.data.success) {
+        onUpdated && onUpdated(res.data.data); // notify parent
+        onClose && onClose(); // close modal
       } else {
-        setError("Failed to save house type");
+        setError(res.data.message || "Failed to update house type");
       }
     } catch (err) {
-      console.error("Error saving house type:", err);
-      setError("Error saving house type");
+      console.error("Update error:", err);
+      setError("Error updating house type");
     } finally {
       setLoading(false);
     }
@@ -148,5 +134,5 @@ export default function CreateHouseType({ onClose, apartment_id,onCreated }) {
         </button>
       </div>
     </form>
-  );
+  )
 }

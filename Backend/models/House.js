@@ -33,7 +33,7 @@ class House{
 
     static async findByApartmentAndFloor(apartment_id, floor_id) {
     const [rows] = await pool.execute(
-        'SELECT * FROM houses WHERE apartment_id=? AND floor_id=? ORDER BY updated_at DESC',
+        'SELECT * FROM houses WHERE apartment_id=? AND floor_id=? ORDER BY updated_at ASC',
         [apartment_id, floor_id]
     );
     return rows;
@@ -49,7 +49,7 @@ class House{
     static async update(id, houseData) {
         const { house_id,house_owner_id,housetype_id,family_id,status } = houseData;
         await pool.execute(
-            'UPDATE houses SET house_id=?,houseowner_id,housetype_id=?,family_id,status=? WHERE id = ?',
+            'UPDATE houses SET house_id=?,houseowner_id=?,housetype_id=?,family_id=?,status=? WHERE id = ?',
             [ house_id,housetype_id,house_owner_id,family_id,status,id]
         );
         return { id, ...houseData };

@@ -13,5 +13,6 @@ router.get('/:id', houseTypeController.getHouseTypeById);
 router.put('/:id', houseTypeController.updateHouseType);
 router.delete('/:id', houseTypeController.deleteHouseType);
 router.get("/apartment/:apartment_id",houseTypeController.getByApartment);
+router.patch('/:id/toggle',houseTypeController.toggleHouseTypeStatus);
 
 module.exports = router;

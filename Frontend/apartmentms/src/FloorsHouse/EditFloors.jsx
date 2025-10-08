@@ -13,6 +13,7 @@ export default function EditFloors({ floor, onClose, onUpdated }) {
     setFormData({ ...formData, [name]: value });
   };
   const token = localStorage.getItem("token"); 
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {

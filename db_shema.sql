@@ -132,6 +132,7 @@ create table housetype(
     sqrfeet float not null,
     rooms INT not null,
     bathrooms INT not null,
+    is_active TINYINT(1) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     FOREIGN KEY (company_id) REFERENCES tenants(id) ON DELETE CASCADE,
