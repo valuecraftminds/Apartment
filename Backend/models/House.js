@@ -33,7 +33,7 @@ class House{
 
     static async findByApartmentAndFloor(apartment_id, floor_id) {
     const [rows] = await pool.execute(
-        'SELECT * FROM houses WHERE apartment_id=? AND floor_id=? ORDER BY updated_at ASC',
+        'SELECT * FROM houses WHERE apartment_id=? AND floor_id=? ORDER BY created_at ASC',
         [apartment_id, floor_id]
     );
     return rows;

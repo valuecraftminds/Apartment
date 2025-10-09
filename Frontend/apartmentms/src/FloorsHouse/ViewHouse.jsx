@@ -16,6 +16,7 @@ export default function ViewHouse() {
     const [floor, setFloor] = useState(null);
     const [house, setHouse] = useState(null);
     const [housetype, setHouseType] = useState(null);
+    const [houseowner,setHouseOwner] = useState(null);
 
     const navigate = useNavigate();
 
@@ -51,6 +52,15 @@ export default function ViewHouse() {
                 .catch(err => console.error("Error fetching house type:", err));
         }
     }, [house]);
+
+    //Fetch House owner
+    useEffect(() => {
+        if(house?.house_owner_id){
+            api.get(`/houseowner/${house.house_owner_id}`)
+                .then(res => res.data.success && setHouseOwner(res.data.data))
+                .catch(err => console.error("Error fetching house owner: ", err));
+        }
+    },[house]);
 
     const handleBack = () => {
         navigate(`/houses/${apartment_id}/${floor_id}`);
@@ -133,6 +143,26 @@ export default function ViewHouse() {
                                 <p><strong>Bathrooms:</strong> {housetype.bathrooms}</p>
                             </div>
                         )}
+                        {activeTab === "owner" && houseowner && (
+                            <div className="mt-1 text-gray-700 dark:text-gray-300 font-semibold space-y-2">
+                                <p><strong>Name:</strong> {houseowner.name}</p>
+                                <p><strong>NIC:</strong> {houseowner.nic}</p>
+                                <p><strong>Occupation:</strong> {houseowner.occupation}</p>
+                                <p><strong>Country:</strong> {houseowner.country}</p>
+                                <p><strong>Mobile:</strong> {houseowner.mobile}</p>
+                                <p><strong>occupied way:</strong> {houseowner.occupied_way}</p>
+                                {/* <p><strong>Proof:</strong> {houseowner.proof}</p> */}
+                            </div>
+                        )}
+                        {/* {activeTab === "family" && housetype && (
+                            <div className="mt-1 text-gray-700 dark:text-gray-300 font-semibold space-y-2">
+                                <p><strong>Type:</strong> {housetype.name}</p>
+                                <p><strong>Members:</strong> {housetype.members}</p>
+                                <p><strong>Square Feet:</strong> {housetype.sqrfeet}</p>
+                                <p><strong>Rooms:</strong> {housetype.rooms}</p>
+                                <p><strong>Bathrooms:</strong> {housetype.bathrooms}</p>
+                            </div>
+                        )} */}
                     </div>
                 </div>
             </div>

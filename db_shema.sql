@@ -108,6 +108,7 @@ CREATE TABLE houses(
     family_id VARCHAR(255),
     house_owner_id VARCHAR(255),
 	is_active TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
     FOREIGN KEY (company_id) REFERENCES tenants(id) ON DELETE CASCADE,
@@ -143,14 +144,18 @@ drop table housetype;
 
 CREATE TABLE houseowner(
 	id varchar(255) primary key,
+    company_id varchar(255),
+    apartment_id varchar(255),
     name varchar(255) not null,
     NIC varchar(255) not null,
-    marital_status varchar(255),
     occupation varchar(255) not null,
     country	varchar(255) not null,
     mobile varchar(100) not null,
     occupied_way ENUM('For rent','own'),
-    proof VARCHAR(255)
+    proof VARCHAR(255),
+    
+    FOREIGN KEY (company_id) REFERENCES tenants(id) ON DELETE CASCADE,
+    FOREIGN KEY (apartment_id) REFERENCES apartments(id) ON DELETE CASCADE
 );
 drop table houseowner;
 
@@ -164,3 +169,6 @@ CREATE TABLE family(
     
     FOREIGN KEY (houseowner_id) REFERENCES houseowner(id) ON DELETE CASCADE
 );
+drop table family;
+
+SELECT house_owner_id FROM houses WHERE id='9317256h4q';
