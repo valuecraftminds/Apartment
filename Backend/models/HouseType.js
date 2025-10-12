@@ -17,7 +17,7 @@ class HouseType{
 }
     static async findById(id) {
         const [rows] = await pool.execute(
-            'SELECT * FROM houseType WHERE id = ?',
+            'SELECT * FROM housetype WHERE id = ?',
             [id]
         );
         return rows[0];
@@ -25,7 +25,7 @@ class HouseType{
 
     static async findByCompanyId(company_id){
         const [rows] = await pool.execute(
-            'SELECT * FROM houseType WHERE company_id=? ORDER BY created_at ASC',
+            'SELECT * FROM housetype WHERE company_id=? ORDER BY created_at ASC',
             [company_id]
         );
         return rows;
@@ -33,7 +33,7 @@ class HouseType{
 
     static async findByApartment(apartment_id) {
     const [rows] = await pool.execute(
-        'SELECT * FROM houseType WHERE apartment_id=? ORDER BY created_at ASC',
+        'SELECT * FROM housetype WHERE apartment_id=? ORDER BY created_at ASC',
         [apartment_id]
     );
     return rows;
@@ -41,7 +41,7 @@ class HouseType{
 
     static async findAll() {
         const [rows] = await pool.execute(
-            'SELECT * FROM houseType ORDER BY created_at DESC'
+            'SELECT * FROM housetype ORDER BY created_at DESC'
         );
         return rows; 
     }
@@ -75,7 +75,7 @@ class HouseType{
 
     static async delete(id) {
         await pool.execute(
-            'DELETE FROM houseType WHERE id = ?',
+            'DELETE FROM housetype WHERE id = ?',
             [id]
         );
         return true;

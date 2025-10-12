@@ -42,6 +42,59 @@ const houseController = {
         });
     }
 },
+
+  //create floors via array
+    async createHousesBatch(req, res) {
+  const conn = await pool.getConnection();
+  try {
+    const company_id = req.user.company_id;
+    const { floor_id, apartment_id,houses } = req.body;
+
+    if (!Array.isArray(houses) || houses.length === 0) {
+      return res.status(400).json({ success: false, message: "No houses provided" });
+    }
+    if (!apartment_id) {
+        return res.status(400).json({ success: false, message: "apartment_id is required" });
+    }
+    if (!floor_id) {
+        return res.status(400).json({ success: false, message: "floor_id is required" });
+    }
+    if (!houses || !Array.isArray(houses) || houses.length === 0) {
+        return res.status(400).json({ success: false, message: "houses array is required" });
+    }
+
+    await conn.beginTransaction();
+    const created = [];
+
+    for (const house of houses) {
+      const newHouse = await House.create({
+        house_id: house.house_id,
+        // house_count: parseInt(floor.house_count) || 1,
+        company_id,
+        apartment_id
+      });
+      created.push(newHouse);
+    }
+
+    await conn.commit();
+
+    res.status(201).json({
+      success: true,
+      message: `${created.length} Houses added successfully`,
+      data: created
+    });
+  } catch (err) {
+    if (conn) await conn.rollback();
+    console.error("Batch create houses error", err);
+    res.status(500).json({ 
+        success: false, 
+        message: "Server error while creating houses" 
+    });
+  } finally {
+    if (conn) conn.release();
+  }
+},
+
     // Get all house
     async getAllHouses(req, res) {
         try {

@@ -8,6 +8,7 @@ router.use(authenticateToken);
 
 // Routes
 router.post('/', houseController.createHouse);
+router.post('/batch', houseController.createHousesBatch);
 router.get('/', houseController.getAllHouses);
 router.get('/:id', houseController.getHouseById);
 router.put('/:id', houseController.updateHouse);
