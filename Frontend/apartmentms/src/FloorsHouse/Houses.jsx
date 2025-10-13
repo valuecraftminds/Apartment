@@ -6,6 +6,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api from '../api/axios';
 import HouseTypes from './HouseTypes';
 import ViewHouse from './ViewHouse';
+import CreateHouse from './CreateHouse';
+import { toast, ToastContainer } from 'react-toastify';
 
 export default function Houses() {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -20,6 +22,7 @@ export default function Houses() {
     const navigate = useNavigate();
     const [loadingHouses, setLoadingHouses] = useState(false);
     const [loadingHouseTypes,setLoadingHouseTypes] = useState(false);
+    const [showCreateModal, setShowCreateModal] = useState(false);
 
     const [activeTab, setActiveTab] = useState("houses"); // NEW: tab state
 
@@ -106,8 +109,21 @@ export default function Houses() {
     const handleHouseView = (house) => {
         navigate(`/viewhouse/${apartment_id}/${floor_id}/${house.id}`);
     };
-    //Add new house
 
+    //Add new house
+    const handleAddNew = () =>{
+        setShowCreateModal(true);
+    }
+
+    const handleCloseModal = () => {
+    setShowCreateModal(false);
+    };
+
+    const handleHouseCreated = () => {
+            loadHouses();
+            setShowCreateModal(false);
+            toast.success('House created successfully!');
+    };
 
     return (
         <div className='flex h-screen bg-gray-100 dark:bg-gray-900 w-screen transition-colors duration-200'>
@@ -162,7 +178,7 @@ export default function Houses() {
                         {/* Content Switch */}
                         {activeTab === "houses" ? (
                             <div className='bg-white dark:bg-gray-800 rounded-2xl p-6'>
-                                <button className='flex items-center gap-2 mb-3 px-4 py-2 rounded-lg font-semibold shadow-md transition-all duration-300 text-white bg-purple-600 hover:bg-purple-700 hover:scale-105'>
+                                <button onClick={handleAddNew} className='flex items-center gap-2 mb-3 px-4 py-2 rounded-lg font-semibold shadow-md transition-all duration-300 text-white bg-purple-600 hover:bg-purple-700 hover:scale-105'>
                                     <Plus size={20} />
                                     <span>New House</span>
                                 </button>
@@ -195,7 +211,7 @@ export default function Houses() {
                                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">House No</th>
                                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Type</th>
                                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
-                                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Updated_at</th>
+                                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Created_at</th>
                                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
                                                 </tr>
                                             </thead>
@@ -220,7 +236,7 @@ export default function Houses() {
                                                             {houses.status}
                                                         </td>
                                                         <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                                            {houses.updated_at}
+                                                            {houses.created_at}
                                                         </td>
                                                         <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                                                             <div className="flex space-x-2">
@@ -250,6 +266,28 @@ export default function Houses() {
                     </div>
                 </div>
             </div>
+            {showCreateModal && (
+                <div className="fixed inset-0 bg-white/0 backdrop-blur-lg flex items-center justify-center z-50">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md relative">
+                        <button
+                            onClick={handleCloseModal}
+                            className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 dark:hover:text-white"
+                        >
+                        ✖
+                        </button>
+                        <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
+                            Create Houses
+                        </h2>
+                        <CreateHouse
+                            onClose={handleCloseModal} 
+                            onCreated={handleHouseCreated}
+                            apartment_id={apartment_id}
+                            floor_id={floor_id}
+                        />
+                    </div>
+                </div>
+            )}
+            <ToastContainer position="top-center" autoClose={3000} />
         </div>
     )
 }

@@ -90,7 +90,7 @@ export default function CreateFloors({ onClose, apartment_id }) {
       onSubmit={handleSubmit}
       className="flex flex-col gap-4 max-h-[90vh] overflow-hidden"
     >
-      <label>
+      <label className=" text-black dark:text-white">
         How many floors do you want to add?
         <input
           type="number"

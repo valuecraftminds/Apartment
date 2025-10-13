@@ -1,5 +1,6 @@
 const e = require('express');
 const House = require('../models/House');
+const pool = require('../db')
 
 const houseController = {
     async createHouse(req, res) {
@@ -70,6 +71,8 @@ const houseController = {
       const newHouse = await House.create({
         house_id: house.house_id,
         // house_count: parseInt(floor.house_count) || 1,
+        housetype_id:house.housetype_id,
+        floor_id,
         company_id,
         apartment_id
       });

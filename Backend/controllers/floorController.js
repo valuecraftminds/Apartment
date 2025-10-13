@@ -46,11 +46,11 @@ const floorController = {
       return res.status(400).json({ success: false, message: "No floors provided" });
     }
     if (!apartment_id) {
-  return res.status(400).json({ success: false, message: "apartment_id is required" });
-}
-if (!floors || !Array.isArray(floors) || floors.length === 0) {
-  return res.status(400).json({ success: false, message: "floors array is required" });
-}
+        return res.status(400).json({ success: false, message: "apartment_id is required" });
+    }
+    if (!floors || !Array.isArray(floors) || floors.length === 0) {
+        return res.status(400).json({ success: false, message: "floors array is required" });
+    }
 
     await conn.beginTransaction();
     const created = [];

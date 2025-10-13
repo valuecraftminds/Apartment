@@ -3,14 +3,14 @@ const { v4: uuidv4 } = require('uuid');
 
 class House{
     static async create(houseData) {
-    const { company_id, apartment_id, floor_id, house_owner_id, house_id, housetype_id, status,family_id } = houseData;
+    const { company_id, apartment_id, floor_id,  house_id, housetype_id } = houseData;
     const id = uuidv4().replace(/-/g, '').substring(0, 10);
 
     const [result] = await pool.execute(
         `INSERT INTO houses 
-        (id, company_id, apartment_id, floor_id, house_id, housetype_id, status, house_owner_id,family_id) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [id, company_id, apartment_id, floor_id, house_id, housetype_id, status, house_owner_id,family_id]
+        (id, company_id, apartment_id, floor_id, house_id, housetype_id) 
+        VALUES (?, ?, ?, ?, ?, ?)`,
+        [id, company_id, apartment_id, floor_id, house_id, housetype_id]
     );
 
     return { id, ...houseData };
