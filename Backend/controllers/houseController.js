@@ -177,36 +177,38 @@ const houseController = {
         }
     },
 
-     //update houses
-    async updateHouse(req,res){
-        try{
-            const {id}=req.params;
-            const {house_id, status}=req.body;
+     
+    async updateHouse(req, res) {
+        try {
+            const { id } = req.params;
+            const { house_id, status, housetype_id, house_owner_id, family_id } = req.body;
 
-            //check house exist
-            const existingHouse= await House.findById(id);
-            if(!existingHouse){
+            const existingHouse = await House.findById(id);
+            if (!existingHouse) {
                 return res.status(404).json({
-                    success:false,
-                    message:'House not found'
+                    success: false,
+                    message: 'House not found'
                 });
             }
 
-            const updateHouse= await House.update(id,{
+            const updatedHouse = await House.update(id, {
                 house_id: house_id || existingHouse.house_id,
                 status: status || existingHouse.status,
+                housetype_id: housetype_id || existingHouse.housetype_id,
+                houseowner_id: house_owner_id || existingHouse.houseowner_id, // Fixed field name
+                family_id: family_id || existingHouse.family_id
             });
 
             res.json({
-                success:true,
-                message:'House updated successfully',
-                data: updateHouse
+                success: true,
+                message: 'House updated successfully',
+                data: updatedHouse
             });
-        }catch(err){
-            console.error('Update house error:',err);
+        } catch (err) {
+            console.error('Update house error:', err);
             res.status(500).json({
-                success:false,
-                message:'Server error while updating house'
+                success: false,
+                message: 'Server error while updating house'
             });
         }
     },

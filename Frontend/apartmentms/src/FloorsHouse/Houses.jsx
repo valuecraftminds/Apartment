@@ -8,6 +8,7 @@ import HouseTypes from './HouseTypes';
 import ViewHouse from './ViewHouse';
 import CreateHouse from './CreateHouse';
 import { toast, ToastContainer } from 'react-toastify';
+import EditHouse from './EditHouse';
 
 export default function Houses() {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -23,6 +24,10 @@ export default function Houses() {
     const [loadingHouses, setLoadingHouses] = useState(false);
     const [loadingHouseTypes,setLoadingHouseTypes] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [showDeactivateModal, setShowDeactivateModal] = useState(false);
+    const [deactivatingFloor, setDeactivatingFloor] = useState(null);
+    
 
     const [activeTab, setActiveTab] = useState("houses"); // NEW: tab state
 
@@ -120,10 +125,27 @@ export default function Houses() {
     };
 
     const handleHouseCreated = () => {
-            loadHouses();
+            loadHouses(floor_id);
             setShowCreateModal(false);
             toast.success('House created successfully!');
     };
+
+    //Update Houses
+        const handleEdit = (house) => {
+        setSelectedHouse(house);
+        setShowEditModal(true);
+        };
+    
+        const handleCloseEditModal = () => {
+        setShowEditModal(false);
+        setSelectedHouse(null);
+        };
+    
+        const handleHouseUpdated = () => {
+        loadHouses(floor_id);
+        setShowEditModal(false);
+        toast.success('Floor updated successfully!');
+        };
 
     return (
         <div className='flex h-screen bg-gray-100 dark:bg-gray-900 w-screen transition-colors duration-200'>
@@ -241,9 +263,13 @@ export default function Houses() {
                                                         <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                                                             <div className="flex space-x-2">
                                                                 <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleEdit(houses);
+                                                                    }}
                                                                     className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
                                                                     title="Edit"
-                                                                >
+                                                                    >
                                                                     <Edit size={20} />
                                                                 </button>
                                                                 <button
@@ -284,6 +310,28 @@ export default function Houses() {
                             apartment_id={apartment_id}
                             floor_id={floor_id}
                         />
+                    </div>
+                </div>
+            )}
+            {showEditModal && selectedHouse && (
+                <div className="fixed inset-0 bg-white/0 backdrop-blur-lg flex items-center justify-center z-50">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md relative">
+                    <button
+                        onClick={handleCloseEditModal}
+                        className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 dark:hover:text-white"
+                    >
+                        ✖
+                    </button>
+                    <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
+                        Edit House
+                    </h2>
+                    <EditHouse
+                        onClose={handleCloseEditModal}
+                        onUpdated={handleHouseUpdated}
+                        house={selectedHouse}
+                        apartment_id={apartment_id}
+                        floor_id={floor_id} 
+                    />
                     </div>
                 </div>
             )}

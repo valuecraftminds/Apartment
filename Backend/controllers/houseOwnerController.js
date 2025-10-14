@@ -34,9 +34,9 @@ const upload = multer({
 const houseOwnerController ={
     async createHouseOwner(req, res) {
         try {
-            const { name, nic, marital_status, occupation, country, mobile, occupied_way } = req.body;
+            const { name, nic, occupation, country, mobile, occupied_way,apartment_id } = req.body;
             const company_id = req.user.company_id;
-            const apartment_id = req.apartment.id;
+            // const apartment_id = req.apartment.id;
 
 
             let picturePath = null;
@@ -44,7 +44,7 @@ const houseOwnerController ={
                 picturePath = '/evidance/houseOwner/' + req.file.filename;
             }
 
-            if (!name || !nic || !marital_status || occupation || country || mobile || occupied_way ) {
+            if (!name || !nic || !occupation || !country || !mobile || !occupied_way ) {
                 return res.status(400).json({
                     success: false,
                     message: 'All fields are required'
@@ -56,7 +56,6 @@ const houseOwnerController ={
                     apartment_id,
                     name,
                     nic,
-                    marital_status,
                     occupation,
                     country,
                     mobile,
@@ -150,7 +149,7 @@ const houseOwnerController ={
     async updateHouseOwner(req,res){
         try{
             const {id}=req.params;
-            const {name, nic, marital_status, occupation, country, mobile, occupied_way}=req.body;
+            const {name, nic, occupation, country, mobile, occupied_way}=req.body;
 
             let picturePath = null;
                 if (req.file) {
@@ -169,7 +168,6 @@ const houseOwnerController ={
             const updateHouseOwner= await HouseOwner.update(id,{
                 name: name || existingHouseOwner.name,
                 nic: nic || existingHouseOwner.nic,
-                marital_status: marital_status || existingHouseOwner.marital_status,
                 occupation: occupation || existingHouseOwner.occupation,
                 country: country || existingHouseOwner.country,
                 mobile: mobile || existingHouseOwner.mobile,

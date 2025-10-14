@@ -47,10 +47,10 @@ class House{
     }
 
     static async update(id, houseData) {
-        const { house_id,house_owner_id,housetype_id,family_id,status } = houseData;
+        const { house_id,houseowner_id,housetype_id,family_id,status } = houseData;
         await pool.execute(
             'UPDATE houses SET house_id=?,houseowner_id=?,housetype_id=?,family_id=?,status=? WHERE id = ?',
-            [ house_id,housetype_id,house_owner_id,family_id,status,id]
+            [ house_id,houseowner_id,housetype_id,family_id,status,id]
         );
         return { id, ...houseData };
     }

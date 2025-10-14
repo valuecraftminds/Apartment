@@ -30,6 +30,7 @@ export default function CreateHouse({ onClose, onCreated, apartment_id, floor_id
               return match ? parseInt(match[0]) : 0;
             })
           );
+          console.log("Detected last house number:", maxNum);
           setLastHouseNumber(maxNum);
         }
       } catch (err) {
@@ -42,7 +43,7 @@ export default function CreateHouse({ onClose, onCreated, apartment_id, floor_id
     fetchExistingHouses();
   }, [apartment_id, floor_id]);
 
-  // 🔹 Fetch house types for dropdown
+  // Fetch house types for dropdown
   useEffect(() => {
     const fetchHouseTypes = async () => {
       try {
@@ -58,7 +59,7 @@ export default function CreateHouse({ onClose, onCreated, apartment_id, floor_id
     fetchHouseTypes();
   }, []);
 
-  // 🔹 Generate houses
+  // Generate houses
   const handleGenerate = () => {
     if (numHouses < 1) return;
     const generated = Array.from({ length: numHouses }, (_, i) => ({
@@ -68,7 +69,7 @@ export default function CreateHouse({ onClose, onCreated, apartment_id, floor_id
     setHouses(generated);
   };
 
-  // 🔹 Handle field change
+  // Handle field change
   const handleChange = (index, field, value) => {
     const updated = [...houses];
     updated[index][field] = value;
@@ -127,36 +128,38 @@ export default function CreateHouse({ onClose, onCreated, apartment_id, floor_id
 
       {houses.length > 0 && (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {houses.map((house, i) => (
-            <div key={i} className="border border-purple-600 rounded p-3">
-              <p className="font-semibold mb-2">House {i + 1}</p>
+          <div className="border border-purple-600 rounded p-3 max-h-80 overflow-y-auto">
+            {houses.map((house, i) => (
+              <div key={i} className="border border-purple-600 rounded p-3 mb-3">
+                <div className="flex gap-3 mb-2">
+                  <input
+                    type="text"
+                    value={house.house_id}
+                    disabled
+                    className="border rounded p-2 text-black dark:text-white border-purple-600 w-1/3"
+                  />
 
-              <div className="flex gap-3 mb-2">
-                <input
-                  type="text"
-                  value={house.house_id}
-                  disabled
-                  className="border rounded p-2 text-black dark:text-white border-purple-600"
-                />
-
-                <select
-                  value={house.housetype_id}
-                  onChange={(e) => handleChange(i, "housetype_id", e.target.value)}
-                  className="border rounded p-2 text-black dark:text-white border-purple-600 w-1/3"
-                  required
-                >
-                  <option value="">Select Type</option>
-                  {houseTypes.map((type) => (
-                    <option key={type.id} value={type.id}>
-                      {type.name}
-                    </option>
-                  ))}
-                </select>
+                  <select
+                    value={house.housetype_id}
+                    onChange={(e) =>
+                      handleChange(i, "housetype_id", e.target.value)
+                    }
+                    className="border rounded p-2 text-black dark:text-white border-purple-600 w-1/2"
+                    required
+                  >
+                    <option value="">Select Type</option>
+                    {houseTypes.map((type) => (
+                      <option key={type.id} value={type.id}>
+                        {type.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
 
-          <div className="flex justify-end gap-2 mt-3">
+          <div className="flex justify-end gap-2 mt-3 sticky bottom-0 bg-black/20 p-2 rounded">
             <button
               type="button"
               onClick={onClose}

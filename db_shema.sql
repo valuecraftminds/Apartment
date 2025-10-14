@@ -155,7 +155,9 @@ CREATE TABLE houseowner(
     proof VARCHAR(255),
     
     FOREIGN KEY (company_id) REFERENCES tenants(id) ON DELETE CASCADE,
-    FOREIGN KEY (apartment_id) REFERENCES apartments(id) ON DELETE CASCADE
+    FOREIGN KEY (apartment_id) REFERENCES apartments(id) ON DELETE CASCADE,
+    INDEX idx_company_id (company_id),
+    INDEX idx_apartment_id (apartment_id)
 );
 drop table houseowner;
 
@@ -167,7 +169,8 @@ CREATE TABLE family(
     details varchar(255),
     proof varchar(255),
     
-    FOREIGN KEY (houseowner_id) REFERENCES houseowner(id) ON DELETE CASCADE
+    FOREIGN KEY (houseowner_id) REFERENCES houseowner(id) ON DELETE CASCADE,
+	INDEX idx_house_owner_id (house_owner_id)
 );
 drop table family;
 
