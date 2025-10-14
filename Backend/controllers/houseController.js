@@ -239,6 +239,42 @@ const houseController = {
                 message:'Server error while deleting house'
             });
         }
+    },
+
+    // Deactivate / Activate House
+    async toggleHouseStatus(req, res) {
+        try {
+            const { id } = req.params;
+
+            const house = await House.findById(id);
+            if (!house) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'House not found'
+                });
+            }
+
+            let updatedHouse;
+            if (house.is_active) {
+                await House.deactivate(id);
+                updatedHouse = { ...house, is_active: 0 };
+            } else {
+                await House.activate(id);
+                updatedHouse = { ...house, is_active: 1 };
+            }
+
+            res.json({
+                success: true,
+                message: house.is_active ? 'House deactivated' : 'House activated',
+                data: updatedHouse
+            });
+        } catch (err) {
+            console.error('Toggle house status error:', err);
+            res.status(500).json({
+                success: false,
+                message: 'Server error while toggling house status'
+            });
+        }
     }
 }
 

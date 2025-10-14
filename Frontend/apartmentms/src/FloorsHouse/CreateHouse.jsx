@@ -144,7 +144,7 @@ export default function CreateHouse({ onClose, onCreated, apartment_id, floor_id
                     onChange={(e) =>
                       handleChange(i, "housetype_id", e.target.value)
                     }
-                    className="border rounded p-2 text-black dark:text-white border-purple-600 w-1/2"
+                    className="w-full p-2 border rounded-md dark:bg-gray-700 dark:text-white"
                     required
                   >
                     <option value="">Select Type</option>

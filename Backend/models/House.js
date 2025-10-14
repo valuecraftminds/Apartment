@@ -62,6 +62,24 @@ class House{
         );
         return true;
     }
+
+    // Deactivate house (set status to 'inactive')
+    static async deactivate(id) {
+    await pool.execute(
+        'UPDATE houses SET is_active = 0 WHERE id = ?',
+        [id]
+    );
+    return true;
+    
+}
+    //Activate house
+    static async activate(id) {
+        await pool.execute(
+            'UPDATE houses SET is_active = 1 WHERE id = ?',
+            [id]
+        );
+        return true;
+    }
 }
 
 module.exports = House;

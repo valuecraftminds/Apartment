@@ -84,6 +84,7 @@ export default function EditHouse({ house, onClose, onUpdated, apartment_id, flo
                 ownerFormDataToSend.append('country', ownerFormData.country);
                 ownerFormDataToSend.append('mobile', ownerFormData.mobile);
                 ownerFormDataToSend.append('occupied_way', ownerFormData.occupied_way);
+                ownerFormDataToSend.append('apartment_id', apartment_id);
                 if (file) {
                     ownerFormDataToSend.append('proof', file);
                 }

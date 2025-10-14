@@ -55,8 +55,8 @@ export default function ViewHouse() {
 
     //Fetch House owner
     useEffect(() => {
-        if(house?.house_owner_id){
-            api.get(`/houseowner/${house.house_owner_id}`)
+        if(house?.houseowner_id){
+            api.get(`/houseowner/${house.houseowner_id}`)
                 .then(res => res.data.success && setHouseOwner(res.data.data))
                 .catch(err => console.error("Error fetching house owner: ", err));
         }

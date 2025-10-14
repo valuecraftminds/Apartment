@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import Sidebar from '../components/Sidebar'
 import Navbar from '../components/Navbar'
-import { ChevronLeft, Edit, House, Image, Loader, Plus, Trash2 } from 'lucide-react'
+import { ChevronLeft, Edit, House, Image, Loader, Plus, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../api/axios';
 import HouseTypes from './HouseTypes';
@@ -26,7 +26,7 @@ export default function Houses() {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [showDeactivateModal, setShowDeactivateModal] = useState(false);
-    const [deactivatingFloor, setDeactivatingFloor] = useState(null);
+    const [deactivatingHouse, setDeactivatingHouse] = useState(null);
     
 
     const [activeTab, setActiveTab] = useState("houses"); // NEW: tab state
@@ -146,6 +146,28 @@ export default function Houses() {
         setShowEditModal(false);
         toast.success('Floor updated successfully!');
         };
+
+     //Deactivate and activate the floors
+    const confirmDeactivate = (house) => {
+        setDeactivatingHouse(house);
+        setShowDeactivateModal(true);
+    };
+
+    const cancelDeactivate = () => {
+        setShowDeactivateModal(false);
+        setDeactivatingHouse(null);
+    }
+
+    const handleToggle = async (houses) => {
+        try {
+            const result = await api.patch(`/houses/${houses.id}/toggle`);
+            toast.success(result.data.message);
+            loadHouses(floor_id); 
+        } catch (err) {
+            console.error('Error toggling house:', err);
+            toast.error('Failed to toggle house status');
+        }
+    };
 
     return (
         <div className='flex h-screen bg-gray-100 dark:bg-gray-900 w-screen transition-colors duration-200'>
@@ -273,9 +295,15 @@ export default function Houses() {
                                                                     <Edit size={20} />
                                                                 </button>
                                                                 <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation(); // prevent row click
+                                                                        confirmDeactivate(houses);
+                                                                        // handleToggle(floor);
+                                                                    }}
                                                                     className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                                                                >
-                                                                    <Trash2 size={20} />
+                                                                    title={houses.is_active ? 'Deactivate' : 'Activate'}
+                                                                    >
+                                                                    {houses.is_active ? <ToggleRight size={25} /> : <ToggleLeft size={25} />}
                                                                 </button>
                                                             </div>
                                                         </td>
@@ -332,6 +360,46 @@ export default function Houses() {
                         apartment_id={apartment_id}
                         floor_id={floor_id} 
                     />
+                    </div>
+                </div>
+            )}
+            {showDeactivateModal && (
+                <div className="fixed inset-0 bg-white/0 backdrop-blur-lg flex items-center justify-center z-50">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm relative">
+                    <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                        {deactivatingHouse?.is_active
+                        ? "Confirm Deactivation of House"
+                        : "Confirm Activation of House"}
+                    </h2>
+                    <p className="text-gray-600 dark:text-gray-300 mb-6">
+                        {deactivatingHouse?.is_active
+                        ? "Are you sure you want to deactivate this house?"
+                        : "Are you sure you want to activate this house?"}
+                    </p>
+                    <div className="flex justify-end space-x-3">
+                        <button
+                        onClick={cancelDeactivate}
+                        className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200"
+                        >
+                        Cancel
+                        </button>
+                        <button
+                        onClick={() => {
+                            if (deactivatingHouse) {
+                            handleToggle(deactivatingHouse);
+                            setShowDeactivateModal(false);
+                            setDeactivatingHouse(null);
+                            }
+                        }}
+                        className={`px-4 py-2 rounded-md text-white transition-colors duration-200 ${
+                            deactivatingHouse?.is_active
+                            ? "bg-red-600 hover:bg-red-700"
+                            : "bg-green-600 hover:bg-green-700"
+                        }`}
+                        >
+                        {deactivatingHouse?.is_active ? "Deactivate" : "Activate"}
+                        </button>
+                    </div>
                     </div>
                 </div>
             )}

@@ -13,6 +13,6 @@ router.get('/', houseController.getAllHouses);
 router.get('/:id', houseController.getHouseById);
 router.put('/:id', houseController.updateHouse);
 router.delete('/:id', houseController.deleteHouse);
-
+router.patch('/:id/toggle', houseController.toggleHouseStatus);
 
 module.exports = router;
