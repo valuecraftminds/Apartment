@@ -73,4 +73,8 @@ app.use('/api/housetype',authenticateToken,houseTypeRoutes);
 
 //Routes the house owner
 const houseOwnerRoutes = require('./routes/houseOwner');
-app.use('/api/houseowner',authenticateToken,houseOwnerRoutes)
+app.use('/api/houseowner',authenticateToken,houseOwnerRoutes);
+
+//Routes the bills
+const billRoutes = require('./routes/bills');
+app.use('/api/bills',authenticateToken,billRoutes);
