@@ -45,7 +45,7 @@ class Bills{
         const {bill_name } = billData;
         await pool.execute(
             'UPDATE bills SET bill_name=? WHERE id = ?',
-            [ id, bill_name]
+            [ bill_name,id]
         );
         return { id, ...billData };
     }

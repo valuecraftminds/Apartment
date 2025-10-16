@@ -24,7 +24,7 @@ const billController = {
             res.status(201).json({
             success: true,
             message: 'Bill type Added successfully',
-            data: newHouseType
+            data: newBill
             });
         } catch (err) {
             console.error('Create bill Type error', err);

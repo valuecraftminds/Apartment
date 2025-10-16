@@ -18,8 +18,10 @@ export default function HouseTypes() {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedHouseType, setSelectedHouseType] = useState(null);
-    const [showDeactivateModal, setShowDeactivateModal] = useState(false);
-    const [deactivatinghouseType, setDeactivatingHouseType] = useState(null);
+    // const [showDeactivateModal, setShowDeactivateModal] = useState(false);
+    // const [deactivatinghouseType, setDeactivatingHouseType] = useState(null);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deletingHouseType, setDeletingHouseType] = useState(null);
 
     const loadHouseTypes = async () => {
         try {
@@ -75,27 +77,53 @@ export default function HouseTypes() {
         toast.success('House Type updated successfully!');
     };
 
-    //Deactivate / Activate House Type
-    const confirmDeactivate = (housetype) => {
-        setDeactivatingHouseType(housetype);
-        setShowDeactivateModal(true);
-    };
+    // //Deactivate / Activate House Type
+    // const confirmDeactivate = (housetype) => {
+    //     setDeactivatingHouseType(housetype);
+    //     setShowDeactivateModal(true);
+    // };
 
-    const cancelDeactivate = () => {
-        setShowDeactivateModal(false);
-        setDeactivatingHouseType(null);
+    // const cancelDeactivate = () => {
+    //     setShowDeactivateModal(false);
+    //     setDeactivatingHouseType(null);
+    // }
+
+    // const handleToggle = async (housetype) => {
+    //     try {
+    //         const result = await api.patch(`/housetype/${housetype.id}/toggle`);
+    //         toast.success(result.data.message);
+    //         loadHouseTypes(); 
+    //     } catch (err) {
+    //         console.error('Error toggling house type:', err);
+    //         toast.error('Failed to toggle house type status');
+    //     }
+    // };
+
+     //Delete house type
+  const handleDeleteClick = (housetype) => {
+    setDeletingHouseType(housetype);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      if (!deletingHouseType) return;
+      await api.delete(`/houseType/${deletingHouseType.id}`);
+      toast.success('House type deleted successfully');
+      setShowDeleteModal(false);
+      setDeletingHouseType(null);
+      loadHouseTypes();
+    } catch (err) {
+      console.error('Delete house type error:', err);
+      toast.error('Failed to delete house type');
     }
+  };
 
-    const handleToggle = async (housetype) => {
-        try {
-            const result = await api.patch(`/housetype/${housetype.id}/toggle`);
-            toast.success(result.data.message);
-            loadHouseTypes(); 
-        } catch (err) {
-            console.error('Error toggling house type:', err);
-            toast.error('Failed to toggle house type status');
-        }
-    };
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+    setDeletingHouseType(null);
+  };
+
 
   return (
     <div className='bg-white dark:bg-gray-800 rounded-2xl p-6 text-gray-700 dark:text-gray-300'>
@@ -168,7 +196,7 @@ export default function HouseTypes() {
                                             >
                                             <Edit size={20} />
                                         </button>
-                                        <button
+                                        {/* <button
                                             onClick={(e) => {
                                                 e.stopPropagation(); // prevent row click
                                                 confirmDeactivate(housetype);
@@ -177,6 +205,16 @@ export default function HouseTypes() {
                                             title={housetype.is_active ? 'Deactivate' : 'Activate'}
                                             >
                                             {housetype.is_active ? <ToggleRight size={25} /> : <ToggleLeft size={25} />}
+                                        </button> */}
+                                        <button
+                                            onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeleteClick(housetype);
+                                            }}
+                                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                            title="Delete"
+                                        >
+                                            <Trash2 size={20} />
                                         </button>
                                     </div>
                                 </td>
@@ -226,7 +264,7 @@ export default function HouseTypes() {
                 </div>
             </div>
         )}
-        {showDeactivateModal && (
+        {/* {showDeactivateModal && (
             <div className="fixed inset-0 bg-white/0 backdrop-blur-lg flex items-center justify-center z-50">
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm relative">
                 <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
@@ -265,7 +303,34 @@ export default function HouseTypes() {
                 </div>
                 </div>
             </div>
-        )}
+        )} */}
+
+        {showDeleteModal && deletingHouseType && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm relative">
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+              Confirm Deletion
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              Are you sure you want to delete "{deletingHouseType.name}"?
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={handleCancelDelete}
+                className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors duration-200"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
         <ToastContainer position="top-center" autoClose={3000} />
     </div>
   )

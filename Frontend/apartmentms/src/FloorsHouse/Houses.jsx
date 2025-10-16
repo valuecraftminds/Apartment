@@ -9,6 +9,7 @@ import ViewHouse from './ViewHouse';
 import CreateHouse from './CreateHouse';
 import { toast, ToastContainer } from 'react-toastify';
 import EditHouse from './EditHouse';
+import Bills from '../Bills/Bills';
 
 export default function Houses() {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -217,6 +218,14 @@ export default function Houses() {
                                         : "text-gray-600 dark:text-gray-300 hover:text-purple-600"}`}>
                                 House Types
                             </button>
+                            <button
+                                onClick={() => setActiveTab("bills")}
+                                className={`px-4 py-2 font-semibold transition-colors duration-200 
+                                    ${activeTab === "bills"
+                                        ? "text-purple-600 border-b-2 border-purple-600 dark:text-purple-400"
+                                        : "text-gray-600 dark:text-gray-300 hover:text-purple-600"}`}>
+                                Bill Type
+                            </button>
                         </div>
 
                         {/* Content Switch */}
@@ -314,9 +323,13 @@ export default function Houses() {
                                     </div>
                                 )}
                             </div>
+                            ) : activeTab === 'houseTypes' ? (
+                                <HouseTypes/>
                             ) : (
-                            <HouseTypes/>
-                        )}
+                                <Bills/>
+                            )
+                        }
+
                     </div>
                 </div>
             </div>
