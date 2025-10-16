@@ -37,6 +37,8 @@ export default function App() {
         <Route path='/housetype/:apartment_id' element={<HouseTypes/>}/>
         <Route path='/viewhouse/:apartment_id/:floor_id/:id' element={<ViewHouse/>}/>
         <Route path='/bills/:apartment_id' element={<Bills/>}/>
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
       </Routes>
     </BrowserRouter>
   )

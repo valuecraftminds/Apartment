@@ -54,11 +54,11 @@ export default function Login() {
     try {
       const res = await api.post('/auth/login', { email, password });
       setAuth({ accessToken: res.data.accessToken, user: res.data.user });
-      toast.success("LogIn Successfull");
+      toast.success("Log in Successfull");
       navigate('/admindashboard');
     } catch (err) {
       setMsg(err.response?.data?.message || 'Login failed');
-      toast.error(err.response?.data?.message || "❌ Login failed");
+      toast.error(err.response?.data?.message || "Login failed");
     }
   }
 
@@ -80,8 +80,11 @@ export default function Login() {
     }
   }
 
-  const handleCancel=()=>{
+  const handleForgotPassword = () => {
+  navigate('/forgot-password');
+};
 
+  const handleCancel=()=>{
     navigate('/');
   }
 
@@ -145,6 +148,16 @@ export default function Login() {
               </button>
             </div>
       </form>
+      <p className="mt-4 text-sm text-center text-gray-600">
+        Forgot password?{" "}
+        <button
+          type="button"
+          onClick={handleForgotPassword}
+          className="text-purple-700 hover:underline bg-white"
+        >
+          Reset
+        </button>
+      </p>
        {/* Add a link to resend verification if needed? */}
           <p className="mt-4 text-sm text-center text-gray-600">
             Didn't get a verification email? <button 

@@ -267,4 +267,96 @@ router.get('/users', authenticateToken, async (req, res) => {
   }
 });
 
+const nodemailer = require('nodemailer');
+
+// ✅ Send password reset link
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email is required' });
+
+    // find user
+    const [rows] = await pool.execute('SELECT id, email FROM users WHERE email = ?', [email]);
+    if (!rows.length) return res.status(404).json({ message: 'No account found with that email' });
+
+    const user = rows[0];
+
+    // generate reset token (plain to email, hashed to DB)
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    await pool.execute(
+      'UPDATE users SET reset_token_hash = ?, reset_token_expires = ? WHERE id = ?',
+      [resetTokenHash, expiresAt, user.id]
+    );
+
+    // Send email
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&id=${user.id}`;
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    await transporter.sendMail({
+      from: `"AptSync Support" <${process.env.EMAIL_USER}>`,
+      to: user.email,
+      subject: 'Reset your password',
+      html: `
+        <h3>Password Reset Request</h3>
+        <p>Click below to reset your password. This link will expire in 15 minutes.</p>
+        <a href="${resetUrl}" style="background:#6d28d9;color:#fff;padding:10px 20px;border-radius:5px;text-decoration:none;">Reset Password</a>
+      `,
+    });
+
+    res.json({ message: 'Password reset link sent to your email' });
+  } catch (err) {
+    console.error('Forgot password error:', err);
+    res.status(500).json({ message: 'Server error while sending reset link' });
+  }
+});
+
+
+// ✅ Reset password route
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, id, password } = req.body;
+    if (!token || !id || !password)
+      return res.status(400).json({ message: 'Token, ID, and new password are required' });
+
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    const [rows] = await pool.execute(
+      'SELECT reset_token_hash, reset_token_expires FROM users WHERE id = ?',
+      [id]
+    );
+
+    if (!rows.length) return res.status(404).json({ message: 'User not found' });
+    const user = rows[0];
+
+    if (user.reset_token_hash !== tokenHash)
+      return res.status(400).json({ message: 'Invalid or already used token' });
+
+    if (new Date(user.reset_token_expires) < new Date())
+      return res.status(400).json({ message: 'Reset token expired' });
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    await pool.execute(
+      'UPDATE users SET password_hash = ?, reset_token_hash = NULL, reset_token_expires = NULL WHERE id = ?',
+      [hashedPassword, id]
+    );
+
+    res.json({ message: 'Password reset successful' });
+  } catch (err) {
+    console.error('Reset password error:', err);
+    res.status(500).json({ message: 'Server error while resetting password' });
+  }
+});
+
+
 module.exports = router;
