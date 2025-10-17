@@ -268,8 +268,26 @@ router.get('/users', authenticateToken, async (req, res) => {
 });
 
 const nodemailer = require('nodemailer');
+const rateLimit = require('express-rate-limit');
 
-// ✅ Send password reset link
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 3, // Limit each IP to 3 forgot password requests per windowMs
+  message: 'Too many password reset attempts, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const resetPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 reset attempts per windowMs
+  message: 'Too many reset attempts, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Send password reset link
+// In your auth.js routes file
 router.post('/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
@@ -281,7 +299,7 @@ router.post('/forgot-password', async (req, res) => {
 
     const user = rows[0];
 
-    // generate reset token (plain to email, hashed to DB)
+    // generate reset token
     const resetToken = crypto.randomBytes(32).toString('hex');
     const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
@@ -291,38 +309,91 @@ router.post('/forgot-password', async (req, res) => {
       [resetTokenHash, expiresAt, user.id]
     );
 
-    // Send email
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&id=${user.id}`;
+    // Debug: Check if email credentials are loaded
+    console.log('Email User:', process.env.SMTP_USER);
+    console.log('Email Pass:', process.env.SMTP_PASS ? '***' : 'MISSING');
 
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      console.error('Email credentials missing from environment variables');
+      return res.status(500).json({ message: 'Email service not configured' });
+    }
+
+    // Create transporter with better configuration
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT,
+      secure: process.env.SMTP_SECURE,
       auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
       },
+      // Add these options for better reliability
+      pool: true,
+      maxConnections: 1,
+      rateDelta: 20000,
+      rateLimit: 5
     });
 
-    await transporter.sendMail({
-      from: `"AptSync Support" <${process.env.EMAIL_USER}>`,
+    // Verify transporter configuration
+    try {
+      await transporter.verify();
+      console.log('Email transporter verified successfully');
+    } catch (verifyError) {
+      console.error('Email transporter verification failed:', verifyError);
+      return res.status(500).json({ message: 'Email service configuration error' });
+    }
+
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}&id=${user.id}`;
+
+    const mailOptions = {
+      from: {
+        name: 'AptSync Support',
+        address: process.env.SMTP_USER
+      },
       to: user.email,
-      subject: 'Reset your password',
+      subject: 'Reset your AptSync password',
       html: `
-        <h3>Password Reset Request</h3>
-        <p>Click below to reset your password. This link will expire in 15 minutes.</p>
-        <a href="${resetUrl}" style="background:#6d28d9;color:#fff;padding:10px 20px;border-radius:5px;text-decoration:none;">Reset Password</a>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #6d28d9;">Password Reset Request</h2>
+          <p>You requested to reset your password for AptSync.</p>
+          <p>Click the button below to reset your password. This link will expire in 15 minutes.</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${resetUrl}" 
+               style="background: #6d28d9; color: white; padding: 12px 24px; 
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              Reset Password
+            </a>
+          </div>
+          <p style="color: #666; font-size: 14px;">
+            If you didn't request this, please ignore this email.
+          </p>
+          <p style="color: #666; font-size: 14px;">
+            Or copy and paste this link in your browser:<br>
+            <code style="background: #f5f5f5; padding: 5px; border-radius: 3px;">${resetUrl}</code>
+          </p>
+        </div>
       `,
-    });
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`Password reset email sent to: ${user.email}`);
 
     res.json({ message: 'Password reset link sent to your email' });
   } catch (err) {
     console.error('Forgot password error:', err);
+    
+    // More specific error messages
+    if (err.code === 'EAUTH') {
+      return res.status(500).json({ message: 'Email authentication failed. Please check email configuration.' });
+    }
+    
     res.status(500).json({ message: 'Server error while sending reset link' });
   }
 });
 
 
 // ✅ Reset password route
-router.post('/reset-password', async (req, res) => {
+router.post('/reset-password',resetPasswordLimiter, async (req, res) => {
   try {
     const { token, id, password } = req.body;
     if (!token || !id || !password)

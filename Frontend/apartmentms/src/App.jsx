@@ -17,6 +17,8 @@ import Houses from './FloorsHouse/Houses'
 import HouseTypes from './FloorsHouse/HouseTypes'
 import ViewHouse from './FloorsHouse/ViewHouse'
 import Bills from './Bills/Bills'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 
 export default function App() {
   return (
