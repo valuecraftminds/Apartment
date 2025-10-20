@@ -98,48 +98,48 @@ export default function Login() {
         />
         <h2 className="text-3xl sm:text-3xl md:text-3xl font-bold text-white mb-4">AptSync</h2>
       </div>
-    <div className="loginPage">
+      <div className="loginPage">
         <div className='loginCard animate-fadeIn'>
             <div className="flex items-center justify-center gap-2 mb-4">
-            <img
-              src="/favicon.ico"
-              alt="AptSync Logo"
-              className="w-10 h-10"
-            />
-            <h1 className="font-bold text-xl">Log In</h1>
-          </div>
-      {/* Show a loading message only while verifying */}
+              <img
+                src="/favicon.ico"
+                alt="AptSync Logo"
+                className="w-10 h-10"
+              />
+              <h1 className="font-bold text-xl">Log In</h1>
+            </div>
+          {/* Show a loading message only while verifying */}
           {isVerifying && <div className="mb-4 text-purple-600">Verifying your email...</div>}
           {/* Show other non-toast messages (e.g., from login) */}
           {/* {msg && <div className="mb-4 text-red-600">{msg}</div>} */}
-      <form onSubmit={submit} className="loginForm">
-        <div>
-            <input 
-            value={email} 
-            onChange={e => setEmail(e.target.value)} 
-            placeholder="Email" 
-            className="loginInput"
-            type="email" // Better for mobile keyboards
-                required />
-        </div>
-        <div className='passwordField'>
-        <input 
-        value={password} 
-        onChange={e => setPassword(e.target.value)} 
-        placeholder="Password" type={showPassword ? "text" : "password"} 
-        className="loginInput" 
-        required/>
-        <span
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="passwordToggle"
-            aria-label={showPassword ? "Hide password" : "Show password"}
-          >
-            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-          </span>
-        </div>
-        <div className="loginButtonGroup">
-               <button type="submit" name="submit" className="loginButton loginButton--submit" disabled={isVerifying}>
+          <form onSubmit={submit} className="loginForm">
+            <div>
+              <input 
+              value={email} 
+              onChange={e => setEmail(e.target.value)} 
+              placeholder="Email" 
+              className="loginInput"
+              type="email" // Better for mobile keyboards
+                  required />
+            </div>
+            <div className='passwordField'>
+              <input 
+              value={password} 
+              onChange={e => setPassword(e.target.value)} 
+              placeholder="Password" type={showPassword ? "text" : "password"} 
+              className="loginInput" 
+              required/>
+              <span
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="passwordToggle"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </span>
+            </div>
+            <div className="loginButtonGroup">
+              <button type="submit" name="submit" className="loginButton loginButton--submit" disabled={isVerifying}>
                 {/* Disable button while verifying */}
                 {isVerifying ? 'Please Wait...' : 'Login'}
               </button>
@@ -147,18 +147,18 @@ export default function Login() {
                 Cancel
               </button>
             </div>
-      </form>
-      <p className="mt-4 text-sm text-center text-gray-600">
-        Forgot password?{" "}
-        <button
-          type="button"
-          onClick={handleForgotPassword}
-          className="text-purple-700 hover:underline bg-white"
-        >
-          Reset
-        </button>
-      </p>
-       {/* Add a link to resend verification if needed? */}
+          </form>
+          <p className="mt-4 text-sm text-center text-gray-600">
+            Forgot password?{" "}
+            <button
+              type="button"
+              onClick={handleForgotPassword}
+              className="text-purple-700 hover:underline bg-white"
+            >
+              Reset
+            </button>
+          </p>
+          {/* Add a link to resend verification if needed? */}
           <p className="mt-4 text-sm text-center text-gray-600">
             Didn't get a verification email? <button 
               type="button" 
@@ -169,9 +169,9 @@ export default function Login() {
               {isResending ? 'Sending...' : 'Resend'}
             </button>
           </p>
+        </div>
       </div>
-    </div>
-     {/* Toast container should be at root of your app (or here works too) */}
+        {/* Toast container should be at root of your app (or here works too) */}
           <ToastContainer position="top-center" autoClose={3000} />
     </div>
   );
