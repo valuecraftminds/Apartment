@@ -130,7 +130,7 @@ export default function EditHouse({ house, onClose, onUpdated, apartment_id, flo
                         name="house_id"
                         value={formData.house_id}
                         onChange={handleChange}
-                        className="w-full p-2 border rounded-md dark:bg-gray-700 dark:text-white"
+                        className="w-full p-2 border rounded-md dark:bg-gray-700 dark:text-white  text-black bg-white"
                         required
                     />
                 </div>
@@ -141,7 +141,7 @@ export default function EditHouse({ house, onClose, onUpdated, apartment_id, flo
                         name="housetype_id"
                         value={formData.housetype_id}
                         onChange={handleChange}
-                        className="w-full p-2 border rounded-md dark:bg-gray-700 dark:text-white"
+                        className="w-full p-2 border rounded-md dark:bg-gray-700 dark:text-white  text-black bg-white"
                         required
                     >
                         <option value="">Select Type</option>
@@ -163,7 +163,7 @@ export default function EditHouse({ house, onClose, onUpdated, apartment_id, flo
                         name="status"
                         value={formData.status}
                         onChange={handleChange}
-                        className="w-full p-2 border rounded-md dark:bg-gray-700 dark:text-white"
+                        className="w-full p-2 border rounded-md dark:bg-gray-700 dark:text-white  text-black bg-white"
                         required
                     >
                         <option value="vacant">Vacant</option>

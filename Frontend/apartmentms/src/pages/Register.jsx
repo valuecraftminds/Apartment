@@ -595,8 +595,11 @@ export default function CombinedRegistration() {
                     <div className="w-full bg-gray-200 h-2 rounded">
                       <div 
                         className={`h-2 rounded transition-all duration-300 ${
-                          passwordStrength.strength < 2 ? 'bg-red-500' :
-                          passwordStrength.strength < 4 ? 'bg-yellow-500' : 'bg-green-500'
+                          passwordStrength.strength < 2 
+                          ? 'bg-red-500' 
+                          :passwordStrength.strength < 4 
+                          ? 'bg-yellow-500' 
+                          : 'bg-green-500'
                         }`} 
                         style={{ width: `${(passwordStrength.strength / 5) * 100}%` }}
                       ></div>

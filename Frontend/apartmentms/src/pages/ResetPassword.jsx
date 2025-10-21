@@ -31,33 +31,72 @@ export default function ResetPassword() {
     }
   }, [searchParams]);
 
+  
+  const handleBackToLogin = () => {
+    navigate('/login');
+  };
+
+  // Validation rules
+    const validateField = (name, value) => {
+    let error = "";
+
+    if (name === "password") {
+      if (!value) error = "Password is required";
+      else if (value.length < 8) error = "Password must be at least 8 characters";
+      else if (!/(?=.*[a-z])/.test(value))
+        error = "Password must contain at least one lowercase letter";
+      else if (!/(?=.*[A-Z])/.test(value))
+        error = "Password must contain at least one uppercase letter";
+      else if (!/(?=.*\d)/.test(value))
+        error = "Password must contain at least one number";
+      else if (!/(?=.*[@$!%*?&])/.test(value))
+        error = "Password must contain at least one special character (@$!%*?&)";
+    }
+
+    if (name === "confirm") {
+      if (!value) error = "Please confirm your password";
+      else if (value !== password) error = "Passwords do not match";
+    }
+
+    return error;
+  };
+
+   // Password strength indicator
+ const getPasswordStrength = () => {
+    if (!password) return { strength: 0, label: "" };
+
+    let strength = 0;
+    if (password.length >= 8) strength++;
+    if (/(?=.*[a-z])/.test(password)) strength++;
+    if (/(?=.*[A-Z])/.test(password)) strength++;
+    if (/(?=.*\\d)/.test(password)) strength++;
+    if (/(?=.*[@$!%*?&])/.test(password)) strength++;
+
+    const labels = ["Very Weak", "Weak", "Fair", "Good", "Strong", "Very Strong"];
+    return { strength, label: labels[strength] };
+  };
+
+  const passwordStrength = getPasswordStrength();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (password !== confirm) {
-      toast.error("Passwords do not match");
-      return;
-    }
-    
-    if (password.length < 6) {
-      toast.error("Password must be at least 6 characters long");
-      return;
-    }
-    
+
+    const passwordError = validateField("password", password);
+    const confirmError = validateField("confirm", confirm);
+
+    if (passwordError) return toast.error(passwordError);
+    if (confirmError) return toast.error(confirmError);
+
     setIsResetting(true);
     try {
       await api.post("/auth/reset-password", { token, id, password });
-      toast.success("✅ Password reset successful! Redirecting to login...");
+      toast.success("Password reset successful! Redirecting to login...");
       setTimeout(() => navigate("/login"), 2000);
     } catch (err) {
       toast.error(err.response?.data?.message || "Reset failed. The link may have expired.");
     } finally {
       setIsResetting(false);
     }
-  };
-
-  const handleBackToLogin = () => {
-    navigate('/login');
   };
 
   if (!isValidLink) {
@@ -96,7 +135,7 @@ export default function ResetPassword() {
       <div className="absolute top-4 left-6 flex -6 mt-5">
         <button 
           onClick={handleBackToLogin}
-          className="flex items-center gap-2 mb-4 text-purple-600 hover:text-purple-700 transition-colors"
+          className="flex items-center gap-2 mb-4 text-white hover:text-black transition-colors"
         >
           <ArrowLeft size={20} />
         </button>
@@ -125,7 +164,6 @@ export default function ResetPassword() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength="6"
               />
               <span
                 type="button"
@@ -135,6 +173,32 @@ export default function ResetPassword() {
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </span>
             </div>
+            {/* Strength Indicator */}
+            {password && (
+              <div className="mb-4">
+                <div className="text-sm text-gray-600 mb-1">
+                  Password strength: <span className="font-semibold">{passwordStrength.label}</span>
+                </div>
+
+                <div className="w-full bg-gray-200 h-2 rounded">
+                  <div
+                    className={`h-2 rounded transition-all duration-300 ${
+                      passwordStrength.strength < 2
+                        ? "bg-red-500"
+                        : passwordStrength.strength < 4
+                        ? "bg-yellow-500"
+                        : "bg-green-500"
+                    }`}
+                    style={{ width: `${(passwordStrength.strength / 5) * 100}%` }}
+                  ></div>
+                </div>
+
+                <div className="text-xs text-gray-500 mt-1 leading-snug">
+                  Must include: uppercase, lowercase, number, special character (@$!%*?&), and be at least 8 characters long.
+                </div>
+              </div>
+            )}
+
 
             <div className="passwordField mb-6">
               <input

@@ -4,6 +4,7 @@ import { ChevronLeft, House } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import { useNavigate, useParams } from 'react-router-dom';
+import CalculateBill from '../Bills/CalculateBill';
 
 export default function ViewHouse() {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -17,6 +18,7 @@ export default function ViewHouse() {
     const [house, setHouse] = useState(null);
     const [housetype, setHouseType] = useState(null);
     const [houseowner,setHouseOwner] = useState(null);
+    // const [calculateBill,setCalculateBill] = useState(null);
 
     const navigate = useNavigate();
 
@@ -132,9 +134,9 @@ export default function ViewHouse() {
                                 Family
                             </button>
                             <button
-                                onClick={() => setActiveTab("bills")}
+                                onClick={() => setActiveTab("calculateBill")}
                                 className={`px-4 py-2 font-semibold 
-                                    ${activeTab === "bills"
+                                    ${activeTab === "calculateBill"
                                         ? "text-purple-600 border-b-2 border-purple-600"
                                         : "text-gray-600 dark:text-gray-300 hover:text-purple-600"}`}
                             >
@@ -172,11 +174,8 @@ export default function ViewHouse() {
                                 <p><strong>Bathrooms:</strong> {housetype.bathrooms}</p>
                             </div>
                         )} */}
-                        {
-                            activeTab === "bills" && bills && (
-                                <div className="mt-1 text-gray-700 dark:text-gray-300 font-semibold space-y-2">
-                                    
-                                </div>
+                        {activeTab === "calculateBill" &&  (
+                                <CalculateBill  apartment_id={apartment_id}/>
                             )
                         }
                     </div>

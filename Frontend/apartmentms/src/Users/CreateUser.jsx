@@ -1,12 +1,11 @@
-// CreateApartment.jsx
 import React, { useState } from 'react';
-import api from '../api/axios'; 
+import api from '../api/axios';
 import { toast } from 'react-toastify';
 
 export default function CreateUser({ onClose, onCreated }) {
   const [formData, setFormData] = useState({
     email: '',
-    role:'',
+    role: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -15,84 +14,86 @@ export default function CreateUser({ onClose, onCreated }) {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]:value,
+      [name]: value,
     }));
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError('');
-  setLoading(true);
-  try {
-    const submitFormData = new FormData(); 
-    submitFormData.append('email', formData.name); 
-    submitFormData.append('role', formData.address);
-    
-    // if (formData.image) { 
-    //   submitFormData.append('picture', formData.image);
-    // }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
 
-    const response = await api.post('/auth/register', submitFormData, {
-    });
-   
-    setLoading(false);
+    try {
+      // no need for FormData since we’re sending simple JSON
+      const response = await api.post('/auth/invite', {
+        email: formData.email,
+        role: formData.role,
+      });
 
-    if (onCreated) onCreated(); // refresh the list
-    if (onClose) onClose(); // close the modal
-  } catch (err) {
-    console.error(err);
-    // setError('Failed to create apartment.');
-    toast.error('Failed to create apartment')
-    setLoading(false);
-  }
-};
+      toast.success('Invitation sent successfully!');
+
+      if (onCreated) onCreated(); // refresh parent list
+      if (onClose) onClose(); // close modal
+    } catch (err) {
+      console.error('Invite error:', err);
+      const message =
+        err.response?.data?.message || 'Failed to send invitation. Try again.';
+      setError(message);
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-col gap-4 text-black dark:text-white"
+    >
       {error && <p className="text-red-500">{error}</p>}
+
+      {/* Email Input */}
       <input
         type="email"
         name="email"
-        placeholder="Email"
+        placeholder="Enter user email"
         value={formData.email}
         onChange={handleChange}
-        className="border rounded p-2 text-black dark:text-white border-purple-600"
+        className="border rounded p-2 border-purple-600 bg-white dark:bg-gray-800"
         required
       />
-      {/* <input
-        type="text"
-        name="role"
-        placeholder="Address"
-        value={formData.address}
-        onChange={handleChange}
-        className="border rounded p-2  text-black dark:text-white border-purple-600"
-        required
-      /> */}
+
+      {/* Role Dropdown */}
       <select
         name="role"
         value={formData.role}
         onChange={handleChange}
-        className="border rounded p-2 text-black dark:text-white border-purple-600"
+        className="border rounded p-2 border-purple-600 bg-white dark:bg-gray-800"
         required
       >
-        <option value="active">Admin</option>
-        <option value="maintenance">Apartment Owner</option>
-        <option value="inactive">Apartment Manager</option>
-        <option value="inactive">Apartment Technician</option>
+        <option value="">Select Role</option>
+        <option value="Admin">Admin</option>
+        <option value="Apartment_owner">Apartment Owner</option>
+        <option value="Apartment_manager">Apartment Manager</option>
+        <option value="Apartment_technician">Apartment Technician</option>
       </select>
-      <div className="flex justify-end gap-2">
+
+      {/* Action Buttons */}
+      <div className="flex justify-end gap-2 mt-2">
         <button
           type="button"
           onClick={onClose}
           className="px-4 py-2 rounded bg-gray-400 hover:bg-gray-500 text-white"
+          disabled={loading}
         >
           Cancel
         </button>
         <button
           type="submit"
-          // disabled={loading}
-          className="px-4 py-2 rounded bg-purple-600 hover:bg-purple-700 text-white"
+          disabled={loading}
+          className="px-4 py-2 rounded bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
         >
-          Save & Invite
+          {loading ? 'Sending...' : 'Save & Invite'}
         </button>
       </div>
     </form>
