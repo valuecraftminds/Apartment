@@ -4,11 +4,11 @@ const HouseType = require('../models/HouseType');
 const houseTypeController = {
     async createHouseType(req, res) {
         try {
-            const { name, members, rooms, sqrfeet, bathrooms,apartment_id } = req.body;
+            const { name, rooms, sqrfeet, bathrooms,apartment_id } = req.body;
             const company_id = req.user.company_id;
             // const apartment_id=req.apartment.id;
 
-            if (!name || members === undefined || sqrfeet === undefined || rooms === undefined || bathrooms === undefined) {
+            if (!name || sqrfeet === undefined || rooms === undefined || bathrooms === undefined) {
                 return res.status(400).json({
                     success: false,
                     message: 'All fields are required'
@@ -17,7 +17,6 @@ const houseTypeController = {
 
             const newHouseType = await HouseType.create({
                     name,
-                    members,
                     sqrfeet:parseFloat(sqrfeet),
                     rooms:parseInt(rooms),
                     bathrooms:parseInt(bathrooms),
@@ -128,7 +127,7 @@ const houseTypeController = {
     async updateHouseType(req,res){
         try{
             const {id}=req.params;
-            const {members,sqrfeet, rooms, bathrooms}=req.body;
+            const {sqrfeet, rooms, bathrooms}=req.body;
 
             //check house exist
             const existingHouseType= await HouseType.findById(id);
@@ -140,7 +139,6 @@ const houseTypeController = {
             }
 
             const updateHouseType= await HouseType.update(id,{
-                members: members ? parseInt(members):existingHouseType.members,
                 sqrfeet:sqrfeet ?parseFloat(sqrfeet): existingHouseType.sqrfeet,
                 rooms:rooms ? parseInt(rooms):existingHouseType.rooms,
                 bathrooms:bathrooms ?parseInt(bathrooms): existingHouseType.bathrooms,

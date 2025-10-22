@@ -27,8 +27,7 @@ export default function Sidebar() {
       name: 'Expenses', 
       icon: BanknoteArrowDown, 
       children: [
-        { name: 'Bills', path: '/bills' },
-        { name: 'Office Use', path: '/officeuse' }
+        { name: 'Bills', path: '/manage-bills' },
       ]
     },
     { name: 'Reports', path: '/reports', icon: FileText },

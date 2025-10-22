@@ -6,7 +6,6 @@ import api from '../api/axios';
 export default function EditHouseType({housetype,onClose,onUpdated}) {
     const [formData, setFormData] = useState({
         name: "",
-        members: "",
         sqrfeet: "",
         rooms: "",
         bathrooms: "",
@@ -20,7 +19,6 @@ export default function EditHouseType({housetype,onClose,onUpdated}) {
     if (housetype) {
       setFormData({
         name: housetype.name || "",
-        members: housetype.members || "",
         sqrfeet: housetype.sqrfeet || "",
         rooms: housetype.rooms || "",
         bathrooms: housetype.bathrooms || "",
@@ -76,16 +74,6 @@ export default function EditHouseType({housetype,onClose,onUpdated}) {
         className="border rounded p-2 text-black dark:text-white border-purple-600"
         required
         disabled
-      />
-
-      <input
-        type="number"
-        name="members"
-        placeholder="How many people can stay"
-        value={formData.members}
-        onChange={handleChange}
-        className="border rounded p-2 text-black dark:text-white border-purple-600"
-        required
       />
 
       <input

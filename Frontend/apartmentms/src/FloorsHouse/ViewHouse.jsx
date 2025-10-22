@@ -148,7 +148,6 @@ export default function ViewHouse() {
                         {activeTab === "type" && housetype && (
                             <div className="mt-1 text-gray-700 dark:text-gray-300 font-semibold space-y-2">
                                 <p><strong>Type:</strong> {housetype.name}</p>
-                                <p><strong>Members:</strong> {housetype.members}</p>
                                 <p><strong>Square Feet:</strong> {housetype.sqrfeet}</p>
                                 <p><strong>Rooms:</strong> {housetype.rooms}</p>
                                 <p><strong>Bathrooms:</strong> {housetype.bathrooms}</p>
@@ -157,10 +156,11 @@ export default function ViewHouse() {
                         {activeTab === "owner" && houseowner && (
                             <div className="mt-1 text-gray-700 dark:text-gray-300 font-semibold space-y-2">
                                 <p><strong>Name:</strong> {houseowner.name}</p>
-                                <p><strong>NIC:</strong> {houseowner.nic}</p>
+                                <p><strong>NIC:</strong> {houseowner.NIC}</p>
                                 <p><strong>Occupation:</strong> {houseowner.occupation}</p>
                                 <p><strong>Country:</strong> {houseowner.country}</p>
                                 <p><strong>Mobile:</strong> {houseowner.mobile}</p>
+                                <p><strong>Email:</strong>{houseowner.email}</p>
                                 <p><strong>occupied way:</strong> {houseowner.occupied_way}</p>
                                 {/* <p><strong>Proof:</strong> {houseowner.proof}</p> */}
                             </div>

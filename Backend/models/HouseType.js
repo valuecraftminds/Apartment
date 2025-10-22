@@ -3,14 +3,14 @@ const { v4: uuidv4 } = require('uuid');
 
 class HouseType{
     static async create(houseTypeData) {
-    const { company_id, apartment_id, name,members, sqrfeet, rooms, bathrooms} = houseTypeData;
+    const { company_id, apartment_id, name, sqrfeet, rooms, bathrooms} = houseTypeData;
     const id = uuidv4().replace(/-/g, '').substring(0, 10);
 
     const [result] = await pool.execute(
         `INSERT INTO housetype 
-        (id, company_id, apartment_id, name, members, sqrfeet, rooms, bathrooms) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [id, company_id, apartment_id, name, members, sqrfeet, rooms, bathrooms]
+        (id, company_id, apartment_id, name, sqrfeet, rooms, bathrooms) 
+        VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [id, company_id, apartment_id, name, sqrfeet, rooms, bathrooms]
     );
 
     return { id, ...houseTypeData };
@@ -49,8 +49,8 @@ class HouseType{
     static async update(id, houseTypeData) {
         const {members,sqrfeet,rooms,bathrooms } = houseTypeData;
         await pool.execute(
-            'UPDATE housetype SET members=?, sqrfeet = ?,rooms=?,bathrooms=? WHERE id = ?',
-            [ members,sqrfeet,rooms,bathrooms,id]
+            'UPDATE housetype SET sqrfeet = ?,rooms=?,bathrooms=? WHERE id = ?',
+            [ sqrfeet,rooms,bathrooms,id]
         );
         return { id, ...houseTypeData };
     }

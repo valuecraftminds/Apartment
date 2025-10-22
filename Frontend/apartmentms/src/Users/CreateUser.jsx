@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import api from '../api/axios';
 import { toast } from 'react-toastify';
 
-export default function CreateUser({ onClose, onCreated }) {
+export default function CreateUser({ onClose, onCreated,company_id }) {
   const [formData, setFormData] = useState({
     email: '',
     role: '',

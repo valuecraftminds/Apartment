@@ -4,7 +4,6 @@ import api from "../api/axios";
 export default function CreateHouseType({ onClose, apartment_id,onCreated }) {
   const [formData, setFormData] = useState({
     name: "",
-    members: "",
     sqrfeet: "",
     rooms: "",
     bathrooms: "",
@@ -91,17 +90,6 @@ export default function CreateHouseType({ onClose, apartment_id,onCreated }) {
         required
         disabled
       />
-
-      <input
-        type="number"
-        name="members"
-        placeholder="How many people can stay"
-        value={formData.members}
-        onChange={handleChange}
-        className="border rounded p-2 text-black dark:text-white border-purple-600"
-        required
-      />
-
       <input
         type="number"
         name="sqrfeet"

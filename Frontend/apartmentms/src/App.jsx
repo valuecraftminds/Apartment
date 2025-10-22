@@ -20,6 +20,8 @@ import Bills from './Bills/Bills'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 import CompleteRegistration from './Users/CompleteRegistration'
+import ManageBills from './Bills/ManageBills'
+import BillsAndCalculations from './Bills/BillsAndCalculations'
 
 export default function App() {
   return (
@@ -43,6 +45,8 @@ export default function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path='/complete-registration' element={<CompleteRegistration/>}/>
+        <Route path='/manage-bills' element={<ManageBills/>}/>
+        <Route path='bills-and-calculations/:apartment_id' element={<BillsAndCalculations/>}/>
       </Routes>
     </BrowserRouter>
   )
