@@ -1,24 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/axios';
-import { toast } from 'react-toastify';
-import jsPDF from 'jspdf'; // <-- install this with: npm install jspdf
+import { toast, ToastContainer } from 'react-toastify';
+import jsPDF from 'jspdf';
 
 export default function CalculateBill({ apartment_id }) {
   const [bills, setBills] = useState([]);
   const [selectedBill, setSelectedBill] = useState('');
+  const [totalConsumption, setTotalConsumption] = useState('');
+  const [totalBillAmount, setTotalBillAmount] = useState('');
+  const [unitPrice, setUnitPrice] = useState(null);
   const [usedUnits, setUsedUnits] = useState('');
   const [commonAreaCost, setCommonAreaCost] = useState('');
-  const [unitPrice, setUnitPrice] = useState('');
   const [month, setMonth] = useState('');
   const [total, setTotal] = useState(null);
   const [loadingBills, setLoadingBills] = useState(false);
   const [error, setError] = useState(null);
 
-  // Load bill types from backend
+  // Load bill types
   const loadBills = async () => {
     try {
       setLoadingBills(true);
-      setError(null);
       const result = await api.get(`/bills?apartment_id=${apartment_id}`);
       if (result.data.success && Array.isArray(result.data.data)) {
         setBills(result.data.data);
@@ -37,28 +38,35 @@ export default function CalculateBill({ apartment_id }) {
     if (apartment_id) loadBills();
   }, [apartment_id]);
 
-  // Calculate bill logic
-  const handleCalculate = () => {
+  // Step 1: Calculate price per unit
+  const handleCalculateUnitPrice = () => {
+    if (!totalConsumption || !totalBillAmount) {
+      toast.error('Please enter both total consumption and total bill amount.');
+      return;
+    }
+
+    const pricePerUnit = parseFloat(totalBillAmount) / parseFloat(totalConsumption);
+    const roundedPrice = pricePerUnit.toFixed(2);
+    setUnitPrice(roundedPrice);
+    // toast.success(`Unit price calculated: Rs. ${roundedPrice} per unit`);
+  };
+
+  // Step 2: Calculate specific house bill
+  const handleCalculateHouseBill = () => {
     if (!selectedBill || !usedUnits || !unitPrice || !month) {
       toast.error('Please fill all required fields.');
       return;
     }
 
-    const bill = bills.find((b) => b.bill_name === selectedBill);
-    if (!bill) {
-      toast.error('Invalid bill type.');
-      return;
-    }
-
-    const units = parseFloat(usedUnits);
+    const houseUnits = parseFloat(usedUnits);
     const commonCost = parseFloat(commonAreaCost) || 0;
-    const calculatedTotal = (unitPrice * units + commonCost).toFixed(2);
+    const houseTotal = (unitPrice * houseUnits + commonCost).toFixed(2);
 
-    setTotal(calculatedTotal);
-    toast.success('Bill calculated successfully!');
+    setTotal(houseTotal);
+    toast.success('House bill calculated successfully!');
   };
 
-  // Generate invoice PDF
+  // Generate invoice
   const handleGenerateInvoice = () => {
     if (!total) {
       toast.error('Please calculate the bill before generating an invoice.');
@@ -66,10 +74,8 @@ export default function CalculateBill({ apartment_id }) {
     }
 
     const doc = new jsPDF();
-
     doc.setFontSize(16);
     doc.text('🏢 Apartment Bill Invoice', 20, 20);
-
     doc.setFontSize(12);
     doc.text(`Apartment ID: ${apartment_id}`, 20, 35);
     doc.text(`Bill Type: ${selectedBill}`, 20, 45);
@@ -77,17 +83,13 @@ export default function CalculateBill({ apartment_id }) {
     doc.text(`Used Units: ${usedUnits}`, 20, 65);
     doc.text(`Unit Price: Rs. ${unitPrice}`, 20, 75);
 
-    if (
-      selectedBill.toLowerCase() === 'electricity' ||
-      selectedBill.toLowerCase() === 'water'
-    ) {
+    if (['electricity', 'water', 'Electricity Bill', 'Water Bill'].includes(selectedBill.toLowerCase())) {
       doc.text(`Common Area Cost: Rs. ${commonAreaCost || 0}`, 20, 85);
     }
 
     doc.text(`--------------------------------------`, 20, 95);
     doc.setFontSize(14);
     doc.text(`Total Bill: Rs. ${total}`, 20, 105);
-
     doc.save(`Invoice_${selectedBill}_${month}.pdf`);
   };
 
@@ -98,7 +100,7 @@ export default function CalculateBill({ apartment_id }) {
       {error && <p className="text-red-500">{error}</p>}
 
       <div className="flex flex-col gap-3 max-w-md">
-        {/* Select Month */}
+        {/* Month */}
         <input
           type="month"
           value={month}
@@ -107,76 +109,94 @@ export default function CalculateBill({ apartment_id }) {
           required
         />
 
-        {/* Bill type selector */}
+        {/* Bill type */}
         <select
           className="border border-purple-600 rounded p-2 bg-white dark:bg-gray-700 dark:text-white"
           value={selectedBill}
           onChange={(e) => setSelectedBill(e.target.value)}
         >
           <option value="">-- Select Bill Type --</option>
-          {bills.map((bills) => (
-            <option key={bills.id} value={bills.bill_name}>
-              {bills.bill_name}
+          {bills.map((bill) => (
+            <option key={bill.id} value={bill.bill_name}>
+              {bill.bill_name}
             </option>
           ))}
         </select>
 
-        {/* Used units */}
+        {/* Step 1: Total apartment data */}
         <input
           type="number"
-          placeholder="Enter used units"
+          placeholder="Total apartment consumption (units)"
+          value={totalConsumption}
+          onChange={(e) => setTotalConsumption(e.target.value)}
+          className="border border-purple-600 rounded p-2 dark:bg-gray-700 dark:text-white"
+        />
+        <input
+          type="number"
+          placeholder="Total apartment bill amount (Rs)"
+          value={totalBillAmount}
+          onChange={(e) => setTotalBillAmount(e.target.value)}
+          className="border border-purple-600 rounded p-2 dark:bg-gray-700 dark:text-white"
+        />
+
+        <button
+          type="button"
+          onClick={handleCalculateUnitPrice}
+          className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded transition"
+        >
+          Calculate Unit Price
+        </button>
+
+        {/* Display unit price */}
+        {unitPrice && (
+          <div className="p-3 border rounded bg-purple-100 dark:bg-purple-900 dark:text-white">
+            <strong>Unit Price:</strong> Rs. {unitPrice} per unit
+          </div>
+        )}
+
+        {/* Step 2: Specific house data */}
+        <input
+          type="number"
+          placeholder="Used units for this house"
           value={usedUnits}
           onChange={(e) => setUsedUnits(e.target.value)}
           className="border border-purple-600 rounded p-2 dark:bg-gray-700 dark:text-white"
         />
 
-        {/* Unit Price */}
-        <input
-          type="number"
-          placeholder="Enter unit price"
-          value={unitPrice}
-          onChange={(e) => setUnitPrice(e.target.value)}
-          className="border border-purple-600 rounded p-2 dark:bg-gray-700 dark:text-white"
-        />
-
-        {/* Common area cost (only for water/electricity) */}
-        {(selectedBill === 'electricity' || 'Electricity Bill' ||
-          selectedBill=== 'water' || 'Water Bill') && (
+        {(selectedBill.toLowerCase().includes('electricity') ||
+          selectedBill.toLowerCase().includes('water')) && (
           <input
             type="number"
-            placeholder="Enter common area cost"
+            placeholder="Enter common area cost (optional)"
             value={commonAreaCost}
             onChange={(e) => setCommonAreaCost(e.target.value)}
             className="border border-purple-600 rounded p-2 dark:bg-gray-700 dark:text-white"
           />
         )}
 
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={handleCalculate}
-            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded transition"
-          >
-            Calculate
-          </button>
+        <button
+          type="button"
+          onClick={handleCalculateHouseBill}
+          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded transition"
+        >
+          Calculate House Bill
+        </button>
 
-          <button
-            type="button"
-            onClick={handleGenerateInvoice}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded transition"
-          >
-            Generate Invoice
-          </button>
-        </div>
-
-        {total !== null && (
-          <div className="mt-3 p-3 border rounded bg-purple-100 dark:bg-purple-900 dark:text-white">
-            <p>
-              <strong>Total Bill:</strong> Rs. {total}
-            </p>
+        {total && (
+          <div className="p-3 border rounded bg-purple-100 dark:bg-purple-900 dark:text-white">
+            <strong>Total Bill for House:</strong> Rs. {total}
           </div>
         )}
+
+        <button
+          type="button"
+          onClick={handleGenerateInvoice}
+          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded transition"
+        >
+          Generate Invoice PDF
+        </button>
       </div>
+      <ToastContainer position="top-center" autoClose={3000}/>
     </div>
   );
 }
