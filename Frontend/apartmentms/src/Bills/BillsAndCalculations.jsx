@@ -16,23 +16,23 @@ export default function BillsAndCalculations() {
     const { apartment_id } = useParams();
     const [apartment, setApartment] = useState(null);
 
-    useEffect(() => {
-        const fetchApartment = async () => {
-            try {
-                const res = await api.get(`/apartments/${apartment_id}`);
-                if (res.data.success) {
-                    setApartment(res.data.data); // set the apartment object
-                }
-            } catch (err) {
-                console.error('Error fetching apartment:', err);
-            }
-        };
-        if (apartment_id) fetchApartment();
-    }, [apartment_id]);
+    // useEffect(() => {
+    //     const fetchApartment = async () => {
+    //         try {
+    //             const res = await api.get(`/apartments/${apartment_id}`);
+    //             if (res.data.success) {
+    //                 setApartment(res.data.data); // set the apartment object
+    //             }
+    //         } catch (err) {
+    //             console.error('Error fetching apartment:', err);
+    //         }
+    //     };
+    //     if (apartment_id) fetchApartment();
+    // }, [apartment_id]);
 
-    const handleBack = () => {
-        navigate('/manage-bills');
-    };
+    // const handleBack = () => {
+    //     navigate('/manage-bills');
+    // };
 
 
 
@@ -46,9 +46,9 @@ export default function BillsAndCalculations() {
                     <div className='flex items-center justify-between bg-white dark:bg-gray-800 rounded-2xl p-4 mb-6'>
                         <div className='flex flex-col'>
                             <div className='flex items-center'>
-                                <button onClick={handleBack} className='p-1 rounded-md hover:bg-gray-100 transition-colors duration-200 text-purple-700'>
+                                {/* <button onClick={handleBack} className='p-1 rounded-md hover:bg-gray-100 transition-colors duration-200 text-purple-700'>
                                     <ChevronLeft size={25} />
-                                </button>
+                                </button> */}
                                 <Receipt size={40} className='text-purple-600 dark:text-purple-400 mr-3'/>
                                 <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Bill Management for Apartments</h1>
                             </div>

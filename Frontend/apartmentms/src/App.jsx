@@ -46,7 +46,7 @@ export default function App() {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path='/complete-registration' element={<CompleteRegistration/>}/>
         <Route path='/manage-bills' element={<ManageBills/>}/>
-        <Route path='bills-and-calculations/:apartment_id' element={<BillsAndCalculations/>}/>
+        <Route path='/bills-and-calculations' element={<BillsAndCalculations/>}/>
       </Routes>
     </BrowserRouter>
   )

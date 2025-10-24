@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import api from "../api/axios";
 
-export default function CreateBillType({ onClose, apartment_id,onCreated }) {
+export default function CreateBillType({ onClose,onCreated }) {
   const [formData, setFormData] = useState({
     bill_name: ""
   });
@@ -50,7 +50,7 @@ export default function CreateBillType({ onClose, apartment_id,onCreated }) {
     try {
       const result = await api.post("/bills", {
         ...formData,
-        apartment_id:apartment_id,
+        // apartment_id:apartment_id,
       },
       {
           headers: {

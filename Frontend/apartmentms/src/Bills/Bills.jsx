@@ -10,8 +10,6 @@ import CreateBillType from '../Bills/CreateBillType';
 import EditBillType from '../Bills/EditBillType';
 
 export default function Bills() {
-    const {apartment_id} = useParams();
-    console.log('Apartment ID:', apartment_id);  
     const [loadingBills,setLoadingBills] = useState(false);
     const [error, setError] = useState(null);
     const [bills,setBills] = useState([]);
@@ -25,7 +23,8 @@ export default function Bills() {
         try {
             setLoadingBills(true);
             setError(null);
-            const result = await api.get(`/bills?apartment_id=${apartment_id}`);
+            // const result = await api.get(`/bills?apartment_id=${apartment_id}`);
+            const result = await api.get('/bills');
             if (result.data.success && Array.isArray(result.data.data)) {
                 setBills(result.data.data);
             } else {
@@ -41,7 +40,7 @@ export default function Bills() {
 
     useEffect(()=>{
         loadBills();
-    },[apartment_id]);
+    },[]);
 
     //create Bill Type
     const handleAddNew = () =>{
@@ -113,7 +112,7 @@ export default function Bills() {
                 <Loader size={32} className="animate-spin text-purple-600" />
                 <span className="ml-2 text-gray-600 dark:text-gray-300">Loading Bill types...</span>
             </div>
-        ) : error ? (
+            ) : error ? (
             <div className="text-center py-12 text-red-600 dark:text-red-400">
                 {error}
                 <button
@@ -123,13 +122,13 @@ export default function Bills() {
                     Retry
                 </button>
             </div>
-        ) : bills.length === 0 ? (
+            ) : bills.length === 0 ? (
             <div className="text-center py-12 text-gray-600 dark:text-gray-300">
                 <Image size={48} className="mx-auto mb-4 text-gray-400" />
                 <p className="text-lg">No bill types found</p>
                 <p className="text-sm">Get started by adding bill types</p>
             </div>
-        ) : (
+            ) : (
             <div className="overflow-x-auto">
                 <table className="w-full table-auto">
                     <thead className="bg-gray-50 dark:bg-gray-700">
@@ -193,7 +192,7 @@ export default function Bills() {
                     <CreateBillType
                         onClose={handleCloseModal} 
                         onCreated={handleCreateBillType}
-                        apartment_id={apartment_id}
+                        // apartment_id={apartment_id}
                     />
                 </div>
             </div>

@@ -3,12 +3,12 @@ const { v4: uuidv4 } = require('uuid');
 
 class Bills{
     static async create(billData){
-        const {company_id, apartment_id, bill_name} = billData;
+        const {company_id, bill_name} = billData;
         const id = uuidv4().replace(/-/g, '').substring(0, 10);
 
         const[result] = await pool.execute(
-            'INSERT INTO bills(id, company_id, apartment_id, bill_name) values (?, ?, ?, ?) ',
-            [id, company_id, apartment_id, bill_name]
+            'INSERT INTO bills(id, company_id, bill_name, is_metered) values (?, ?, ?, 1) ',
+            [id, company_id, bill_name]
         );
         return { id, ...billData };        
     } 
@@ -26,7 +26,8 @@ class Bills{
             [company_id]
         );
         return rows;
-    }static async findByApartment(apartment_id) {
+    }
+    static async findByApartment(apartment_id) {
     const [rows] = await pool.execute(
         'SELECT * FROM bills WHERE apartment_id=? ORDER BY created_at ASC',
         [apartment_id]

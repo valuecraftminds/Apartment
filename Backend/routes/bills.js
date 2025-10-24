@@ -13,6 +13,7 @@ router.get('/:id', billController.getBillById);
 router.put('/:id', billController.updateBill);
 router.delete('/:id', billController.deleteBill);
 router.get("/apartment/:apartment_id",billController.getByApartment);
+// router.get("/tenants/company_id"),billController.
 // router.patch('/:id/toggle',houseTypeController.toggleHouseTypeStatus);
 
 module.exports = router;
