@@ -3,7 +3,7 @@ import Sidebar from '../components/Sidebar'
 import Navbar from '../components/Navbar';
 import {Edit, Image, Loader, Plus, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import api from '../api/axios';
 import { toast, ToastContainer } from 'react-toastify';
 import CreateBillType from '../Bills/CreateBillType';
@@ -18,6 +18,8 @@ export default function Bills() {
     const [selectedBillType, setSelectedBillType] = useState(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deletingBill, setDeletingBill] = useState(null);
+    const navigate = useNavigate();
+
 
     const loadBills = async () => {
         try {
@@ -140,7 +142,10 @@ export default function Bills() {
                     </thead>
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                         {bills.map((bills,index) => (
-                            <tr key={bills.id}>
+                            <tr key={bills.id}
+                                className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                                onClick={() => navigate(`/billranges/${bills.id}`)}
+                            >
                                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                                     {index + 1}
                                 </td>

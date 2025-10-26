@@ -1,9 +1,6 @@
 const pool = require('../db');
 const { v4: uuidv4 } = require('uuid');
 
-const pool = require('../db');
-const { v4: uuidv4 } = require('uuid');
-
 class BillRange{
     static async create(billRangeData){
         const {company_id,bill_id, fromRange,toRange,unitPrice} = billRangeData;
@@ -25,7 +22,7 @@ class BillRange{
 
     static async findByCompanyId(company_id){
         const [rows] = await pool.execute(
-            'SELECT * FROM billRange WHERE company_id=? ORDER BY created_at ASC',
+            'SELECT * FROM billrange WHERE company_id=? ORDER BY created_at ASC',
             [company_id]
         );
         return rows;

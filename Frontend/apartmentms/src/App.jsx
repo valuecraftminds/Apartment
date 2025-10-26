@@ -22,6 +22,7 @@ import ResetPassword from './pages/ResetPassword'
 import CompleteRegistration from './Users/CompleteRegistration'
 import ManageBills from './Bills/ManageBills'
 import BillsAndCalculations from './Bills/BillsAndCalculations'
+import BillRange from './Bills/BillRange'
 
 export default function App() {
   return (
@@ -47,6 +48,8 @@ export default function App() {
         <Route path='/complete-registration' element={<CompleteRegistration/>}/>
         <Route path='/manage-bills' element={<ManageBills/>}/>
         <Route path='/bills-and-calculations' element={<BillsAndCalculations/>}/>
+        <Route path="/billranges/:bill_id" element={<BillRange />} />
+
       </Routes>
     </BrowserRouter>
   )

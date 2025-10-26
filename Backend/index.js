@@ -78,3 +78,7 @@ app.use('/api/houseowner',authenticateToken,houseOwnerRoutes);
 //Routes the bills
 const billRoutes = require('./routes/bills');
 app.use('/api/bills',authenticateToken,billRoutes);
+
+//Routes of bill range
+const billRangeRoutes = require('./routes/billRanges');
+app.use('/api/billranges', authenticateToken,billRangeRoutes);
