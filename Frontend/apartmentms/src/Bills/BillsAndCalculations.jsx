@@ -56,11 +56,11 @@ export default function BillsAndCalculations() {
                                 <Plus size={20}/>
                                 <span>Add New</span>
                             </button> */}
-                            {apartment && (
+                            {/* {apartment && (
                                 <div className='mt-1 text-gray-700 dark:text-gray-300 font-semibold ml-12'>
                                     Apartment: {apartment.name}
                                 </div>
-                            )}
+                            )} */}
                         </div>
                     </div>
 
