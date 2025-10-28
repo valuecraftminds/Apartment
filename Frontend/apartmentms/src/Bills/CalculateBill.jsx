@@ -1,202 +1,167 @@
-import React, { useEffect, useState } from 'react';
-import api from '../api/axios';
-import { toast, ToastContainer } from 'react-toastify';
-import jsPDF from 'jspdf';
+import React, { useState, useEffect } from "react";
+import api from "../api/axios";
+import { toast, ToastContainer } from "react-toastify";
 
-export default function CalculateBill({ apartment_id }) {
-  const [bills, setBills] = useState([]);
-  const [selectedBill, setSelectedBill] = useState('');
-  const [totalConsumption, setTotalConsumption] = useState('');
-  const [totalBillAmount, setTotalBillAmount] = useState('');
-  const [unitPrice, setUnitPrice] = useState(null);
-  const [usedUnits, setUsedUnits] = useState('');
-  const [commonAreaCost, setCommonAreaCost] = useState('');
-  const [month, setMonth] = useState('');
+export default function CalculateBill() {
+  const [calculationType, setCalculationType] = useState("");
+  const [bills, setBillTypes] = useState([]);
+  const [selectedBill, setSelectedBill] = useState("");
+  const [billRanges, setBillRanges] = useState([]);
+  const [usedUnits, setUsedUnits] = useState("");
+  const [fixedCharges, setFixedCharges] = useState('');
+  const [commonCost, setCommonCost] = useState("");
   const [total, setTotal] = useState(null);
-  const [loadingBills, setLoadingBills] = useState(false);
-  const [error, setError] = useState(null);
+
+  const token = localStorage.getItem("token");
 
   // Load bill types
-  const loadBills = async () => {
-    try {
-      setLoadingBills(true);
-      const result = await api.get(`/bills?apartment_id=${apartment_id}`);
-      if (result.data.success && Array.isArray(result.data.data)) {
-        setBills(result.data.data);
-      } else {
-        setBills([]);
-      }
-    } catch (err) {
-      console.error('Error loading bills:', err);
-      setError('Failed to load bills. Please try again.');
-    } finally {
-      setLoadingBills(false);
-    }
-  };
-
   useEffect(() => {
-    if (apartment_id) loadBills();
-  }, [apartment_id]);
+    const fetchBills = async () => {
+      try {
+        const res = await api.get("/bills", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setBillTypes(res.data.data || []);
+      } catch (err) {
+        toast.error("Failed to load bill types");
+      }
+    };
+    fetchBills();
+  }, []);
 
-  // Step 1: Calculate price per unit
-  const handleCalculateUnitPrice = () => {
-    if (!totalConsumption || !totalBillAmount) {
-      toast.error('Please enter both total consumption and total bill amount.');
-      return;
+  // Load bill ranges when bill type selected
+  useEffect(() => {
+  const fetchRanges = async () => {
+    if (!selectedBill) return;
+    try {
+      const res = await api.get(`/billranges/bills/${selectedBill}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setBillRanges(res.data.data || res.data || []);
+    } catch (err) {
+      console.error("Error fetching bill ranges:", err);
+      toast.error("Failed to load bill ranges");
     }
-
-    const pricePerUnit = parseFloat(totalBillAmount) / parseFloat(totalConsumption);
-    const roundedPrice = pricePerUnit.toFixed(2);
-    setUnitPrice(roundedPrice);
-    // toast.success(`Unit price calculated: Rs. ${roundedPrice} per unit`);
   };
+  fetchRanges();
+}, [selectedBill]);
 
-  // Step 2: Calculate specific house bill
-  const handleCalculateHouseBill = () => {
-    if (!selectedBill || !usedUnits || !unitPrice || !month) {
-      toast.error('Please fill all required fields.');
+
+  // Bill calculation logic
+  const handleCalculate = () => {
+    if (!usedUnits || !selectedBill) {
+      toast.error("Please fill in all fields");
       return;
     }
 
-    const houseUnits = parseFloat(usedUnits);
-    const commonCost = parseFloat(commonAreaCost) || 0;
-    const houseTotal = (unitPrice * houseUnits + commonCost).toFixed(2);
+    let remainingUnits = parseFloat(usedUnits);
+    let totalCost = 0;
 
-    setTotal(houseTotal);
-    toast.success('House bill calculated successfully!');
-  };
+    for (const range of billRanges) {
+      const from = parseFloat(range.fromRange);
+      const to = parseFloat(range.toRange);
+      const price = parseFloat(range.unitPrice);
 
-  // Generate invoice
-  const handleGenerateInvoice = () => {
-    if (!total) {
-      toast.error('Please calculate the bill before generating an invoice.');
-      return;
+      if (remainingUnits > 0) {
+        const unitsInRange = Math.min(remainingUnits, to - from + 1);
+        totalCost += unitsInRange * price;
+        remainingUnits -= unitsInRange;
+      }
     }
 
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text('🏢 Apartment Bill Invoice', 20, 20);
-    doc.setFontSize(12);
-    doc.text(`Apartment ID: ${apartment_id}`, 20, 35);
-    doc.text(`Bill Type: ${selectedBill}`, 20, 45);
-    doc.text(`Month: ${month}`, 20, 55);
-    doc.text(`Used Units: ${usedUnits}`, 20, 65);
-    doc.text(`Unit Price: Rs. ${unitPrice}`, 20, 75);
+    if (commonCost) totalCost += parseFloat(commonCost);
 
-    if (['electricity', 'water', 'Electricity Bill', 'Water Bill'].includes(selectedBill.toLowerCase())) {
-      doc.text(`Common Area Cost: Rs. ${commonAreaCost || 0}`, 20, 85);
-    }
-
-    doc.text(`--------------------------------------`, 20, 95);
-    doc.setFontSize(14);
-    doc.text(`Total Bill: Rs. ${total}`, 20, 105);
-    doc.save(`Invoice_${selectedBill}_${month}.pdf`);
+    setTotal(totalCost.toFixed(2));
+    toast.success("Bill calculated successfully!");
   };
 
   return (
-    <div className="mt-4 text-gray-800 dark:text-gray-200 font-medium space-y-3">
-      <h3 className="text-lg font-semibold mb-2">Calculate Monthly Bill</h3>
+    <div className="p-6 space-y-4 text-gray-800 dark:text-gray-200">
+      <h2 className="text-xl font-bold">Calculate Bill</h2>
 
-      {error && <p className="text-red-500">{error}</p>}
+      {/* <input
+        type="text"
+        placeholder="Calculation type (e.g., Monthly, 6 Months, Annual)"
+        value={calculationType}
+        onChange={(e) => setCalculationType(e.target.value)}
+        className="border border-purple-600 rounded p-2 w-full dark:bg-gray-700 dark:text-white"
+      /> */}
 
-      <div className="flex flex-col gap-3 max-w-md">
-        {/* Month */}
-        <input
-          type="month"
-          value={month}
-          onChange={(e) => setMonth(e.target.value)}
-          className="border border-purple-600 rounded p-2 dark:bg-gray-700 dark:text-white"
-          required
-        />
+      <select
+        value={selectedBill}
+        onChange={(e) => setSelectedBill(e.target.value)}
+        className="border border-purple-600 rounded p-2 w-full dark:bg-gray-700 dark:text-white"
+      >
+        <option value="">-- Select Bill Type --</option>
+        {bills.map((bill) => (
+          <option key={bill.id} value={bill.id}>
+            {bill.bill_name}
+          </option>
+        ))}
+      </select>
 
-        {/* Bill type */}
-        <select
-          className="border border-purple-600 rounded p-2 bg-white dark:bg-gray-700 dark:text-white"
-          value={selectedBill}
-          onChange={(e) => setSelectedBill(e.target.value)}
-        >
-          <option value="">-- Select Bill Type --</option>
-          {bills.map((bill) => (
-            <option key={bill.id} value={bill.bill_name}>
-              {bill.bill_name}
-            </option>
-          ))}
-        </select>
+      {billRanges.length > 0 && (
+        <div className="border rounded p-3 bg-gray-50 dark:bg-gray-800">
+          <h3 className="font-semibold mb-2">Bill Ranges</h3>
+          <table className="w-full border-collapse border border-gray-300">
+            <thead>
+              <tr className="bg-purple-200 dark:bg-purple-700">
+                <th>From</th>
+                <th>To</th>
+                <th>Unit Price (Rs)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {billRanges.map((r, i) => (
+                <tr key={i} className="text-center border-t">
+                  <td>{r.fromRange}</td>
+                  <td>{r.toRange}</td>
+                  <td>{r.unitPrice}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-        {/* Step 1: Total apartment data */}
-        <input
-          type="number"
-          placeholder="Total apartment consumption (units)"
-          value={totalConsumption}
-          onChange={(e) => setTotalConsumption(e.target.value)}
-          className="border border-purple-600 rounded p-2 dark:bg-gray-700 dark:text-white"
-        />
-        <input
-          type="number"
-          placeholder="Total apartment bill amount (Rs)"
-          value={totalBillAmount}
-          onChange={(e) => setTotalBillAmount(e.target.value)}
-          className="border border-purple-600 rounded p-2 dark:bg-gray-700 dark:text-white"
-        />
+      {/* <input
+        type="number"
+        placeholder="Levy"
+        value={usedUnits}
+        onChange={(e) => setUsedUnits(e.target.value)}
+        className="border border-purple-600 rounded p-2 w-full dark:bg-gray-700 dark:text-white"
+      /> */}
 
-        <button
-          type="button"
-          onClick={handleCalculateUnitPrice}
-          className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded transition"
-        >
-          Calculate Unit Price
-        </button>
+      {/* <input
+        type="number"
+        placeholder="Used units"
+        value={usedUnits}
+        onChange={(e) => setUsedUnits(e.target.value)}
+        className="border border-purple-600 rounded p-2 w-full dark:bg-gray-700 dark:text-white"
+      /> */}
 
-        {/* Display unit price */}
-        {unitPrice && (
-          <div className="p-3 border rounded bg-purple-100 dark:bg-purple-900 dark:text-white">
-            <strong>Unit Price:</strong> Rs. {unitPrice} per unit
-          </div>
-        )}
+      {/* <input
+        type="number"
+        placeholder="Common area cost (optional)"
+        value={commonCost}
+        onChange={(e) => setCommonCost(e.target.value)}
+        className="border border-purple-600 rounded p-2 w-full dark:bg-gray-700 dark:text-white"
+      /> */}
 
-        {/* Step 2: Specific house data */}
-        <input
-          type="number"
-          placeholder="Used units for this house"
-          value={usedUnits}
-          onChange={(e) => setUsedUnits(e.target.value)}
-          className="border border-purple-600 rounded p-2 dark:bg-gray-700 dark:text-white"
-        />
+      {/* <button
+        onClick={handleCalculate}
+        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded transition"
+      >
+        Calculate Bill
+      </button> */}
 
-        {(selectedBill.toLowerCase().includes('electricity') ||
-          selectedBill.toLowerCase().includes('water')) && (
-          <input
-            type="number"
-            placeholder="Enter common area cost (optional)"
-            value={commonAreaCost}
-            onChange={(e) => setCommonAreaCost(e.target.value)}
-            className="border border-purple-600 rounded p-2 dark:bg-gray-700 dark:text-white"
-          />
-        )}
+      {total && (
+        <div className="mt-4 p-3 border rounded bg-purple-100 dark:bg-purple-900 dark:text-white">
+          <strong>Total Bill:</strong> Rs. {total}
+        </div>
+      )}
 
-        <button
-          type="button"
-          onClick={handleCalculateHouseBill}
-          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded transition"
-        >
-          Calculate House Bill
-        </button>
-
-        {total && (
-          <div className="p-3 border rounded bg-purple-100 dark:bg-purple-900 dark:text-white">
-            <strong>Total Bill for House:</strong> Rs. {total}
-          </div>
-        )}
-
-        <button
-          type="button"
-          onClick={handleGenerateInvoice}
-          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded transition"
-        >
-          Generate Invoice PDF
-        </button>
-      </div>
-      <ToastContainer position="top-center" autoClose={3000}/>
+      <ToastContainer position="top-center" autoClose={3000} />
     </div>
   );
 }

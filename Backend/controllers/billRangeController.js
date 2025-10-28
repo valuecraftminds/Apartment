@@ -88,13 +88,13 @@ const billRangeController = {
         }
     },
 
-    async getByApartment(req, res) {
+    async getByBillId(req, res) {
         try {
-        const { apartment_id } = req.params;
-        const bills = await Bills.findByApartment(apartment_id);
-        res.json(bills);
+        const { bill_id } = req.params;
+        const billranges = await BillRange.findByBillId(bill_id);
+        res.json(billranges);
         } catch (err) {
-        console.error("Error fetching bill types:", err);
+        console.error("Error fetching bill ranges:", err);
         res.status(500).json({ message: "Server error" });
         }
     },

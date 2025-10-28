@@ -10,6 +10,7 @@ router.use(authenticateToken);
 router.post('/', billRangeController.createBillRange);
 router.get('/', billRangeController.getAllBillRanges);
 router.get('/:id', billRangeController.getBillRangeById);
+router.get('/bills/:bill_id',billRangeController.getByBillId);
 router.put('/:id', billRangeController.updateBillRange);
 router.delete('/:id', billRangeController.deleteBillRange);
 // router.get("/apartment/:apartment_id",billController.getByApartment);

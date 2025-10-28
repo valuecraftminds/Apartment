@@ -6,6 +6,7 @@ import { toast, ToastContainer } from "react-toastify";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import CreateBillRange from "./CreateBillRange";
+import EditBillRange from "./EditBillRange";
 
 export default function BillRange() {
   const { bill_id } = useParams(); // get from route
@@ -17,6 +18,8 @@ export default function BillRange() {
   const [bills,setBills] = useState([]);
   const [loadingBills,setLoadingBills] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedRange, setSelectedRange] = useState(null);
 
   const loadBillRanges = async () => {
     try {
@@ -70,6 +73,7 @@ export default function BillRange() {
     useEffect(()=>{
         loadBills();
     },[]);
+
 
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-gray-900 w-screen transition-colors duration-200">
@@ -157,6 +161,10 @@ export default function BillRange() {
                         <td className="px-4 py-4">
                           <div className="flex space-x-2">
                             <button
+                              onClick={() => {
+                                setSelectedRange(range); // store the range to edit
+                                setShowEditModal(true);
+                              }}
                               className="text-green-600 hover:text-green-900"
                               title="Edit"
                             >
@@ -203,6 +211,17 @@ export default function BillRange() {
                 }}
               />
 
+              {/* Edit Modal */}
+              {showEditModal && (
+                <EditBillRange
+                  range={selectedRange}
+                  onClose={() => setShowEditModal(false)}
+                  onUpdated={() => {
+                    toast.success("Bill range updated!");
+                    loadBillRanges();
+                  }}
+                />
+              )}
             <ToastContainer position="top-center" autoClose={3000} />
           </div>
     

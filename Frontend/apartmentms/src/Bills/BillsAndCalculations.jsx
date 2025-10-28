@@ -89,7 +89,7 @@ export default function BillsAndCalculations() {
                         <Bills/>
                     )}
                     {activeTab === "calculateBill" && (
-                        <CalculateBill apartment_id={apartment_id}/>
+                        <CalculateBill/>
                     )}
                 </div>
             </div>

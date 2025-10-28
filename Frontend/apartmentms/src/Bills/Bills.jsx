@@ -59,7 +59,7 @@ export default function Bills() {
         toast.success('Bill type Created Successfully');
     }
 
-    // //Update house types
+    //Update house types
     const handleEdit = (bills) => {
         setSelectedBillType(bills);
         setShowEditModal(true);

@@ -27,13 +27,13 @@ class BillRange{
         );
         return rows;
     }
-    // static async findByApartment(apartment_id) {
-    // const [rows] = await pool.execute(
-    //     'SELECT * FROM bills WHERE apartment_id=? ORDER BY created_at ASC',
-    //     [apartment_id]
-    // );
-    // return rows;
-    // }
+    static async findByBillId(bill_id) {
+    const [rows] = await pool.execute(
+        'SELECT * FROM billrange WHERE bill_id=? ORDER BY created_at ASC',
+        [bill_id]
+    );
+    return rows;
+    }
 
     static async findAll() {
         const [rows] = await pool.execute(
