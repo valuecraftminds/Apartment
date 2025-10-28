@@ -81,7 +81,16 @@ export default function BillsAndCalculations() {
                                     ? "text-purple-600 border-b-2 border-purple-600"
                                     : "text-gray-600 dark:text-gray-300 hover:text-purple-600"}`}
                         >
-                            Manage Bills
+                            Manage Bills For Each House
+                        </button>
+                        <button
+                            onClick={() => setActiveTab("calculateBillApartment")}
+                            className={`px-4 py-2 font-semibold 
+                                ${activeTab === "calculateBillApartment"
+                                    ? "text-purple-600 border-b-2 border-purple-600"
+                                    : "text-gray-600 dark:text-gray-300 hover:text-purple-600"}`}
+                        >
+                            Manage Bills for Whole Apartment 
                         </button>
                     </div>
 
@@ -90,6 +99,9 @@ export default function BillsAndCalculations() {
                     )}
                     {activeTab === "calculateBill" && (
                         <CalculateBill/>
+                    )}
+                    {activeTab === 'calculateBillApartment' && (
+                        <ManageBills/>
                     )}
                 </div>
             </div>
