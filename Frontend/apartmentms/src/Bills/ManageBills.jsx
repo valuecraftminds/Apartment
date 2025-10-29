@@ -13,8 +13,6 @@ import { toast, ToastContainer } from 'react-toastify';
 export default function ManageBills() {
     const { auth } = useContext(AuthContext);
     const navigate = useNavigate();
-
-    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [apartments, setApartments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -132,10 +130,7 @@ export default function ManageBills() {
                 <div className="flex-1 overflow-y-auto p-6">
                     <div className="mx-auto max-w-7xl">
                         <div className='flex items-center justify-between bg-white dark:bg-gray-800 rounded-2xl p-4 mb-6'>
-                            <div className='flex items-center'>
-                                <Building2 size={40} className='text-purple-600 dark:text-purple-400 mr-3'/>
-                                <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Bill Management for Apartments</h1>
-                            </div>
+                            
                             {/* <button onClick={handleAddNew} className='flex items-center gap-2 px-4 py-2 rounded-lg font-semibold shadow-md transition-all duration-300 text-white bg-purple-600 hover:bg-purple-700 hover:scale-105'>
                                 <Plus size={20}/>
                                 <span>Add New</span>

@@ -4,11 +4,10 @@ import { X } from "lucide-react";
 export default function CreateBillRange({ show, onClose, onSave }) {
   const [formData, setFormData] = useState({
     fromRange: "",
-    toRange: "",
-    unitPrice: "",
+    toRange: ""
   });
 
-  if (!show) return null; // 👈 Don't render anything if modal is closed
+  if (!show) return null; // Don't render anything if modal is closed
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -16,7 +15,7 @@ export default function CreateBillRange({ show, onClose, onSave }) {
   };
 
   const handleSubmit = () => {
-    if (!formData.fromRange || !formData.toRange || !formData.unitPrice) {
+    if (!formData.fromRange || !formData.toRange) {
       alert("Please fill all fields.");
       return;
     }
@@ -24,7 +23,7 @@ export default function CreateBillRange({ show, onClose, onSave }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/0 backdrop-blur-lg">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-[90%] max-w-md relative">
         {/* Header */}
         <div className="flex justify-between items-center mb-4">
@@ -47,7 +46,7 @@ export default function CreateBillRange({ show, onClose, onSave }) {
             placeholder="From Range"
             value={formData.fromRange}
             onChange={handleChange}
-            className="p-2 border rounded-md dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-purple-500 outline-none"
+            className="p-2 border rounded-md text-black dark:text-white focus:ring-2 focus:ring-purple-500 outline-none"
           />
           <input
             type="number"
@@ -55,15 +54,7 @@ export default function CreateBillRange({ show, onClose, onSave }) {
             placeholder="To Range"
             value={formData.toRange}
             onChange={handleChange}
-            className="p-2 border rounded-md dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-purple-500 outline-none"
-          />
-          <input
-            type="number"
-            name="unitPrice"
-            placeholder="Unit Price"
-            value={formData.unitPrice}
-            onChange={handleChange}
-            className="p-2 border rounded-md dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-purple-500 outline-none"
+            className="p-2 border rounded-md text-black dark:text-white focus:ring-2 focus:ring-purple-500 outline-none"
           />
         </div>
 

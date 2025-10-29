@@ -23,6 +23,7 @@ import CompleteRegistration from './Users/CompleteRegistration'
 import ManageBills from './Bills/ManageBills'
 import BillsAndCalculations from './Bills/BillsAndCalculations'
 import BillRange from './Bills/BillRange'
+import BillPrice from './Bills/BillPrice'
 
 export default function App() {
   return (
@@ -49,6 +50,8 @@ export default function App() {
         <Route path='/manage-bills' element={<ManageBills/>}/>
         <Route path='/bills-and-calculations' element={<BillsAndCalculations/>}/>
         <Route path="/billranges/:bill_id" element={<BillRange />} />
+        <Route path="/billprice/:billrange_id" element={<BillPrice />} />
+
 
       </Routes>
     </BrowserRouter>

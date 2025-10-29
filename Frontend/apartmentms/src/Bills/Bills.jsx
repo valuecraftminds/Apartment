@@ -149,8 +149,18 @@ export default function Bills() {
                                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                                     {index + 1}
                                 </td>
-                                <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                    {bills.bill_name}
+                                <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white flex items-center ">
+                                <span>{bills.bill_name}</span>
+                                <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/assignbill/${bills.id}`); // route to assign page or modal
+                                }}
+                                title="Assign Bill"
+                                className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 transition-all justify-between ml-7"
+                                >
+                                <Plus size={20} />
+                                </button>
                                 </td>
                                 <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                                     <div className="flex space-x-2">

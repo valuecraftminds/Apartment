@@ -86,7 +86,7 @@ export default function EditBillRange({ range, onClose, onUpdated }) {
             required
           />
 
-          <input
+          {/* <input
             type="number"
             name="unitPrice"
             value={formData.unitPrice}
@@ -94,7 +94,7 @@ export default function EditBillRange({ range, onClose, onUpdated }) {
             placeholder="Unit Price"
             className="border rounded p-2 text-black dark:text-white border-purple-600"
             required
-          />
+          /> */}
 
           <div className="flex justify-end gap-2">
             <button

@@ -1,32 +1,33 @@
 const e = require('express');
-const bills = require('../models/Bill');
-const Bills = require('../models/Bill');
-const BillRange = require('../models/BillRange');
+const Billprice = require('../models/BillPrice');
 
-const billRangeController = {
-    async createBillRange(req, res) {
+const billPriceController = {
+    async createBillPrice(req, res) {
         try {
-            const { bill_id, fromRange,toRange } = req.body;
+            const { bill_id,billrange_id, year,month,unitprice,fixedamount } = req.body;
             const company_id = req.user.company_id;
             // const apartment_id=req.apartment.id;
 
-            if (!fromRange || !toRange === undefined) {
+            if (year || !month || unitprice || fixedamount === undefined) {
                 return res.status(400).json({
                     success: false,
                     message: 'All fields are required'
                 });
             }
 
-            const newBillRange = await BillRange.create({
-                    fromRange:parseFloat(fromRange),
-                    toRange:parseFloat(toRange),
+            const newBillPrice = await Billprice.create({
+                    year:parseInt(year),
+                    month,
+                    unitprice:parseFloat(unitprice),
+                    fixedamount:parseFloat(fixedamount),
                     company_id,
-                    bill_id
+                    bill_id,
+                    billrange_id
             });
             res.status(201).json({
             success: true,
             // message: 'Bill type Added successfully',
-            data: newBillRange
+            data: newBillPrice
             });
         } catch (err) {
             console.error('Create bill range error', err);
@@ -38,7 +39,7 @@ const billRangeController = {
     },
 
     // Get all house
-    async getAllBillRanges(req, res) {
+    async getAllBillPrices(req, res) {
         try {
 
             // Get company_id from authenticated user (from JWT token)
@@ -73,10 +74,10 @@ const billRangeController = {
             });
         }
 
-            const billRanges = await BillRange.findByCompanyId(company_id);
+            const billPrice = await Billprice.findByCompanyId(company_id);
             res.json({
                 success: true,
-                data: billRanges
+                data: billPrice
             });
         } catch (err) {
             console.error('Get bill range error', err);
@@ -90,90 +91,103 @@ const billRangeController = {
     async getByBillId(req, res) {
         try {
         const { bill_id } = req.params;
-        const billranges = await BillRange.findByBillId(bill_id);
-        res.json(billranges);
+        const billprice = await Billprice.findByBillId(bill_id);
+        res.json(billprice);
         } catch (err) {
-        console.error("Error fetching bill ranges:", err);
+        console.error("Error fetching bill range price:", err);
+        res.status(500).json({ message: "Server error" });
+        }
+    },
+
+    async getByBillRangeId(req, res) {
+        try {
+        const { billrange_id } = req.params;
+        const billPrice = await Billprice.findByBillRangeId(billrange_id);
+        res.json(billPrice);
+        } catch (err) {
+        console.error("Error fetching bill range price by bill range :", err);
         res.status(500).json({ message: "Server error" });
         }
     },
 
     //get bill by ID
-    async getBillRangeById(req,res){
+    async getBillPriceById(req,res){
         try{
             const {id}=req.params;
-            const billRanges=await BillRange.findById(id);
+            const billPrice=await Billprice.findById(id);
 
-            if(!billRanges){
+            if(!billPrice){
                 return res.status(404).json({
                     success:false,
-                    message:'bill range is not found'
+                    message:'bill range price is not found'
                 });
             }
 
             res.json({
                 success:true,
-                data:billRanges
+                data:billPrice
             });
         }catch(err){
-            console.error('Get bill ranges error',err);
+            console.error('Get bill range price error',err);
             res.status(500).json({
                 success:false,
-                message:'Server error while fetching bill ranges'
+                message:'Server error while fetching bill range price'
             });
         }
     },
 
-    //update bills
-    async updateBillRange(req,res){
+    //update bill range price
+    async updateBillRangePrice(req,res){
         try{
             const {id}=req.params;
-            const {fromRange,toRange}=req.body;
+            const {year,month,unitprice,fixedamount}=req.body;
 
             //check house exist
-            const existingBillRanges= await BillRange.findById(id);
-            if(!existingBillRanges){
+            const existingBillRangePrice= await Billprice.findById(id);
+            if(!existingBillRangePrice){
                 return res.status(404).json({
                     success:false,
-                    message:'Bill range not found'
+                    message:'Bill range price not found'
                 });
             }
 
-            const updateBillRange= await BillRange.update(id,{
-                 fromRange: fromRange ? parseFloat(fromRange): existingBillRanges.fromRange,
-                 toRange: toRange ? parseFloat(toRange): existingBillRanges.toRange,
+            const updateBillRangePrice= await Billprice.update(id,{
+                 year: year ? parseInt(year): existingBillRangePrice.year,
+                 month:existingBillRangePrice.month,
+                 unitprice: unitprice ? parseFloat(unitprice): existingBillRangePrice.unitprice,
+                 fixedamount: fixedamount ? parseFloat(fixedamount): existingBillRangePrice.fixedamount
                 //  unitPrice: unitPrice ? parseFloat(unitPrice): existingBillRanges.unitPrice
             });
 
             res.json({
                 success:true,
-                message:'Bill range updated successfully',
-                data: updateBillRange
+                message:'Bill range price updated successfully',
+                data: updateBillRangePrice
             });
         }catch(err){
-            console.error('Update bill range error:',err);
+            console.error('Update bill range price error:',err);
             res.status(500).json({
                 success:false,
-                message:'Server error while updating bill range'
+                message:'Server error while updating bill range price'
             });
         }
     },
 
     //Delete house
-    async deleteBillRange(req,res){
+    async deleteBillRangePrice(req,res){
         try{
             const {id} = req.params;
 
             //check if house exists
-            const existingBillRange= await BillRange.findById(id);
-            if(!existingBillRange){
+            const existingBillRangePrice= await Billprice.findById(id);
+            if(!existingBillRangePrice){
                 return res.status(404).json({
                     success:false,
-                    message:'Bill range not found'
+                    message:'Bill range price not found'
                 });
             }
 
-            await BillRange.delete(id);
+            await Billprice.delete(id);
             res.json({
                 success:true,
                 message:'Deleted successfully'
@@ -182,10 +196,10 @@ const billRangeController = {
             console.error('Delete error:',err);
             res.status(500).json({
                 success:false,
-                message:'Server error while deleting bill range'
+                message:'Server error while deleting bill range price'
             });
         }
     },
     
 }
-module.exports=billRangeController;
+module.exports=billPriceController;

@@ -82,3 +82,7 @@ app.use('/api/bills',authenticateToken,billRoutes);
 //Routes of bill range
 const billRangeRoutes = require('./routes/billRanges');
 app.use('/api/billranges', authenticateToken,billRangeRoutes);
+
+//Routes of bill price
+const billPriceRoutes = require('./routes/billPrice');
+app.use('/api/billprice', authenticateToken, billPriceRoutes)
