@@ -31,7 +31,15 @@ class Floor {
 
     static async findByApartmentId(apartment_id){
         const [rows] = await pool.execute(
-            'SELECT * FROM floors WHERE apartment_id=? ORDER BY CAST(SUBSTRING(floor_id, 2) AS UNSIGNED) ASC',
+            // 'SELECT * FROM floors WHERE apartment_id=? ORDER BY CAST(SUBSTRING(floor_id, 2) AS UNSIGNED) ASC',
+           `SELECT 
+            f.*, 
+            COUNT(DISTINCT h.id) AS house_count
+        FROM floors f
+        LEFT JOIN houses h ON f.id = h.floor_id
+        WHERE f.apartment_id = ?
+        GROUP BY f.id
+        ORDER BY CAST(SUBSTRING(f.floor_id, 2) AS UNSIGNED) ASC`,
         [apartment_id]
         );
         return rows;

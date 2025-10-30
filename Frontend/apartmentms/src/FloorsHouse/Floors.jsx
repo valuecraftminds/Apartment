@@ -62,17 +62,18 @@ export default function Floors() {
     } finally {
          setLoadingFloors(false);
     }
-};
+    };
 
     useEffect(() => {
         loadFloors();
     }, [id]);
 
-  const handleHouseView = (floor) => {
-  navigate(`/houses/${id}/${floor.id}`); // pass both apartment id and floor id
-};
+    const handleHouseView = (floor) => {
+        navigate(`/houses/${id}/${floor.id}`); // pass both apartment id and floor id
+    };
 
-const confirmDeactivate = (floor) => {
+    //Deactivate and activate the floors
+    const confirmDeactivate = (floor) => {
         setDeactivatingFloor(floor);
         setShowDeactivateModal(true);
     };
@@ -102,12 +103,13 @@ const confirmDeactivate = (floor) => {
     setShowCreateModal(false);
   };
 
-  const handleFloorsCreated = () => {
+    const handleFloorsCreated = () => {
           loadFloors();
           setShowCreateModal(false);
           toast.success('Floor created successfully!');
-      };
+    };
 
+    //Update Floors
     const handleEdit = (floor) => {
     setSelectedFloor(floor);
     setShowEditModal(true);
@@ -229,18 +231,18 @@ const confirmDeactivate = (floor) => {
                                                                     title="Edit"
                                                                     >
                                                                     <Edit size={20} />
-                                                                    </button>
+                                                                </button>
                                                                 <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation(); // prevent row click
-                                                                    confirmDeactivate(floor);
-                                                                    // handleToggle(floor);
-                                                                }}
-                                                                className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                                                                title={floor.is_active ? 'Deactivate' : 'Activate'}
-                                                                >
-                                                                {floor.is_active ? <ToggleRight size={25} /> : <ToggleLeft size={25} />}
-                                                            </button>
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation(); // prevent row click
+                                                                        confirmDeactivate(floor);
+                                                                        // handleToggle(floor);
+                                                                    }}
+                                                                    className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                                                    title={floor.is_active ? 'Deactivate' : 'Activate'}
+                                                                    >
+                                                                    {floor.is_active ? <ToggleRight size={25} /> : <ToggleLeft size={25} />}
+                                                                </button>
                                                             </div>
                                                         </td>
                                                     </tr>

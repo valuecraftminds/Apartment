@@ -267,4 +267,281 @@ router.get('/users', authenticateToken, async (req, res) => {
   }
 });
 
+const nodemailer = require('nodemailer');
+const rateLimit = require('express-rate-limit');
+
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 3, // Limit each IP to 3 forgot password requests per windowMs
+  message: 'Too many password reset attempts, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const resetPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 reset attempts per windowMs
+  message: 'Too many reset attempts, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Send password reset link
+// In your auth.js routes file
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email is required' });
+
+    // find user
+    const [rows] = await pool.execute('SELECT id, email FROM users WHERE email = ?', [email]);
+    if (!rows.length) return res.status(404).json({ message: 'No account found with that email' });
+
+    const user = rows[0];
+
+    // generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    await pool.execute(
+      'UPDATE users SET reset_token_hash = ?, reset_token_expires = ? WHERE id = ?',
+      [resetTokenHash, expiresAt, user.id]
+    );
+
+    // Debug: Check if email credentials are loaded
+    console.log('Email User:', process.env.SMTP_USER);
+    console.log('Email Pass:', process.env.SMTP_PASS ? '***' : 'MISSING');
+
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      console.error('Email credentials missing from environment variables');
+      return res.status(500).json({ message: 'Email service not configured' });
+    }
+
+    // Create transporter with better configuration
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT,
+      secure: process.env.SMTP_SECURE,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+      // Add these options for better reliability
+      pool: true,
+      maxConnections: 1,
+      rateDelta: 20000,
+      rateLimit: 5
+    });
+
+    // Verify transporter configuration
+    try {
+      await transporter.verify();
+      console.log('Email transporter verified successfully');
+    } catch (verifyError) {
+      console.error('Email transporter verification failed:', verifyError);
+      return res.status(500).json({ message: 'Email service configuration error' });
+    }
+
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}&id=${user.id}`;
+
+    const mailOptions = {
+      from: {
+        name: 'AptSync Support',
+        address: process.env.SMTP_USER
+      },
+      to: user.email,
+      subject: 'Reset your AptSync password',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #6d28d9;">Password Reset Request</h2>
+          <p>You requested to reset your password for AptSync.</p>
+          <p>Click the button below to reset your password. This link will expire in 15 minutes.</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${resetUrl}" 
+               style="background: #6d28d9; color: white; padding: 12px 24px; 
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              Reset Password
+            </a>
+          </div>
+          <p style="color: #666; font-size: 14px;">
+            If you didn't request this, please ignore this email.
+          </p>
+          <p style="color: #666; font-size: 14px;">
+            Or copy and paste this link in your browser:<br>
+            <code style="background: #f5f5f5; padding: 5px; border-radius: 3px;">${resetUrl}</code>
+          </p>
+        </div>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`Password reset email sent to: ${user.email}`);
+
+    res.json({ message: 'Password reset link sent to your email' });
+  } catch (err) {
+    console.error('Forgot password error:', err);
+    
+    // More specific error messages
+    if (err.code === 'EAUTH') {
+      return res.status(500).json({ message: 'Email authentication failed. Please check email configuration.' });
+    }
+    
+    res.status(500).json({ message: 'Server error while sending reset link' });
+  }
+});
+
+
+// Reset password route
+router.post('/reset-password',resetPasswordLimiter, async (req, res) => {
+  try {
+    const { token, id, password } = req.body;
+    if (!token || !id || !password)
+      return res.status(400).json({ message: 'Token, ID, and new password are required' });
+
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    const [rows] = await pool.execute(
+      'SELECT reset_token_hash, reset_token_expires FROM users WHERE id = ?',
+      [id]
+    );
+
+    if (!rows.length) return res.status(404).json({ message: 'User not found' });
+    const user = rows[0];
+
+    if (user.reset_token_hash !== tokenHash)
+      return res.status(400).json({ message: 'Invalid or already used token' });
+
+    if (new Date(user.reset_token_expires) < new Date())
+      return res.status(400).json({ message: 'Reset token expired' });
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    await pool.execute(
+      'UPDATE users SET password_hash = ?, reset_token_hash = NULL, reset_token_expires = NULL WHERE id = ?',
+      [hashedPassword, id]
+    );
+
+    res.json({ message: 'Password reset successful' });
+  } catch (err) {
+    console.error('Reset password error:', err);
+    res.status(500).json({ message: 'Server error while resetting password' });
+  }
+});
+
+//user invite
+router.post('/invite', async (req, res) => {
+  try {
+    const { email, role, company_id } = req.body;
+    if (!email || !role) {
+      return res.status(400).json({ message: 'Email and role are required' });
+    }
+
+    // Check if user already exists
+    const [exists] = await pool.execute('SELECT id FROM users WHERE email = ?', [email]);
+    if (exists.length) {
+      return res.status(409).json({ message: 'User already exists' });
+    }
+
+    // Insert invited user (allow NULL password_hash!)
+    const [ins] = await pool.execute(
+      'INSERT INTO users (email, role, is_verified, is_active, company_id, password_hash) VALUES (?, ?, 0, 1, ?, NULL)',
+      [email, role, company_id || null]
+    );
+
+    const userId = ins.insertId;
+
+    // Generate verification token
+    const plainToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(plainToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    await pool.execute(
+      'UPDATE users SET verification_token_hash=?, verification_token_expires=? WHERE id=?',
+      [tokenHash, expiresAt, userId]
+    );
+
+    // Create transporter
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT,
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
+
+    await transporter.verify();
+
+    // Build invite link
+    const inviteUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/complete-registration?token=${plainToken}&id=${userId}`;
+
+    const mailOptions = {
+      from: {
+        name: 'AptSync Support',
+        address: process.env.SMTP_USER,
+      },
+      to: email,
+      subject: 'You are invited to join AptSync',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #6d28d9;">You're Invited!</h2>
+          <p>You’ve been invited to join <b>AptSync</b> as a ${role}.</p>
+          <p>Click the button below to complete your registration. This link will expire in 24 hours.</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${inviteUrl}" 
+               style="background: #6d28d9; color: white; padding: 12px 24px; 
+                      text-decoration: none; border-radius: 6px; display: inline-block;">
+              Complete Registration
+            </a>
+          </div>
+          <p style="color: #666; font-size: 14px;">
+            Or copy and paste this link into your browser:<br>
+            <code style="background: #f5f5f5; padding: 5px; border-radius: 3px;">${inviteUrl}</code>
+          </p>
+        </div>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`Invite email sent to: ${email}`);
+
+    res.status(201).json({ message: 'Invitation sent successfully' });
+  } catch (err) {
+    console.error('Invite error:', err);
+    res.status(500).json({ message: 'Server error while inviting user' });
+  }
+});
+
+router.post('/complete-registration', async (req, res) => {
+  try {
+    const { email, firstname, lastname, country, mobile, password } = req.body;
+    if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
+
+    const [users] = await pool.execute('SELECT id, is_verified FROM users WHERE email = ?', [email]);
+    if (!users.length) return res.status(404).json({ message: 'User not found' });
+
+    const user = users[0];
+    if (!user.is_verified) return res.status(400).json({ message: 'Email not verified' });
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    await pool.execute(
+      `UPDATE users 
+       SET firstname=?, lastname=?, country=?, mobile=?, password_hash=?, is_active=1 
+       WHERE id=?`,
+      [firstname, lastname, country, mobile, hashedPassword, user.id]
+    );
+
+    res.json({ message: 'Registration completed successfully' });
+  } catch (err) {
+    console.error('Complete registration error:', err);
+    res.status(500).json({ message: 'Server error while completing registration' });
+  }
+});
+
+
+
+
 module.exports = router;

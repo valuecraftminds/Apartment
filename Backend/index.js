@@ -70,3 +70,25 @@ app.use('/api/houses',authenticateToken,houseRoutes);
 //Routes the house types
 const houseTypeRoutes = require ('./routes/houseType');
 app.use('/api/housetype',authenticateToken,houseTypeRoutes);
+
+//Routes the house owner
+const houseOwnerRoutes = require('./routes/houseOwner');
+app.use('/api/houseowner',authenticateToken,houseOwnerRoutes);
+
+//Routes the bills
+const billRoutes = require('./routes/bills');
+app.use('/api/bills',authenticateToken,billRoutes);
+
+//Routes of bill range
+const billRangeRoutes = require('./routes/billRanges');
+app.use('/api/billranges', authenticateToken,billRangeRoutes);
+
+//Routes of bill price
+const billPriceRoutes = require('./routes/billPrice');
+app.use('/api/billprice', authenticateToken, billPriceRoutes)
+
+// In your main routes file (usually app.js or routes/index.js)
+const billAssignmentsRoutes = require('./routes/billAssignments');
+
+// Then add to your app
+app.use('/api/bill-assignments', billAssignmentsRoutes);

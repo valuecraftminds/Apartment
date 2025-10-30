@@ -24,15 +24,36 @@ class Apartment {
 
     static async findByCompanyId(company_id){
         const [rows] = await pool.execute(
-            'SELECT * FROM apartments WHERE company_id=? ORDER BY CAST(SUBSTRING(company_id, 2) AS UNSIGNED) ASC',
+            // 'SELECT * FROM apartments WHERE company_id=? ORDER BY CAST(SUBSTRING(company_id, 2) AS UNSIGNED) ASC',
+            `SELECT 
+            a.*, 
+            COUNT(DISTINCT f.id) AS floors,
+            COUNT(DISTINCT h.id) AS houses
+        FROM apartments a 
+        LEFT JOIN floors f ON a.id = f.apartment_id
+        LEFT JOIN houses h ON f.id = h.floor_id
+        WHERE a.company_id = ?
+        GROUP BY a.id
+        ORDER BY CAST(SUBSTRING(a.company_id, 2) AS UNSIGNED) ASC
+    `,
             [company_id]
+            
         );
         return rows;
     }
 
     static async findAll() {
         const [rows] = await pool.execute(
-            'SELECT * FROM apartments ORDER BY created_at DESC'
+            `SELECT 
+            a.*, 
+            COUNT(DISTINCT f.id) AS floors,
+            COUNT(DISTINCT h.id) AS houses
+        FROM apartments a WHERE company_id=?
+        LEFT JOIN floors f ON a.id = f.apartment_id
+        LEFT JOIN houses h ON f.id = h.floor_id
+        GROUP BY a.id
+        ORDER BY a.CAST(SUBSTRING(company_id, 2) AS UNSIGNED) ASC
+    `
         );
         return rows; 
     }

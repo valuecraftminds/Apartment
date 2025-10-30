@@ -15,6 +15,15 @@ import Layout from './pages/Layout'
 import Floors from './FloorsHouse/Floors'
 import Houses from './FloorsHouse/Houses'
 import HouseTypes from './FloorsHouse/HouseTypes'
+import ViewHouse from './FloorsHouse/ViewHouse'
+import Bills from './Bills/Bills'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
+import CompleteRegistration from './Users/CompleteRegistration'
+import ManageBills from './Bills/ManageBills'
+import BillsAndCalculations from './Bills/BillsAndCalculations'
+import BillRange from './Bills/BillRange'
+import BillPrice from './Bills/BillPrice'
 
 export default function App() {
   return (
@@ -32,7 +41,18 @@ export default function App() {
         <Route path='/userview' element={<UserView/>}/>
         <Route path='/floors/:id' element={<Floors/>}/>
         <Route path='/houses/:apartment_id/:floor_id' element={<Houses/>}/>
-        <Route path='/housetype/:id' element={<HouseTypes/>}/>
+        <Route path='/housetype/:apartment_id' element={<HouseTypes/>}/>
+        <Route path='/viewhouse/:apartment_id/:floor_id/:id' element={<ViewHouse/>}/>
+        <Route path='/bills/:apartment_id' element={<Bills/>}/>
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path='/complete-registration' element={<CompleteRegistration/>}/>
+        <Route path='/manage-bills' element={<ManageBills/>}/>
+        <Route path='/bills-and-calculations' element={<BillsAndCalculations/>}/>
+        <Route path="/billranges/:bill_id" element={<BillRange />} />
+        <Route path="/billprice/:bill_id/:billrange_id" element={<BillPrice />} />
+
+
       </Routes>
     </BrowserRouter>
   )

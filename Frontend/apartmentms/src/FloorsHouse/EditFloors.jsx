@@ -13,6 +13,7 @@ export default function EditFloors({ floor, onClose, onUpdated }) {
     setFormData({ ...formData, [name]: value });
   };
   const token = localStorage.getItem("token"); 
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -59,7 +60,7 @@ export default function EditFloors({ floor, onClose, onUpdated }) {
           value={formData.status}
           onChange={handleChange}
           className="mt-1 block w-full px-3 py-2 border rounded-lg shadow-sm 
-                     focus:ring-purple-500 border-purple-500 sm:text-sm  text-black dark:text-white"
+                     focus:ring-purple-500 border-purple-500 sm:text-sm  dark:bg-gray-700 dark:text-white text-black bg-white"
         >
           <option value="active">Active</option>
           <option value="maintenance">Maintenance</option>
