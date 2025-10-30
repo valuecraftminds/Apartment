@@ -8,7 +8,7 @@ import { ToastContainer, toast } from "react-toastify";
 import CreateBillPrice from "./CreateBillPrice";
 
 export default function BillPrice() {
-  const { billrange_id } = useParams();
+  const { bill_id, billrange_id } = useParams();
   const navigate = useNavigate();
 
   const [billPrices, setBillPrices] = useState([]);
@@ -17,35 +17,69 @@ export default function BillPrice() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
+  // Add this useEffect to debug the route parameters
+  React.useEffect(() => {
+    console.log('Route parameters:', { bill_id, billrange_id });
+  }, [bill_id, billrange_id]);
+
   // Fetch bill prices for this range
   const loadBillPrices = async () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await api.get(`/billprice?billrange_id=${billrange_id}`);
+      
+      console.log('Loading bill prices with:', { bill_id, billrange_id });
+      
+      // Use the correct API endpoint with query parameters
+      const res = await api.get(`/billprice?bill_id=${bill_id}&billrange_id=${billrange_id}`);
+      
+      console.log('API Response:', res.data);
 
-      if (res.data.success && Array.isArray(res.data.data)) {
-        const filtered = res.data.data.filter(
-          (bp) => bp.billrange_id === billrange_id
-        );
-        setBillPrices(filtered);
+      if (res.data.success) {
+        setBillPrices(res.data.data || []);
       } else {
         setBillPrices([]);
+        setError(res.data.message || 'Failed to load bill prices');
       }
     } catch (err) {
       console.error("Error loading bill prices:", err);
-      setError("Failed to load bill prices. Please try again.");
+      setError(err.response?.data?.message || "Failed to load bill prices. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadBillPrices();
-  }, [billrange_id]);
+    if (bill_id && billrange_id) {
+      loadBillPrices();
+    } else {
+      setError("Missing bill_id or billrange_id in URL parameters");
+    }
+  }, [bill_id, billrange_id]);
 
   const handleBack = () => {
     navigate(-1);
+  };
+
+  const handleCreateBillPrice = () => {
+    loadBillPrices();
+    setShowCreateModal(false);
+    toast.success('Bill price created successfully!');
+  }
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this bill price?')) {
+      return;
+    }
+
+    try {
+      await api.delete(`/billprice/${id}`);
+      toast.success('Bill price deleted successfully');
+      loadBillPrices();
+    } catch (err) {
+      console.error('Error deleting bill price:', err);
+      toast.error('Failed to delete bill price');
+    }
   };
 
   return (
@@ -78,17 +112,34 @@ export default function BillPrice() {
                   Bill Prices
                 </h1>
               </div>
+              {/* <div className="text-sm text-gray-600 dark:text-gray-400">
+                Bill ID: {bill_id || 'NOT FOUND'} | Range ID: {billrange_id || 'NOT FOUND'}
+              </div> */}
             </div>
+
+            {/* Show error if parameters are missing */}
+            {/* {(!bill_id || !billrange_id) && (
+              <div className="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded mb-6">
+                <strong>Error:</strong> Missing bill_id or billrange_id in URL parameters. 
+                Please check your route configuration.
+              </div>
+            )} */}
 
             {/* Content */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 text-gray-700 dark:text-gray-300">
-                <button
-             onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 mb-3 px-4 py-2 rounded-lg font-semibold shadow-md transition-all duration-300 text-white bg-purple-600 hover:bg-purple-700 hover:scale-105"
-            >
-              <Plus size={20} />
-              <span>Set Bill Range Price</span>
-            </button>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                disabled={!bill_id || !billrange_id}
+                className={`flex items-center gap-2 mb-6 px-4 py-2 rounded-lg font-semibold shadow-md transition-all duration-300 text-white ${
+                  !bill_id || !billrange_id 
+                    ? 'bg-purple-400 cursor-not-allowed' 
+                    : 'bg-purple-600 hover:bg-purple-700 hover:scale-105'
+                }`}
+              >
+                <Plus size={20} />
+                <span>Set Bill Price</span>
+              </button>
+
               {loading ? (
                 <div className="flex justify-center items-center py-12">
                   <Loader size={32} className="animate-spin text-purple-600" />
@@ -110,7 +161,7 @@ export default function BillPrice() {
                 <div className="text-center py-12 text-gray-600 dark:text-gray-300">
                   <FileText size={48} className="mx-auto mb-4 text-gray-400" />
                   <p className="text-lg">No Bill Prices Found</p>
-                  <p className="text-sm">Add new prices for this range.</p>
+                  <p className="text-sm">Add new prices for this bill range.</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -143,28 +194,29 @@ export default function BillPrice() {
                           <td className="px-4 py-4">{index + 1}</td>
                           <td className="px-4 py-4">{bp.year}</td>
                           <td className="px-4 py-4">{bp.month}</td>
-                          <td className="px-4 py-4">{bp.unitpice}</td>
+                          <td className="px-4 py-4">{bp.unitprice}</td>
                           <td className="px-4 py-4">{bp.fixedamount}</td>
                           <td className="px-4 py-4">
-                          <div className="flex space-x-2">
-                            <button
-                            //   onClick={() => {
-                            //     setSelectedRange(range); // store the range to edit
-                            //     setShowEditModal(true);
-                            //   }}
-                              className="text-green-600 hover:text-green-900"
-                              title="Edit"
-                            >
-                              <Edit size={20} />
-                            </button>
-                            <button
-                              className="text-red-600 hover:text-red-900"
-                              title="Delete"
-                            >
-                              <Trash2 size={20} />
-                            </button>
-                          </div>
-                        </td>
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => {
+                                  // Implement edit functionality
+                                  toast.info('Edit functionality to be implemented');
+                                }}
+                                className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+                                title="Edit"
+                              >
+                                <Edit size={20} />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(bp.id)}
+                                className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                title="Delete"
+                              >
+                                <Trash2 size={20} />
+                              </button>
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -175,8 +227,14 @@ export default function BillPrice() {
           </div>
         </div>
       </div>
-       {showCreateModal && (
-        <CreateBillPrice onClose={() => setShowCreateModal(false)} />
+
+      {showCreateModal && (
+        <CreateBillPrice 
+          onClose={() => setShowCreateModal(false)} 
+          onCreated={handleCreateBillPrice}
+          billrange_id={billrange_id}
+          bill_id={bill_id}
+        />
       )}
 
       <ToastContainer position="top-center" autoClose={3000} />

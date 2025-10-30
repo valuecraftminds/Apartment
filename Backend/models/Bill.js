@@ -3,15 +3,47 @@ const { v4: uuidv4 } = require('uuid');
 
 class Bills{
     static async create(billData){
-        const {company_id, bill_name} = billData;
+        const {company_id, bill_name,billtype} = billData;
         const id = uuidv4().replace(/-/g, '').substring(0, 10);
 
         const[result] = await pool.execute(
-            'INSERT INTO bills(id, company_id, bill_name, is_metered) values (?, ?, ?, 1) ',
-            [id, company_id, bill_name]
+            'INSERT INTO bills(id, company_id, bill_name,billtype, is_metered) values (?, ?, ?, ?, 1) ',
+            [id, company_id, bill_name,billtype]
         );
         return { id, ...billData };        
     } 
+
+    // Check for similar bill names (case-insensitive, ignoring spaces and special characters)
+    static async findSimilarBillName(company_id, bill_name) {
+        // Normalize the input: lowercase, remove extra spaces, remove common words
+        const normalizedInput = bill_name
+            .toLowerCase()
+            .trim()
+            .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+            .replace(/\b(bill|charge|fee|payment|amount)\b/gi, '') // Remove common words
+            .trim();
+        
+        const [rows] = await pool.execute(
+            `SELECT * FROM bills 
+             WHERE company_id = ? 
+             AND (
+                 LOWER(TRIM(bill_name)) = LOWER(TRIM(?)) OR
+                 LOWER(REPLACE(bill_name, ' ', '')) = LOWER(REPLACE(?, ' ', '')) OR
+                 SOUNDEX(bill_name) = SOUNDEX(?)
+             )`,
+            [company_id, bill_name, bill_name, bill_name]
+        );
+        return rows.length > 0;
+    }
+
+    static async findByBillName(bill_name){
+        const [rows] = await pool.execute(
+            'SELECT * FROM bills WHERE bill_name=?',
+            [bill_name]
+        );
+        return rows[0];
+    }
+
     static async findById(id) {
         const [rows] = await pool.execute(
             'SELECT * FROM bills WHERE id = ?',
@@ -43,10 +75,10 @@ class Bills{
     }
 
     static async update(id, billData) {
-        const {bill_name } = billData;
+        const {bill_name,billtype } = billData;
         await pool.execute(
-            'UPDATE bills SET bill_name=? WHERE id = ?',
-            [ bill_name,id]
+            'UPDATE bills SET bill_name=?, billtype=? WHERE id = ?',
+            [ bill_name,billtype,id]
         );
         return { id, ...billData };
     }

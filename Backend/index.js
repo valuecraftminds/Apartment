@@ -86,3 +86,9 @@ app.use('/api/billranges', authenticateToken,billRangeRoutes);
 //Routes of bill price
 const billPriceRoutes = require('./routes/billPrice');
 app.use('/api/billprice', authenticateToken, billPriceRoutes)
+
+// In your main routes file (usually app.js or routes/index.js)
+const billAssignmentsRoutes = require('./routes/billAssignments');
+
+// Then add to your app
+app.use('/api/bill-assignments', billAssignmentsRoutes);

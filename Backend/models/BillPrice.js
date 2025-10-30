@@ -3,15 +3,16 @@ const { v4: uuidv4 } = require('uuid');
 
 class BillPrice{
     static async create(billPriceData){
-        const {company_id,bill_id,billrange_id,year,month,unitPrice,fixedamount} = billPriceData;
+        const {company_id, bill_id, billrange_id, year, month, unitprice, fixedamount} = billPriceData;
         const id = uuidv4().replace(/-/g, '').substring(0, 10);
 
         const[result] = await pool.execute(
-            'INSERT INTO billprice(id, company_id, bill_id, billrange_id, year, month, unitprice, fixedamount) values (?, ?, ?, ?, ?, ?, ?, ?) ',
-            [id, company_id, bill_id, billrange_id, year,month, unitPrice,fixedamount]
+            'INSERT INTO billprice(id, company_id, bill_id, billrange_id, year, month, unitprice, fixedamount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [id, company_id, bill_id, billrange_id, year, month, unitprice, fixedamount]
         );
         return { id, ...billPriceData };        
     } 
+
     static async findById(id) {
         const [rows] = await pool.execute(
             'SELECT * FROM billprice WHERE id = ?',
@@ -27,20 +28,30 @@ class BillPrice{
         );
         return rows;
     }
+
     static async findByBillId(bill_id) {
-    const [rows] = await pool.execute(
-        'SELECT * FROM billprice WHERE bill_id=? ORDER BY created_at ASC',
-        [bill_id]
-    );
-    return rows;
+        const [rows] = await pool.execute(
+            'SELECT * FROM billprice WHERE bill_id=? ORDER BY created_at ASC',
+            [bill_id]
+        );
+        return rows;
     }
 
     static async findByBillRangeId(billrange_id) {
-    const [rows] = await pool.execute(
-        'SELECT * FROM billprice WHERE billrange_id=? ORDER BY created_at ASC',
-        [billrange_id]
-    );
-    return rows;
+        const [rows] = await pool.execute(
+            'SELECT * FROM billprice WHERE billrange_id=? ORDER BY created_at ASC',
+            [billrange_id]
+        );
+        return rows;
+    }
+
+    // NEW: Find by both bill_id and billrange_id
+    static async findByBillAndRange(bill_id, billrange_id) {
+        const [rows] = await pool.execute(
+            'SELECT * FROM billprice WHERE bill_id=? AND billrange_id=? ORDER BY created_at ASC',
+            [bill_id, billrange_id]
+        );
+        return rows;
     }
 
     static async findAll() {
@@ -50,13 +61,13 @@ class BillPrice{
         return rows; 
     }
 
-    static async update(id, billRangePriceData) {
-        const {year,month,unitPrice,fixedamount } = billRangePriceData;
+    static async update(id, billPriceData) {
+        const { year, month, unitprice, fixedamount } = billPriceData;
         await pool.execute(
-            'UPDATE billprice SET year=? ,month = ?, unitPrice = ?, fixedamount=? WHERE id = ?',
-            [ year,month,unitPrice,fixedamount,id]
+            'UPDATE billprice SET year=?, month=?, unitprice=?, fixedamount=? WHERE id = ?',
+            [year, month, unitprice, fixedamount, id]
         );
-        return { id, ...billRangePriceData };
+        return { id, ...billPriceData };
     }
 
     static async delete(id) {
@@ -67,4 +78,5 @@ class BillPrice{
         return true;
     }    
 }
+
 module.exports = BillPrice;

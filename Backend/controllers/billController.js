@@ -5,11 +5,29 @@ const Bills = require('../models/Bill');
 const billController = {
     async createBill(req, res) {
         try {
-            const { bill_name } = req.body;
+            const { bill_name, billtype } = req.body;
             const company_id = req.user.company_id;
             // const apartment_id=req.apartment.id;
 
-            if (!bill_name === undefined) {
+            // check existing tenants
+            const existingBill = await Bills.findByBillName(bill_name);
+            if(existingBill){
+                return res.status(409).json({
+                    success:false,
+                    message:'Bill is already exists'
+                });
+            }
+
+            // Check for similar bill names (more robust validation)
+            const hasSimilarBill = await Bills.findSimilarBillName(company_id, bill_name);
+            if (hasSimilarBill) {
+                return res.status(409).json({
+                    success: false,
+                    message: 'A similar bill name already exists. Please use a different name.'
+                });
+            }
+
+            if (!bill_name || !billtype === undefined) {
                 return res.status(400).json({
                     success: false,
                     message: 'All fields are required'
@@ -18,11 +36,12 @@ const billController = {
 
             const newBill = await Bills.create({
                     bill_name,
+                    billtype,
                     company_id
             });
             res.status(201).json({
             success: true,
-            // message: 'Bill type Added successfully',
+            message: 'Bill type Added successfully',
             data: newBill
             });
         } catch (err) {
@@ -125,7 +144,7 @@ const billController = {
     async updateBill(req,res){
         try{
             const {id}=req.params;
-            const {bill_name}=req.body;
+            const {bill_name,billtype}=req.body;
 
             //check house exist
             const existingBills= await Bills.findById(id);
@@ -137,7 +156,8 @@ const billController = {
             }
 
             const updateBill= await Bills.update(id,{
-                 bill_name: bill_name || existingBills.bill_name
+                 bill_name: bill_name || existingBills.bill_name,
+                 billtype: billtype || existingBills.billtype
             });
 
             res.json({

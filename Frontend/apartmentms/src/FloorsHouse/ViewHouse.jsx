@@ -134,13 +134,13 @@ export default function ViewHouse() {
                                 Family
                             </button>
                             <button
-                                onClick={() => setActiveTab("calculateBill")}
+                                onClick={() => setActiveTab("assignedBills")}
                                 className={`px-4 py-2 font-semibold 
-                                    ${activeTab === "calculateBill"
+                                    ${activeTab === "assignedBills"
                                         ? "text-purple-600 border-b-2 border-purple-600"
                                         : "text-gray-600 dark:text-gray-300 hover:text-purple-600"}`}
                             >
-                                Manage Bills
+                                Assigned Bills
                             </button>
                         </div>
 
@@ -174,7 +174,7 @@ export default function ViewHouse() {
                                 <p><strong>Bathrooms:</strong> {housetype.bathrooms}</p>
                             </div>
                         )} */}
-                        {activeTab === "calculateBill" &&  (
+                        {activeTab === "assignedBills" &&  (
                                 <CalculateBill  apartment_id={apartment_id}/>
                             )
                         }

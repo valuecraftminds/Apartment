@@ -50,7 +50,7 @@ export default function App() {
         <Route path='/manage-bills' element={<ManageBills/>}/>
         <Route path='/bills-and-calculations' element={<BillsAndCalculations/>}/>
         <Route path="/billranges/:bill_id" element={<BillRange />} />
-        <Route path="/billprice/:billrange_id" element={<BillPrice />} />
+        <Route path="/billprice/:bill_id/:billrange_id" element={<BillPrice />} />
 
 
       </Routes>

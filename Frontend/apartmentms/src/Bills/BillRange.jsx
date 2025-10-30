@@ -10,6 +10,7 @@ import EditBillRange from "./EditBillRange";
 
 export default function BillRange() {
   const { bill_id } = useParams(); // get from route
+  console.log('Bill ID:', bill_id);
   const [loadingRanges, setLoadingRanges] = useState(false);
   const [error, setError] = useState(null);
   const [billRanges, setBillRanges] = useState([]);
@@ -179,7 +180,7 @@ export default function BillRange() {
                     {billRanges.map((range, index) => (
                       <tr
                         key={range.id}
-                        onClick={() => navigate(`/billprice/${range.id}`)}
+                        onClick={() => navigate(`/billprice/${bill_id}/${range.id}`)}
                         className="cursor-pointer hover:bg-purple-100 dark:hover:bg-gray-700 transition"
                       >
                         <td className="px-4 py-4">{index + 1}</td>
