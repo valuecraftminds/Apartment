@@ -168,12 +168,12 @@ export default function ApartmentView() {
                                     <table className="w-full table-auto">
                                         <thead className="bg-gray-50 dark:bg-gray-700">
                                             <tr>
+                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Picture</th>
                                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Name</th>
                                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Address</th>
                                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">City</th>
                                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Floors</th>
                                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Units</th>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Picture</th>
                                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
                                             </tr>
                                         </thead>
@@ -188,21 +188,6 @@ export default function ApartmentView() {
                                                             : 'opacity-50 cursor-not-allowed'
                                                     }`}
                                                 >
-                                                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                                        {apartment.name}
-                                                    </td>
-                                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                                                        {apartment.address}
-                                                    </td>
-                                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                                                        {apartment.city || 'N/A'}
-                                                    </td>
-                                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                                                        {apartment.floors}
-                                                    </td>
-                                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                                                        {apartment.houses}
-                                                    </td>
                                                     {/* ApartmentView.jsx - Update the image display part */}
                                                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
                                                         {apartment.picture ? (
@@ -223,6 +208,21 @@ export default function ApartmentView() {
                                                                 <Image size={20} className="text-gray-400" />
                                                             </div>
                                                         )}
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                                        {apartment.name}
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                                                        {apartment.address}
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                                                        {apartment.city || 'N/A'}
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                                                        {apartment.floors}
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                                                        {apartment.houses}
                                                     </td>
                                                     <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                                                         <div className="flex space-x-2">
