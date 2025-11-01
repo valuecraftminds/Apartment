@@ -9,21 +9,21 @@ const billController = {
             const company_id = req.user.company_id;
             // const apartment_id=req.apartment.id;
 
-            // check existing tenants
-            const existingBill = await Bills.findByBillName(bill_name);
-            if(existingBill){
-                return res.status(409).json({
-                    success:false,
-                    message:'Bill is already exists'
-                });
-            }
+            // check existing bills
+            // const existingBill = await Bills.findByBillName(bill_name);
+            // if(existingBill){
+            //     return res.status(409).json({
+            //         success:false,
+            //         message:'Bill is already exists'
+            //     });
+            // }
 
             // Check for similar bill names (more robust validation)
             const hasSimilarBill = await Bills.findSimilarBillName(company_id, bill_name);
             if (hasSimilarBill) {
                 return res.status(409).json({
                     success: false,
-                    message: 'A similar bill name already exists. Please use a different name.'
+                    message: 'Bill is already exists'
                 });
             }
 

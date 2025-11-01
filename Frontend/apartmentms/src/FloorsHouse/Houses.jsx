@@ -335,7 +335,7 @@ export default function Houses() {
             {/* Create House Modal */}
             {showCreateModal && (
                 <div className="fixed inset-0 bg-white/0 backdrop-blur-lg flex items-center justify-center z-50">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md relative">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-5xl relative">
                         <button
                             onClick={handleCloseModal}
                             className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 dark:hover:text-white"
