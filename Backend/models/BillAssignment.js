@@ -56,15 +56,30 @@ class BillAssignment {
 
     // Find assignments by house ID
     static async findByHouseId(house_id) {
-        const [rows] = await pool.execute(
-            `SELECT ba.*, b.bill_name, b.description
-             FROM bill_assignments ba
-             JOIN bills b ON ba.bill_id = b.id
-             WHERE ba.house_id = ? AND ba.is_active = 1`,
-            [house_id]
-        );
-        return rows;
-    }
+    const [rows] = await pool.execute(
+        `SELECT 
+            ba.*, 
+            b.bill_name, 
+            b.billtype,
+            ba.assigned_at AS assigned_date
+        FROM bill_assignments ba
+        JOIN bills b ON ba.bill_id = b.id
+        WHERE ba.house_id = ? AND ba.is_active = 1`,
+        [house_id]
+    );
+
+    // Format to include nested bill object like frontend expects
+    return rows.map(row => ({
+        id: row.id,
+        status: row.is_active ? 'active' : 'inactive',
+        assigned_date: row.assigned_date,
+        bill: {
+            bill_name: row.bill_name,
+            billtype: row.billtype
+        }
+    }));
+}
+
 
     // Check if bill is already assigned to a house
     static async checkExistingAssignment(bill_id, house_id) {
@@ -83,7 +98,6 @@ class BillAssignment {
                    f.floor_id as floor_number,
                    h.house_id as house_number,
                    b.bill_name,
-                   b.description
             FROM bill_assignments ba
             LEFT JOIN apartments a ON ba.apartment_id = a.id
             LEFT JOIN floors f ON ba.floor_id = f.id

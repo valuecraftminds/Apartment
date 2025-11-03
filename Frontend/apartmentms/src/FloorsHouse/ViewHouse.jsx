@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/axios';
-import { ChevronLeft, FileText, House } from 'lucide-react';
+import { Calendar, ChevronLeft, DollarSign, FileText, House } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -254,11 +254,11 @@ export default function ViewHouse() {
                                                                 <span>{formatDate(assignment.assigned_date)}</span>
                                                             </div>
                                                         </div>
-                                                        {assignment.bill?.description && (
+                                                        {/* {assignment.bill?.description && (
                                                             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                                                                {assignment.bill.description}
+                                                                {assignment.bill.bill_name}
                                                             </p>
-                                                        )}
+                                                        )} */}
                                                     </div>
                                                     <div className="flex flex-col items-end space-y-2">
                                                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${

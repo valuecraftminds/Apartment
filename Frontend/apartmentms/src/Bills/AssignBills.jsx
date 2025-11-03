@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Loader } from 'lucide-react';
+import { Loader, ChevronDown, ChevronUp } from 'lucide-react';
 import api from '../api/axios';
 import { toast, ToastContainer } from 'react-toastify';
 
@@ -11,15 +11,16 @@ export default function AssignBills({
 }) {
   // States for assign modal
   const [apartments, setApartments] = useState([]);
-  const [floors, setFloors] = useState([]);
-  const [houses, setHouses] = useState([]);
+  const [floors, setFloors] = useState({});
+  const [houses, setHouses] = useState({});
   const [selectedApartment, setSelectedApartment] = useState('');
   const [selectedFloor, setSelectedFloor] = useState('');
   const [selectedHouses, setSelectedHouses] = useState([]);
-  const [selectAll, setSelectAll] = useState(false);
+  const [expandedApartments, setExpandedApartments] = useState({});
+  const [expandedFloors, setExpandedFloors] = useState({});
   const [loadingApartments, setLoadingApartments] = useState(false);
-  const [loadingFloors, setLoadingFloors] = useState(false);
-  const [loadingHouses, setLoadingHouses] = useState(false);
+  const [loadingFloors, setLoadingFloors] = useState({});
+  const [loadingHouses, setLoadingHouses] = useState({});
   const [assigning, setAssigning] = useState(false);
 
   // Load apartments for assign modal
@@ -38,72 +39,89 @@ export default function AssignBills({
     }
   };
 
-  // Load floors based on selected apartment
-  const loadFloors = async (apartmentId) => {
-    if (!apartmentId) {
-      setFloors([]);
-      setSelectedFloor('');
-      return;
-    }
+  // Load floors for a specific apartment
+  const loadFloorsForApartment = async (apartmentId) => {
+    if (!apartmentId) return;
+    
     try {
-      setLoadingFloors(true);
+      setLoadingFloors(prev => ({ ...prev, [apartmentId]: true }));
       const result = await api.get(`/floors?apartment_id=${apartmentId}`);
       if (result.data.success) {
-        setFloors(result.data.data || []);
+        const floorsData = result.data.data || [];
+        setFloors(prev => ({
+          ...prev,
+          [apartmentId]: floorsData
+        }));
       }
     } catch (err) {
       console.error('Error loading floors:', err);
       toast.error('Failed to load floors');
     } finally {
-      setLoadingFloors(false);
+      setLoadingFloors(prev => ({ ...prev, [apartmentId]: false }));
     }
   };
 
-  // Load houses based on selected floor
-  const loadHouses = async (apartmentId, floorId) => {
-    if (!apartmentId || !floorId) {
-      setHouses([]);
-      setSelectedHouses([]);
-      return;
-    }
+  // Load houses for a specific floor
+  const loadHousesForFloor = async (apartmentId, floorId) => {
+    if (!apartmentId || !floorId) return;
+    
     try {
-      setLoadingHouses(true);
+      setLoadingHouses(prev => ({ ...prev, [floorId]: true }));
       const result = await api.get(`/houses?apartment_id=${apartmentId}&floor_id=${floorId}`);
       if (result.data.success) {
         const housesData = result.data.data || [];
-        setHouses(housesData);
-        setSelectedHouses([]);
-        setSelectAll(false);
+        setHouses(prev => ({
+          ...prev,
+          [floorId]: housesData
+        }));
       }
     } catch (err) {
       console.error('Error loading houses:', err);
       toast.error('Failed to load houses');
     } finally {
-      setLoadingHouses(false);
+      setLoadingHouses(prev => ({ ...prev, [floorId]: false }));
     }
   };
 
-  // Handle apartment selection
-  const handleApartmentChange = (e) => {
-    const apartmentId = e.target.value;
-    setSelectedApartment(apartmentId);
-    setSelectedFloor('');
-    setFloors([]);
-    setHouses([]);
-    setSelectedHouses([]);
-    if (apartmentId) {
-      loadFloors(apartmentId);
+  // Toggle apartment expansion
+  const toggleApartment = async (apartment) => {
+    const isExpanded = expandedApartments[apartment.id];
+    
+    if (!isExpanded && !floors[apartment.id]) {
+      await loadFloorsForApartment(apartment.id);
+    }
+    
+    setExpandedApartments(prev => ({
+      ...prev,
+      [apartment.id]: !isExpanded
+    }));
+    
+    // Set selected apartment when expanded
+    if (!isExpanded) {
+      setSelectedApartment(apartment.id);
+      setSelectedFloor('');
+      setSelectedHouses([]);
     }
   };
 
-  // Handle floor selection
-  const handleFloorChange = (e) => {
-    const floorId = e.target.value;
-    setSelectedFloor(floorId);
-    setHouses([]);
-    setSelectedHouses([]);
-    if (selectedApartment && floorId) {
-      loadHouses(selectedApartment, floorId);
+  // Toggle floor expansion
+  const toggleFloor = async (apartmentId, floor) => {
+    const floorKey = `${apartmentId}-${floor.id}`;
+    const isExpanded = expandedFloors[floorKey];
+    
+    if (!isExpanded && !houses[floor.id]) {
+      await loadHousesForFloor(apartmentId, floor.id);
+    }
+    
+    setExpandedFloors(prev => ({
+      ...prev,
+      [floorKey]: !isExpanded
+    }));
+    
+    // Set selected floor when expanded
+    if (!isExpanded) {
+      setSelectedFloor(floor.id);
+      setSelectedHouses([]);
     }
   };
 
@@ -118,25 +136,47 @@ export default function AssignBills({
     });
   };
 
-  // Handle select all houses
+  // Handle select all houses for current floor
   const handleSelectAll = () => {
-    if (selectAll) {
-      setSelectedHouses([]);
+    if (!selectedFloor) return;
+    
+    const currentHouses = houses[selectedFloor] || [];
+    const allHouseIds = currentHouses.map(house => house.id);
+    const allSelected = allHouseIds.every(id => selectedHouses.includes(id));
+    
+    if (allSelected) {
+      setSelectedHouses(prev => prev.filter(id => !allHouseIds.includes(id)));
     } else {
-      const allHouseIds = houses.map(house => house.id);
-      setSelectedHouses(allHouseIds);
+      setSelectedHouses(prev => {
+        const newSelection = [...prev];
+        allHouseIds.forEach(id => {
+          if (!newSelection.includes(id)) {
+            newSelection.push(id);
+          }
+        });
+        return newSelection;
+      });
     }
-    setSelectAll(!selectAll);
   };
 
-  // Update selectAll when selectedHouses changes
-  useEffect(() => {
-    if (houses.length > 0) {
-      setSelectAll(selectedHouses.length === houses.length);
-    }
-  }, [selectedHouses, houses]);
+  // Check if all houses in current floor are selected
+  const isAllHousesSelected = () => {
+    if (!selectedFloor) return false;
+    const currentHouses = houses[selectedFloor] || [];
+    if (currentHouses.length === 0) return false;
+    return currentHouses.every(house => selectedHouses.includes(house.id));
+  };
 
-  // Submit assignment
+  // Check if some houses in current floor are selected
+  const isSomeHousesSelected = () => {
+    if (!selectedFloor) return false;
+    const currentHouses = houses[selectedFloor] || [];
+    if (currentHouses.length === 0) return false;
+    return currentHouses.some(house => selectedHouses.includes(house.id)) && 
+           !isAllHousesSelected();
+  };
+
+  // Submit assignment - KEEPING THE ORIGINAL FUNCTIONALITY
   const handleAssignSubmit = async () => {
     if (!selectedApartment || !selectedFloor || selectedHouses.length === 0) {
       toast.error('Please select apartment, floor, and at least one house');
@@ -153,7 +193,7 @@ export default function AssignBills({
       };
 
       await api.post('/bill-assignments/assign', assignmentData);
-      //toast.success(`Bill "${selectedBill.bill_name}" assigned to ${selectedHouses.length} house(s) successfully!`);
+      toast.success("Bill assign successfully")
       onAssignSuccess();
       handleClose();
     } catch (err) {
@@ -168,10 +208,11 @@ export default function AssignBills({
   const handleClose = () => {
     setSelectedApartment('');
     setSelectedFloor('');
-    setFloors([]);
-    setHouses([]);
+    setFloors({});
+    setHouses({});
     setSelectedHouses([]);
-    setSelectAll(false);
+    setExpandedApartments({});
+    setExpandedFloors({});
     onClose();
   };
 
@@ -198,113 +239,173 @@ export default function AssignBills({
         </h2>
         
         <div className="space-y-6">
-          {/* Apartment Selection */}
+          {/* Apartments List - Hierarchical View */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
               Select Apartment *
             </label>
-            <select
-              value={selectedApartment}
-              onChange={handleApartmentChange}
-              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              disabled={loadingApartments}
-            >
-              <option value="">Choose Apartment</option>
-              {apartments.map(apartment => (
-                <option key={apartment.id} value={apartment.id}>
-                  {apartment.name}
-                </option>
-              ))}
-            </select>
-            {loadingApartments && (
-              <p className="text-sm text-gray-500 mt-2 flex items-center">
-                <Loader size={16} className="animate-spin mr-2" />
-                Loading apartments...
-              </p>
-            )}
-          </div>
-
-          {/* Floor Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Select Floor *
-            </label>
-            <select
-              value={selectedFloor}
-              onChange={handleFloorChange}
-              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              disabled={!selectedApartment || loadingFloors}
-            >
-              <option value="">{!selectedApartment ? 'Select apartment first' : 'Choose Floor'}</option>
-              {floors.map(floor => (
-                <option key={floor.id} value={floor.id}>
-                  {floor.floor_id}
-                </option>
-              ))}
-            </select>
-            {loadingFloors && (
-              <p className="text-sm text-gray-500 mt-2 flex items-center">
-                <Loader size={16} className="animate-spin mr-2" />
-                Loading floors...
-              </p>
-            )}
-          </div>
-
-          {/* Houses Selection */}
-          {houses.length > 0 && (
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Select Houses ({selectedHouses.length} selected)
-                </label>
-                <span className="text-sm text-gray-500">
-                  {houses.length} houses available
-                </span>
+            
+            {loadingApartments ? (
+              <div className="flex items-center justify-center p-8">
+                <Loader size={24} className="animate-spin mr-3 text-purple-600" />
+                <span className="text-gray-600 dark:text-gray-400">Loading apartments...</span>
               </div>
-              <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-4 max-h-60 overflow-y-auto bg-gray-50 dark:bg-gray-700">
-                {/* Select All Checkbox */}
-                <div className="flex items-center mb-3 p-2 bg-white dark:bg-gray-600 rounded border">
-                  <input
-                    type="checkbox"
-                    checked={selectAll}
-                    onChange={handleSelectAll}
-                    className="h-4 w-4 text-purple-600 rounded focus:ring-purple-500"
-                  />
-                  <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Select All Houses
-                  </span>
-                </div>
-                
-                {/* Houses List */}
-                <div className="space-y-2">
-                  {houses.map(house => (
-                    <div key={house.id} className="flex items-center p-3 bg-white dark:bg-gray-600 rounded border hover:bg-gray-50 dark:hover:bg-gray-500 transition-colors">
-                      <input
-                        type="checkbox"
-                        checked={selectedHouses.includes(house.id)}
-                        onChange={() => handleHouseSelect(house.id)}
-                        className="h-4 w-4 text-purple-600 rounded focus:ring-purple-500"
-                      />
-                      <div className="ml-3 flex-1">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          {house.house_id}
-                        </span>
-                        <span className="ml-2 text-xs text-gray-500 dark:text-gray-400 capitalize">
-                          ({house.status})
-                        </span>
-                      </div>
+            ) : (
+              <div className="space-y-3">
+                {apartments.map(apartment => (
+                  <div key={apartment.id} className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+                    {/* Apartment Header */}
+                    <div 
+                      className={`flex items-center justify-between p-4 cursor-pointer transition-colors ${
+                        selectedApartment === apartment.id 
+                          ? 'bg-purple-50 dark:bg-purple-900/20 border-l-4 border-l-purple-600' 
+                          : 'bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600'
+                      }`}
+                      onClick={() => toggleApartment(apartment)}
+                    >
+                      <span className="font-medium text-gray-800 dark:text-white">
+                        {apartment.name}
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleApartment(apartment);
+                        }}
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-500 rounded-lg transition-colors"
+                      >
+                        {expandedApartments[apartment.id] ? (
+                          <ChevronUp size={20} className="text-gray-600 dark:text-gray-400" />
+                        ) : (
+                          <ChevronDown size={20} className="text-gray-600 dark:text-gray-400" />
+                        )}
+                      </button>
                     </div>
-                  ))}
-                </div>
+
+                    {/* Floors List - Shown when apartment is expanded */}
+                    {expandedApartments[apartment.id] && (
+                      <div className="bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
+                        {loadingFloors[apartment.id] ? (
+                          <div className="flex items-center justify-center p-4">
+                            <Loader size={16} className="animate-spin mr-2 text-purple-600" />
+                            <span className="text-sm text-gray-600 dark:text-gray-400">Loading floors...</span>
+                          </div>
+                        ) : (
+                          <div className="space-y-2 p-3">
+                            {(floors[apartment.id] || []).map(floor => (
+                              <div key={floor.id} className="border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
+                                {/* Floor Header */}
+                                <div 
+                                  className={`flex items-center justify-between p-3 cursor-pointer transition-colors ${
+                                    selectedFloor === floor.id 
+                                      ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500' 
+                                      : 'bg-white dark:bg-gray-600 hover:bg-gray-50 dark:hover:bg-gray-500'
+                                  }`}
+                                  onClick={() => toggleFloor(apartment.id, floor)}
+                                >
+                                  <span className="font-medium text-gray-800 dark:text-white">
+                                    {floor.floor_id}
+                                  </span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleFloor(apartment.id, floor);
+                                    }}
+                                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-400 rounded-lg transition-colors"
+                                  >
+                                    {expandedFloors[`${apartment.id}-${floor.id}`] ? (
+                                      <ChevronUp size={18} className="text-gray-600 dark:text-gray-400" />
+                                    ) : (
+                                      <ChevronDown size={18} className="text-gray-600 dark:text-gray-400" />
+                                    )}
+                                  </button>
+                                </div>
+
+                                {/* Houses List - Shown when floor is expanded */}
+                                {expandedFloors[`${apartment.id}-${floor.id}`] && (
+                                  <div className="bg-white dark:bg-gray-500 border-t border-gray-200 dark:border-gray-400">
+                                    {loadingHouses[floor.id] ? (
+                                      <div className="flex items-center justify-center p-3">
+                                        <Loader size={14} className="animate-spin mr-2 text-purple-600" />
+                                        <span className="text-xs text-gray-600 dark:text-gray-400">Loading houses...</span>
+                                      </div>
+                                    ) : (
+                                      <div className="p-4 space-y-3">
+                                        {/* Select All for this floor */}
+                                        <div className="flex items-center p-2 bg-gray-50 dark:bg-gray-400 rounded">
+                                          <input
+                                            type="checkbox"
+                                            checked={isAllHousesSelected()}
+                                            ref={input => {
+                                              if (input) {
+                                                input.indeterminate = isSomeHousesSelected();
+                                              }
+                                            }}
+                                            onChange={handleSelectAll}
+                                            className="h-4 w-4 text-purple-600 rounded focus:ring-purple-500"
+                                          />
+                                          <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-800">
+                                            Select All Houses
+                                          </span>
+                                        </div>
+                                        
+                                        {/* Houses Checkboxes */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto">
+                                          {(houses[floor.id] || []).map(house => (
+                                            <div key={house.id} className="flex items-center p-3 bg-gray-50 dark:bg-gray-400 rounded border hover:bg-gray-100 dark:hover:bg-gray-300 transition-colors">
+                                              <input
+                                                type="checkbox"
+                                                checked={selectedHouses.includes(house.id)}
+                                                onChange={() => handleHouseSelect(house.id)}
+                                                className="h-4 w-4 text-purple-600 rounded focus:ring-purple-500"
+                                              />
+                                              <div className="ml-3 flex-1">
+                                                <span className="text-sm font-medium text-gray-700 dark:text-gray-800">
+                                                  {house.house_id}
+                                                </span>
+                                                <span className="ml-2 text-xs text-gray-500 dark:text-gray-700 capitalize">
+                                                  ({house.status})
+                                                </span>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
-              {loadingHouses && (
-                <p className="text-sm text-gray-500 mt-2 flex items-center">
-                  <Loader size={16} className="animate-spin mr-2" />
-                  Loading houses...
+            )}
+          </div>
+
+          {/* Selection Summary */}
+          {/* {(selectedApartment || selectedFloor || selectedHouses.length > 0) && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <h3 className="font-medium text-blue-800 dark:text-blue-300 mb-2">Selection Summary:</h3>
+              {selectedApartment && (
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  <strong>Apartment:</strong> {apartments.find(a => a.id === selectedApartment)?.name}
+                </p>
+              )}
+              {selectedFloor && (
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  <strong>Floor:</strong> {Object.values(floors).flat().find(f => f.id === selectedFloor)?.floor_id}
+                </p>
+              )}
+              {selectedHouses.length > 0 && (
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  <strong>Houses:</strong> {selectedHouses.length} selected
                 </p>
               )}
             </div>
-          )}
+          )} */}
 
           {/* Selected Houses Summary */}
           {selectedHouses.length > 0 && (

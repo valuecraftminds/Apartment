@@ -150,7 +150,7 @@ const billAssignmentController = {
             if (apartment_id) filters.apartment_id = apartment_id;
             if (floor_id) filters.floor_id = floor_id;
             if (house_id) filters.house_id = house_id;
-            if (is_active !== undefined) filters.is_active = is_active === 'true';
+            if (is_active !== undefined) filters.is_active = is_active === 1;
 
             const assignments = await BillAssignment.findWithFilters(filters);
 

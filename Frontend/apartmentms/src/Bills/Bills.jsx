@@ -58,7 +58,7 @@ export default function Bills() {
     // Handle successful assignment
     const handleAssignSuccess = () => {
         // You can refresh data or perform other actions after successful assignment
-        // toast.success('Bill assigned successfully!');
+        toast.success('Bill assigned successfully!');
     };
 
     // Create Bill Type
