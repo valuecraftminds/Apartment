@@ -271,12 +271,12 @@ export default function AssignBills({
                           e.stopPropagation();
                           toggleApartment(apartment);
                         }}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-500 rounded-lg transition-colors"
+                        className="p-2 dark:hover:bg-white hover:bg-gray-200 rounded-md"
                       >
                         {expandedApartments[apartment.id] ? (
-                          <ChevronUp size={20} className="text-gray-600 dark:text-gray-400" />
+                          <ChevronUp size={20} className=" transition-colors duration-200 text-purple-700" />
                         ) : (
-                          <ChevronDown size={20} className="text-gray-600 dark:text-gray-400" />
+                          <ChevronDown size={20} className="transition-colors duration-200 text-purple-700" />
                         )}
                       </button>
                     </div>
@@ -313,9 +313,9 @@ export default function AssignBills({
                                     className="p-2 hover:bg-gray-100 dark:hover:bg-gray-400 rounded-lg transition-colors"
                                   >
                                     {expandedFloors[`${apartment.id}-${floor.id}`] ? (
-                                      <ChevronUp size={18} className="text-gray-600 dark:text-gray-400" />
+                                      <ChevronUp size={18} className="text-white dark:text-purple-600 bg-gray-500 dark:bg-white" />
                                     ) : (
-                                      <ChevronDown size={18} className="text-gray-600 dark:text-gray-400" />
+                                      <ChevronDown size={18} className="text-white dark:text-purple-600 bg-gray-500 dark:bg-white" />
                                     )}
                                   </button>
                                 </div>

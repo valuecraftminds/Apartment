@@ -430,11 +430,20 @@ router.post('/reset-password',resetPasswordLimiter, async (req, res) => {
 });
 
 //user invite
-router.post('/invite', async (req, res) => {
+router.post('/invite', authenticateToken, async (req, res) => {
   try {
-    const { email, role, company_id } = req.body;
+    const { email, role } = req.body;
+    const company_id = req.user.company_id; 
+
+    //console.log('Invite request:', { email, role, company_id, user: req.user });
+
     if (!email || !role) {
       return res.status(400).json({ message: 'Email and role are required' });
+    }
+
+    // Validate company_id exists
+    if (!company_id) {
+      return res.status(400).json({ message: 'Company ID is required' });
     }
 
     // Check if user already exists
@@ -443,11 +452,12 @@ router.post('/invite', async (req, res) => {
       return res.status(409).json({ message: 'User already exists' });
     }
 
-    // Insert invited user (allow NULL password_hash!)
+    // Insert invited user with company_id
     const [ins] = await pool.execute(
       'INSERT INTO users (email, role, is_verified, is_active, company_id, password_hash) VALUES (?, ?, 0, 1, ?, NULL)',
-      [email, role, company_id || null]
+      [email, role, company_id]
     );
+
 
     const userId = ins.insertId;
 
@@ -475,6 +485,7 @@ router.post('/invite', async (req, res) => {
     await transporter.verify();
 
     // Build invite link
+    // const inviteUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/complete-registration?token=${plainToken}&id=${userId}`;
     const inviteUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/complete-registration?token=${plainToken}&id=${userId}`;
 
     const mailOptions = {
@@ -514,6 +525,50 @@ router.post('/invite', async (req, res) => {
   }
 });
 
+// Add this route to your auth.js before the complete-registration route
+router.post('/verify-invite-link', async (req, res) => {
+  try {
+    const { token, id } = req.body;
+    if (!token || !id) return res.status(400).json({ message: 'Invalid request' });
+
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    
+    const [rows] = await pool.execute(
+      'SELECT id, email, verification_token_hash, verification_token_expires, is_verified FROM users WHERE id = ?',
+      [id]
+    );
+    
+    if (!rows.length) return res.status(400).json({ message: 'Invalid invitation link' });
+
+    const user = rows[0];
+    
+    // Check if already verified
+    if (user.is_verified) {
+      return res.status(400).json({ message: 'This invitation has already been used' });
+    }
+
+    // Check token validity
+    if (!user.verification_token_hash || user.verification_token_hash !== tokenHash) {
+      return res.status(400).json({ message: 'Invalid invitation token' });
+    }
+
+    // Check expiration
+    if (new Date(user.verification_token_expires) < new Date()) {
+      return res.status(400).json({ message: 'Invitation link has expired' });
+    }
+
+    res.json({ 
+      success: true, 
+      email: user.email,
+      message: 'Invitation link is valid' 
+    });
+    
+  } catch (err) {
+    console.error('Verify invite error:', err);
+    res.status(500).json({ message: 'Server error while verifying invitation' });
+  }
+});
+
 router.post('/complete-registration', async (req, res) => {
   try {
     const { email, firstname, lastname, country, mobile, password } = req.body;
@@ -523,13 +578,21 @@ router.post('/complete-registration', async (req, res) => {
     if (!users.length) return res.status(404).json({ message: 'User not found' });
 
     const user = users[0];
-    if (!user.is_verified) return res.status(400).json({ message: 'Email not verified' });
+    
+    // Check if user is already verified and has completed registration
+    if (user.is_verified) {
+      // Check if they already have a password (completed registration)
+      const [userDetails] = await pool.execute('SELECT password_hash FROM users WHERE id = ?', [user.id]);
+      if (userDetails[0].password_hash) {
+        return res.status(400).json({ message: 'Registration already completed' });
+      }
+    }
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
     await pool.execute(
       `UPDATE users 
-       SET firstname=?, lastname=?, country=?, mobile=?, password_hash=?, is_active=1 
+       SET firstname=?, lastname=?, country=?, mobile=?, password_hash=?, is_verified=1, is_active=1 
        WHERE id=?`,
       [firstname, lastname, country, mobile, hashedPassword, user.id]
     );

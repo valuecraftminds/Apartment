@@ -30,7 +30,6 @@ export default function Sidebar() {
         { name: 'Bills', path: '/bills-and-calculations' },
       ]
     },
-    { name: 'Reports', path: '/reports', icon: FileText },
     { name: 'Settings', path: '/settings', icon: Settings }
   ];
 

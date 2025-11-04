@@ -136,6 +136,11 @@ export default function ApartmentView() {
                                 <Building2 size={40} className='text-purple-600 dark:text-purple-400 mr-3'/>
                                 <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Apartments</h1>
                             </div>
+                            <button 
+                            //onClick={handleAddNew} 
+                            className='flex px-4 py-2 rounded-md font-semibold shadow-md transition-all duration-300 text-white bg-purple-600 hover:bg-purple-700 hover:scale-105'>
+                                <span>Upload</span>
+                            </button>
                             <button onClick={handleAddNew} className='flex items-center gap-2 px-4 py-2 rounded-lg font-semibold shadow-md transition-all duration-300 text-white bg-purple-600 hover:bg-purple-700 hover:scale-105'>
                                 <Plus size={20}/>
                                 <span>Add New</span>
