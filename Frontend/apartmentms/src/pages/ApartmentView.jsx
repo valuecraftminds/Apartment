@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { Building2, Plus, Edit, Trash2, Eye, Image, Loader, ToggleRight, ToggleLeft } from 'lucide-react';
+import { Building2, Plus, Edit, Trash2, Eye, Image, Loader, ToggleRight, ToggleLeft, Upload } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import { AuthContext } from '../contexts/AuthContext';
@@ -8,6 +8,7 @@ import api from '../api/axios';
 import CreateApartment from '../Apartments/CreateApartment';
 import EditApartment from '../Apartments/EditApartment';
 import { toast, ToastContainer } from 'react-toastify';
+import BulkImportModal from '../Apartments/BulkImportModal';
 // import ViewApartment from '../Apartments/ViewApartment';
 
 export default function ApartmentView() {
@@ -25,11 +26,19 @@ export default function ApartmentView() {
     // const [showViewModal, setShowViewModal] = useState(false);
     const [showDeactivateModal,setShowDeactivateModal] = useState(false);
     const [deactivatingApartment, setDeactivatingApartment] = useState(null);
+    const [showBulkImportModal, setShowBulkImportModal] = useState(false);
 
-
-     const handleAddNew = () => {
+    const handleAddNew = () => {
     setShowCreateModal(true);
   };
+
+    const handleUploadExcel = () => {
+        setShowBulkImportModal(true);
+    };
+
+    const handleBulkImportModalClose = () => {
+        setShowBulkImportModal(false);
+    };
 
   const handleEdit = (apartment) => {
   setEditingApartment(apartment);
@@ -68,6 +77,11 @@ export default function ApartmentView() {
         setShowEditModal(false);
         setEditingApartment(null);
         toast.success('Apartment updated successfully!');
+    };
+
+     const handleBulkImportSuccess = () => {
+        loadApartments(); // Refresh the apartments list after successful import
+        toast.success('Bulk import completed successfully!');
     };
 
     const confirmDeactivate = (apartment) => {
@@ -136,15 +150,19 @@ export default function ApartmentView() {
                                 <Building2 size={40} className='text-purple-600 dark:text-purple-400 mr-3'/>
                                 <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Apartments</h1>
                             </div>
-                            <button 
-                            //onClick={handleAddNew} 
-                            className='flex px-4 py-2 rounded-md font-semibold shadow-md transition-all duration-300 text-white bg-purple-600 hover:bg-purple-700 hover:scale-105'>
-                                <span>Upload</span>
-                            </button>
-                            <button onClick={handleAddNew} className='flex items-center gap-2 px-4 py-2 rounded-lg font-semibold shadow-md transition-all duration-300 text-white bg-purple-600 hover:bg-purple-700 hover:scale-105'>
-                                <Plus size={20}/>
-                                <span>Add New</span>
-                            </button>
+                            <div className='flex gap-3'>
+                                <button 
+                                 onClick={handleUploadExcel} 
+                                className='flex items-center gap-2 px-4 py-2 rounded-md font-semibold shadow-md transition-all duration-300 text-white bg-green-600 hover:bg-green-700 hover:scale-105'
+                                >
+                                    <Upload size={20}/>
+                                    <span>Upload Excel</span>
+                                </button>
+                                <button onClick={handleAddNew} className='flex items-center gap-2 px-4 py-2 rounded-lg font-semibold shadow-md transition-all duration-300 text-white bg-purple-600 hover:bg-purple-700 hover:scale-105'>
+                                    <Plus size={20}/>
+                                    <span>Add New</span>
+                                </button>
+                            </div>
                         </div>
                         <div className='bg-white dark:bg-gray-800 rounded-2xl p-6'>
                             {loading ? (
@@ -313,6 +331,12 @@ export default function ApartmentView() {
                 />
                 </div>
             )} */}
+
+            <BulkImportModal
+                isOpen={showBulkImportModal}
+                onClose={handleBulkImportModalClose}
+                onImportSuccess={handleBulkImportSuccess}
+            />
 
             {showDeactivateModal && (
                 <div className="fixed inset-0 bg-white/0 backdrop-blur-lg flex items-center justify-center z-50">

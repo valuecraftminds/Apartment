@@ -87,8 +87,10 @@ app.use('/api/billranges', authenticateToken,billRangeRoutes);
 const billPriceRoutes = require('./routes/billPrice');
 app.use('/api/billprice', authenticateToken, billPriceRoutes)
 
-// In your main routes file (usually app.js or routes/index.js)
+//Routes for bill assignments
 const billAssignmentsRoutes = require('./routes/billAssignments');
-
-// Then add to your app
 app.use('/api/bill-assignments', billAssignmentsRoutes);
+
+//Routes for bulk imports
+const bulkImportRoutes = require('./routes/bulkImports');
+app.use('/api/bulk-import', bulkImportRoutes);
