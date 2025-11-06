@@ -40,9 +40,6 @@ const bulkImportController = {
           houseTypes: 0,
           houses: 0
         },
-        updated: {
-          houses: 0
-        },
         errors: []
       };
 
@@ -52,19 +49,20 @@ const bulkImportController = {
         const rowNumber = i + 2;
 
         try {
-          // Validate required fields
-          if (!row.apartment_name || !row.floor_number || !row.house_number || !row.house_type) {
-            results.errors.push(`Row ${rowNumber}: Missing required fields (apartment_name, floor_number, house_number, house_type)`);
+          // Validate required fields for new format
+          if (!row.apartment_name || !row.floor_number || !row.house_type || !row.number_of_houses) {
+            results.errors.push(`Row ${rowNumber}: Missing required fields (apartment_name, floor_number, house_type, number_of_houses)`);
             continue;
           }
 
           const apartmentName = row.apartment_name.toString().trim();
           const floorNumber = row.floor_number.toString().trim();
-          const houseNumber = row.house_number.toString().trim();
           const houseTypeName = row.house_type.toString().trim();
+          const numberOfHouses = parseInt(row.number_of_houses) || 1;
           const status = row.status && ['vacant', 'occupied', 'maintenance'].includes(row.status.toString().toLowerCase()) 
             ? row.status.toString().toLowerCase() 
             : 'vacant';
+          const housePrefix = row.house_prefix?.toString().trim() || '';
 
           // House type details (with defaults)
           const sqrfeet = parseFloat(row.sqrfeet) || 1000;
@@ -112,26 +110,35 @@ const bulkImportController = {
             results.created.houseTypes++;
           }
 
-          // Step 4: Create or update house
-          const existingHouse = await BulkImportModel.findHouse(floor.id, houseNumber);
-          if (existingHouse) {
-            // Update existing house
-            await connection.execute(
-              'UPDATE houses SET housetype_id = ?, status = ? WHERE id = ?',
-              [houseType.id, status, existingHouse.id]
-            );
-            results.updated.houses++;
-          } else {
-            // Create new house
-            await BulkImportModel.createHouse({
+          // Step 4: Create multiple houses
+          const housesToCreate = [];
+          
+          // Get the starting house number
+          let nextHouseNumber = await BulkImportModel.getNextHouseNumber(floor.id, housePrefix);
+          
+          for (let j = 0; j < numberOfHouses; j++) {
+            const houseId = housePrefix ? nextHouseNumber : `${floorNumber}${(j + 1).toString().padStart(2, '0')}`;
+            
+            housesToCreate.push({
               company_id,
               apartment_id: apartment.id,
               floor_id: floor.id,
-              house_id: houseNumber,
+              house_id: houseId,
               housetype_id: houseType.id,
               status
             });
-            results.created.houses++;
+
+            // Increment for next house (if using prefix-based numbering)
+            if (housePrefix) {
+              const currentNumber = parseInt(nextHouseNumber.replace(housePrefix, '')) || 0;
+              nextHouseNumber = `${housePrefix}${(currentNumber + 1).toString().padStart(2, '0')}`;
+            }
+          }
+
+          // Create all houses for this row
+          if (housesToCreate.length > 0) {
+            await BulkImportModel.createMultipleHouses(housesToCreate);
+            results.created.houses += housesToCreate.length;
           }
 
           // Update counts
@@ -167,15 +174,16 @@ const bulkImportController = {
 
   async downloadTemplate(req, res) {
     try {
-      // Create sample data for template with all required fields
+      // Create sample data for new template format
       const templateData = [
         {
           apartment_name: 'Sunrise Apartments',
           address: '123 Main Street',
           city: 'Colombo',
           floor_number: '1',
-          house_number: '101',
           house_type: 'Standard',
+          number_of_houses: 5,
+          house_prefix: '1',
           sqrfeet: 1200,
           rooms: 3,
           bathrooms: 2,
@@ -186,20 +194,35 @@ const bulkImportController = {
           address: '123 Main Street',
           city: 'Colombo',
           floor_number: '1',
-          house_number: '102',
           house_type: 'Deluxe',
+          number_of_houses: 3,
+          house_prefix: '1',
           sqrfeet: 1500,
           rooms: 4,
           bathrooms: 3,
-          status: 'occupied'
+          status: 'vacant'
+        },
+        {
+          apartment_name: 'Sunrise Apartments',
+          address: '123 Main Street',
+          city: 'Colombo',
+          floor_number: '2',
+          house_type: 'Standard',
+          number_of_houses: 4,
+          house_prefix: '2',
+          sqrfeet: 1200,
+          rooms: 3,
+          bathrooms: 2,
+          status: 'vacant'
         },
         {
           apartment_name: 'Ocean View',
           address: '456 Beach Road',
           city: 'Galle',
           floor_number: 'Ground',
-          house_number: 'G01',
           house_type: 'Standard',
+          number_of_houses: 2,
+          house_prefix: 'G',
           sqrfeet: 1000,
           rooms: 3,
           bathrooms: 2,

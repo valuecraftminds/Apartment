@@ -118,6 +118,39 @@ class BulkImportModel {
       [floorsResult[0].floor_count, housesResult[0].house_count, apartment_id]
     );
   }
+
+  static async createMultipleHouses(housesData) {
+    const houses = [];
+    for (const houseData of housesData) {
+      const { company_id, apartment_id, floor_id, house_id, housetype_id, status } = houseData;
+      const id = uuidv4();
+      
+      const [result] = await pool.execute(
+        `INSERT INTO houses (id, company_id, apartment_id, floor_id, house_id, housetype_id, status) 
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [id, company_id, apartment_id, floor_id, house_id, housetype_id, status]
+      );
+      
+      houses.push({ id, ...houseData });
+    }
+    return houses;
+  }
+
+  static async getNextHouseNumber(floor_id, prefix = '') {
+    const [rows] = await pool.execute(
+      'SELECT house_id FROM houses WHERE floor_id = ? AND house_id LIKE ? ORDER BY house_id DESC LIMIT 1',
+      [floor_id, `${prefix}%`]
+    );
+    
+    if (rows.length === 0) {
+      return `${prefix}01`;
+    }
+    
+    const lastHouseId = rows[0].house_id;
+    const lastNumber = parseInt(lastHouseId.replace(prefix, '')) || 0;
+    const nextNumber = lastNumber + 1;
+    return `${prefix}${nextNumber.toString().padStart(2, '0')}`;
+  }
 }
 
 module.exports = BulkImportModel;

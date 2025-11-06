@@ -22,8 +22,8 @@ export default function Floors() {
     const [selectedFloor, setSelectedFloor] = useState(null);
     const [showDeactivateModal, setShowDeactivateModal] = useState(false);
     const [deactivatingFloor, setDeactivatingFloor] = useState(null);
-
-    
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deletingFloor, setDeletingFloor] = useState(null);    
 
     useEffect(() => {
         const fetchApartment = async () => {
@@ -125,6 +125,31 @@ export default function Floors() {
     setShowEditModal(false);
     toast.success('Floor updated successfully!');
     };
+
+    //Delete floors
+  const handleDeleteClick = (floor) => {
+    setDeletingFloor(floor);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      if (!deletingFloor) return;
+      await api.delete(`/floors/${deletingFloor.id}`);
+      toast.success('Floor deleted successfully');
+      setShowDeleteModal(false);
+      setDeletingFloor(null);
+      loadFloors();
+    } catch (err) {
+      console.error('Delete floor error:', err);
+      toast.error('Failed to delete floor');
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+    setDeletingFloor(null);
+  };
 
   return (    
     <div className='flex h-screen bg-gray-100 dark:bg-gray-900 w-screen transition-colors duration-200'>
@@ -243,6 +268,16 @@ export default function Floors() {
                                                                     >
                                                                     {floor.is_active ? <ToggleRight size={25} /> : <ToggleLeft size={25} />}
                                                                 </button>
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleDeleteClick(floor);
+                                                                    }}
+                                                                    className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                                                    title="Delete"
+                                                                >
+                                                                    <Trash2 size={20} />
+                                                                </button>
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -332,6 +367,32 @@ export default function Floors() {
                     {deactivatingFloor?.is_active ? "Deactivate" : "Activate"}
                     </button>
                 </div>
+                </div>
+            </div>
+        )}
+        {showDeleteModal && deletingFloor && (
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm relative">
+                    <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                    Confirm Deletion
+                    </h2>
+                    <p className="text-gray-600 dark:text-gray-300 mb-6">
+                    Are you sure you want to delete "{deletingFloor.floor_id}"?
+                    </p>
+                    <div className="flex justify-end space-x-3">
+                    <button
+                        onClick={handleCancelDelete}
+                        className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleConfirmDelete}
+                        className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors duration-200"
+                    >
+                        Delete
+                    </button>
+                    </div>
                 </div>
             </div>
         )}

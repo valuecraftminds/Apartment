@@ -1,6 +1,6 @@
 // components/BulkImportModal.jsx
 import React, { useState } from 'react';
-import { Upload, Download, FileText, CheckCircle, XCircle, AlertCircle, X, Building, Layers, Home, Users } from 'lucide-react';
+import { Upload, Download, CheckCircle, XCircle, AlertCircle, X, Building, Layers, Home, Users, Hash } from 'lucide-react';
 import api from '../api/axios';
 import { toast } from 'react-toastify';
 
@@ -121,7 +121,7 @@ export default function BulkImportModal({ isOpen, onClose, onImportSuccess }) {
     onClose();
   };
 
-  if (!isOpen) return null;
+   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -197,37 +197,41 @@ export default function BulkImportModal({ isOpen, onClose, onImportSuccess }) {
                   </p>
                 </div>
 
-                {/* Required Format Info */}
+                {/* Required Format Info - UPDATED */}
                 <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg text-left">
                   <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-3">
-                    Required Columns:
+                    New Format - Specify Number of Houses:
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <div>
-                      <h5 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Apartment Details</h5>
+                      <h5 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Apartment & Floor</h5>
                       <ul className="text-gray-600 dark:text-gray-400 space-y-1">
                         <li>• <strong>apartment_name</strong> - Name of apartment</li>
                         <li>• <strong>address</strong> - Address (optional)</li>
                         <li>• <strong>city</strong> - City (optional)</li>
+                        <li>• <strong>floor_number</strong> - Floor number/name</li>
                       </ul>
                     </div>
                     <div>
-                      <h5 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Floor & House Details</h5>
+                      <h5 className="font-medium text-gray-700 dark:text-gray-300 mb-2">House Configuration</h5>
                       <ul className="text-gray-600 dark:text-gray-400 space-y-1">
-                        <li>• <strong>floor_number</strong> - Floor number/name</li>
-                        <li>• <strong>house_number</strong> - House/unit number</li>
                         <li>• <strong>house_type</strong> - Type of house</li>
+                        <li>• <strong>number_of_houses</strong> - How many houses to create</li>
+                        <li>• <strong>house_prefix</strong> - House number prefix (optional)</li>
                         <li>• <strong>status</strong> - vacant/occupied/maintenance</li>
                       </ul>
                     </div>
-                    <div>
-                      <h5 className="font-medium text-gray-700 dark:text-gray-300 mb-2">House Type Details</h5>
-                      <ul className="text-gray-600 dark:text-gray-400 space-y-1">
-                        <li>• <strong>sqrfeet</strong> - Area in sq ft (default: 1000)</li>
-                        <li>• <strong>rooms</strong> - Room count (default: 3)</li>
-                        <li>• <strong>bathrooms</strong> - Bathroom count (default: 2)</li>
-                      </ul>
-                    </div>
+                  </div>
+                  
+                  {/* Example Section */}
+                  <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 rounded border border-green-200 dark:border-green-800">
+                    <h5 className="font-medium text-green-800 dark:text-green-300 mb-2">Example:</h5>
+                    <p className="text-sm text-green-700 dark:text-green-400">
+                      If you specify: <strong>floor_number: "1"</strong>, <strong>house_type: "Standard"</strong>, <strong>number_of_houses: 5</strong>, <strong>house_prefix: "1"</strong>
+                    </p>
+                    <p className="text-sm text-green-700 dark:text-green-400 mt-1">
+                      It will create houses: <strong>101, 102, 103, 104, 105</strong> automatically!
+                    </p>
                   </div>
                 </div>
               </div>
@@ -273,7 +277,7 @@ export default function BulkImportModal({ isOpen, onClose, onImportSuccess }) {
                       Import Completed Successfully!
                     </h3>
                     <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-                      Processed {results.total} rows from your file
+                      Created {results.created.houses} houses from {results.total} configuration rows
                     </p>
                   </div>
                 </div>
@@ -303,30 +307,13 @@ export default function BulkImportModal({ isOpen, onClose, onImportSuccess }) {
                   <div className="text-sm text-purple-600 dark:text-purple-400">House Types</div>
                 </div>
                 <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 text-center">
-                  <Users className="h-8 w-8 text-green-600 dark:text-green-400 mx-auto mb-2" />
+                  <Hash className="h-8 w-8 text-green-600 dark:text-green-400 mx-auto mb-2" />
                   <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                     {results.created.houses}
                   </div>
-                  <div className="text-sm text-green-600 dark:text-green-400">Houses</div>
+                  <div className="text-sm text-green-600 dark:text-green-400">Houses Created</div>
                 </div>
               </div>
-
-              {/* Updated Houses */}
-              {results.updated.houses > 0 && (
-                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-                  <div className="flex items-center gap-3">
-                    <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-                    <div>
-                      <h3 className="font-medium text-yellow-800 dark:text-yellow-300">
-                        Updated Existing Houses
-                      </h3>
-                      <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-1">
-                        {results.updated.houses} houses were updated with new information
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* Errors Display */}
               {results.errors.length > 0 && (
