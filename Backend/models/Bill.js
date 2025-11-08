@@ -38,7 +38,7 @@ class Bills{
 
     static async findByBillName(bill_name){
         const [rows] = await pool.execute(
-            'SELECT * FROM bills WHERE bill_name=?',
+            'SELECT * FROM bills WHERE bill_name=? & company_id=?',
             [bill_name]
         );
         return rows[0];

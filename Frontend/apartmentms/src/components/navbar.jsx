@@ -81,14 +81,14 @@ export default function Navbar() {
 
             {/* Search bar */}
             <div className="hidden md:block relative ml-4">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              {/* <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search size={18} className="text-gray-800 dark:text-gray-500" />
               </div>
               <input
                 type="text"
                 placeholder="Search..."
                 className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white text-gray-800 text-sm w-64 transition-colors duration-200"
-              />
+              /> */}
             </div>
           </div>
 
@@ -115,12 +115,14 @@ export default function Navbar() {
             <div className="flex items-center space-x-2">
               <div className="h-8 w-8 bg-purple-600 rounded-full flex items-center justify-center">
                 <span className="text-white text-sm font-medium">
-                  {auth?.user?.name?.[0] || auth?.user?.email?.[0]?.toUpperCase()}
+                  {auth?.user?.firstname?.toUpperCase()}
+                  {/* {auth?.user?.name?.[0] || auth?.user?.email?.[0]?.toUpperCase()} */}
                 </span>
               </div>
               <div className="hidden md:block text-left">
                 <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                  {auth?.user?.name || auth?.user?.email?.split('@')[0]}
+                  {auth?.user?.firstname}
+                  {/* {auth?.user?.name || auth?.user?.email?.split('@')[0]} */}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
                   {auth?.user?.role}

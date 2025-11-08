@@ -28,7 +28,8 @@ export default function Houses() {
     const [showEditModal, setShowEditModal] = useState(false);
     const [showDeactivateModal, setShowDeactivateModal] = useState(false);
     const [deactivatingHouse, setDeactivatingHouse] = useState(null);
-    
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deletingHouse, setDeletingHouse] = useState(null);   
 
     const [activeTab, setActiveTab] = useState("houses");
 
@@ -170,6 +171,32 @@ export default function Houses() {
         }
     };
 
+    //delete house
+    const handleDeleteClick = (house) => {
+    setDeletingHouse(house);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      if (!deletingHouse) return;
+      await api.delete(`/houses/${deletingHouse.id}`);
+      toast.success('House deleted successfully');
+      setShowDeleteModal(false);
+      setDeletingHouse(null);
+      loadHouses(floor_id);
+    } catch (err) {
+      console.error('Delete house error:', err);
+      toast.error('Failed to delete house');
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+    setDeletingHouse(null);
+  };
+
+
     return (
         <div className='flex h-screen bg-gray-100 dark:bg-gray-900 w-screen transition-colors duration-200'>
             <Sidebar />
@@ -308,6 +335,16 @@ export default function Houses() {
                                                                     >
                                                                         {house.is_active ? <ToggleRight size={25} /> : <ToggleLeft size={25} />}
                                                                     </button>
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleDeleteClick(house);
+                                                                        }}
+                                                                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                                                        title="Delete"
+                                                                    >
+                                                                        <Trash2 size={20} />
+                                                                    </button>
                                                                 </div>
                                                             </td>
                                                         </tr>
@@ -335,7 +372,7 @@ export default function Houses() {
             {/* Create House Modal */}
             {showCreateModal && (
                 <div className="fixed inset-0 bg-white/0 backdrop-blur-lg flex items-center justify-center z-50">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md relative">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-5xl relative">
                         <button
                             onClick={handleCloseModal}
                             className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 dark:hover:text-white"
@@ -420,7 +457,32 @@ export default function Houses() {
                     </div>
                 </div>
             )}
-            
+            {showDeleteModal && deletingHouse && (
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm relative">
+                    <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                    Confirm Deletion
+                    </h2>
+                    <p className="text-gray-600 dark:text-gray-300 mb-6">
+                    Are you sure you want to delete "{deletingHouse.house_id}"?
+                    </p>
+                    <div className="flex justify-end space-x-3">
+                    <button
+                        onClick={handleCancelDelete}
+                        className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleConfirmDelete}
+                        className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors duration-200"
+                    >
+                        Delete
+                    </button>
+                    </div>
+                </div>
+            </div>
+        )}            
             <ToastContainer position="top-center" autoClose={3000} />
         </div>
     )

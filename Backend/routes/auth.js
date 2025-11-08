@@ -6,7 +6,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const {authenticateToken} = require('../middleware/auth')
-const { sendVerificationEmail } = require('../helpers/email');
+const { sendVerificationEmail, sendPasswordResetEmail, sendInvitationEmail } = require('../helpers/email');
 require('dotenv').config();
 
 // helpers for JWT
@@ -107,24 +107,43 @@ router.post('/verify', async (req, res) => {
 router.post('/resend', async (req, res) => {
   try {
     const { email } = req.body;
+    console.log('Resend verification request for:', email);
+    
     if (!email) return res.status(400).json({ message: 'Email required' });
 
     const [rows] = await pool.execute('SELECT id, is_verified FROM users WHERE email = ?', [email]);
-    if (!rows.length) return res.status(404).json({ message: 'User not found' });
+    if (!rows.length) {
+      console.log('User not found for email:', email);
+      return res.status(404).json({ message: 'User not found' });
+    }
 
     const user = rows[0];
-    if (user.is_verified) return res.status(400).json({ message: 'Already verified' });
+    console.log('User found:', { id: user.id, is_verified: user.is_verified });
+    
+    if (user.is_verified) {
+      console.log('User already verified');
+      return res.status(400).json({ message: 'Already verified' });
+    }
 
     const plainToken = crypto.randomBytes(32).toString('hex');
     const tokenHash = crypto.createHash('sha256').update(plainToken).digest('hex');
     const expiresAt = new Date(Date.now() + (Number(process.env.VERIFICATION_TOKEN_EXPIRES_HOURS || 24) * 3600 * 1000));
-    await pool.execute('UPDATE users SET verification_token_hash = ?, verification_token_expires = ? WHERE id = ?', [tokenHash, expiresAt, user.id]);
+    
+    await pool.execute(
+      'UPDATE users SET verification_token_hash = ?, verification_token_expires = ? WHERE id = ?', 
+      [tokenHash, expiresAt, user.id]
+    );
 
+    console.log('Sending verification email to:', email);
+    
+    // Use the email helper
     await sendVerificationEmail(email, plainToken, user.id);
+    console.log(`Verification email sent successfully to: ${email}`);
+
     res.json({ message: 'Verification email resent' });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Resend verification error:', err);
+    res.status(500).json({ message: 'Server error while sending verification email' });
   }
 });
 
@@ -287,7 +306,6 @@ const resetPasswordLimiter = rateLimit({
 });
 
 // Send password reset link
-// In your auth.js routes file
 router.post('/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
@@ -309,88 +327,16 @@ router.post('/forgot-password', async (req, res) => {
       [resetTokenHash, expiresAt, user.id]
     );
 
-    // Debug: Check if email credentials are loaded
-    console.log('Email User:', process.env.SMTP_USER);
-    console.log('Email Pass:', process.env.SMTP_PASS ? '***' : 'MISSING');
-
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      console.error('Email credentials missing from environment variables');
-      return res.status(500).json({ message: 'Email service not configured' });
-    }
-
-    // Create transporter with better configuration
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      secure: process.env.SMTP_SECURE,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-      // Add these options for better reliability
-      pool: true,
-      maxConnections: 1,
-      rateDelta: 20000,
-      rateLimit: 5
-    });
-
-    // Verify transporter configuration
-    try {
-      await transporter.verify();
-      console.log('Email transporter verified successfully');
-    } catch (verifyError) {
-      console.error('Email transporter verification failed:', verifyError);
-      return res.status(500).json({ message: 'Email service configuration error' });
-    }
-
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}&id=${user.id}`;
-
-    const mailOptions = {
-      from: {
-        name: 'AptSync Support',
-        address: process.env.SMTP_USER
-      },
-      to: user.email,
-      subject: 'Reset your AptSync password',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #6d28d9;">Password Reset Request</h2>
-          <p>You requested to reset your password for AptSync.</p>
-          <p>Click the button below to reset your password. This link will expire in 15 minutes.</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${resetUrl}" 
-               style="background: #6d28d9; color: white; padding: 12px 24px; 
-                      text-decoration: none; border-radius: 6px; display: inline-block;">
-              Reset Password
-            </a>
-          </div>
-          <p style="color: #666; font-size: 14px;">
-            If you didn't request this, please ignore this email.
-          </p>
-          <p style="color: #666; font-size: 14px;">
-            Or copy and paste this link in your browser:<br>
-            <code style="background: #f5f5f5; padding: 5px; border-radius: 3px;">${resetUrl}</code>
-          </p>
-        </div>
-      `,
-    };
-
-    await transporter.sendMail(mailOptions);
+    // Use email helper
+    await sendPasswordResetEmail(email, resetToken, user.id);
     console.log(`Password reset email sent to: ${user.email}`);
 
     res.json({ message: 'Password reset link sent to your email' });
   } catch (err) {
     console.error('Forgot password error:', err);
-    
-    // More specific error messages
-    if (err.code === 'EAUTH') {
-      return res.status(500).json({ message: 'Email authentication failed. Please check email configuration.' });
-    }
-    
     res.status(500).json({ message: 'Server error while sending reset link' });
   }
 });
-
 
 // Reset password route
 router.post('/reset-password',resetPasswordLimiter, async (req, res) => {
@@ -430,11 +376,112 @@ router.post('/reset-password',resetPasswordLimiter, async (req, res) => {
 });
 
 //user invite
-router.post('/invite', async (req, res) => {
+// router.post('/invite', authenticateToken, async (req, res) => {
+//   try {
+//     const { email, role } = req.body;
+//     const company_id = req.user.company_id; 
+
+//     //console.log('Invite request:', { email, role, company_id, user: req.user });
+
+//     if (!email || !role) {
+//       return res.status(400).json({ message: 'Email and role are required' });
+//     }
+
+//     // Validate company_id exists
+//     if (!company_id) {
+//       return res.status(400).json({ message: 'Company ID is required' });
+//     }
+
+//     // Check if user already exists
+//     const [exists] = await pool.execute('SELECT id FROM users WHERE email = ?', [email]);
+//     if (exists.length) {
+//       return res.status(409).json({ message: 'User already exists' });
+//     }
+
+//     // Insert invited user with company_id
+//     const [ins] = await pool.execute(
+//       'INSERT INTO users (email, role, is_verified, is_active, company_id, password_hash) VALUES (?, ?, 0, 1, ?, NULL)',
+//       [email, role, company_id]
+//     );
+
+
+//     const userId = ins.insertId;
+
+//     // Generate verification token
+//     const plainToken = crypto.randomBytes(32).toString('hex');
+//     const tokenHash = crypto.createHash('sha256').update(plainToken).digest('hex');
+//     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+//     await pool.execute(
+//       'UPDATE users SET verification_token_hash=?, verification_token_expires=? WHERE id=?',
+//       [tokenHash, expiresAt, userId]
+//     );
+
+//     // Create transporter
+//     const transporter = nodemailer.createTransport({
+//       host: process.env.SMTP_HOST,
+//       port: process.env.SMTP_PORT,
+//       secure: process.env.SMTP_SECURE === 'true',
+//       auth: {
+//         user: process.env.SMTP_USER,
+//         pass: process.env.SMTP_PASS,
+//       },
+//     });
+
+//     await transporter.verify();
+
+//     // Build invite link
+//     // const inviteUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/complete-registration?token=${plainToken}&id=${userId}`;
+//     const inviteUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/complete-registration?token=${plainToken}&id=${userId}`;
+
+//     const mailOptions = {
+//       from: {
+//         name: 'AptSync Support',
+//         address: process.env.SMTP_USER,
+//       },
+//       to: email,
+//       subject: 'You are invited to join AptSync',
+//       html: `
+//         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+//           <h2 style="color: #6d28d9;">You're Invited!</h2>
+//           <p>You’ve been invited to join <b>AptSync</b> as a ${role}.</p>
+//           <p>Click the button below to complete your registration. This link will expire in 24 hours.</p>
+//           <div style="text-align: center; margin: 30px 0;">
+//             <a href="${inviteUrl}" 
+//                style="background: #6d28d9; color: white; padding: 12px 24px; 
+//                       text-decoration: none; border-radius: 6px; display: inline-block;">
+//               Complete Registration
+//             </a>
+//           </div>
+//           <p style="color: #666; font-size: 14px;">
+//             Or copy and paste this link into your browser:<br>
+//             <code style="background: #f5f5f5; padding: 5px; border-radius: 3px;">${inviteUrl}</code>
+//           </p>
+//         </div>
+//       `,
+//     };
+
+//     await transporter.sendMail(mailOptions);
+//     console.log(`Invite email sent to: ${email}`);
+
+//     res.status(201).json({ message: 'Invitation sent successfully' });
+//   } catch (err) {
+//     console.error('Invite error:', err);
+//     res.status(500).json({ message: 'Server error while inviting user' });
+//   }
+// });
+
+router.post('/invite', authenticateToken, async (req, res) => {
   try {
-    const { email, role, company_id } = req.body;
+    const { email, role } = req.body;
+    const company_id = req.user.company_id; 
+
     if (!email || !role) {
       return res.status(400).json({ message: 'Email and role are required' });
+    }
+
+    if (!company_id) {
+      return res.status(400).json({ message: 'Company ID is required' });
     }
 
     // Check if user already exists
@@ -443,10 +490,10 @@ router.post('/invite', async (req, res) => {
       return res.status(409).json({ message: 'User already exists' });
     }
 
-    // Insert invited user (allow NULL password_hash!)
+    // Insert invited user with company_id
     const [ins] = await pool.execute(
       'INSERT INTO users (email, role, is_verified, is_active, company_id, password_hash) VALUES (?, ?, 0, 1, ?, NULL)',
-      [email, role, company_id || null]
+      [email, role, company_id]
     );
 
     const userId = ins.insertId;
@@ -461,56 +508,58 @@ router.post('/invite', async (req, res) => {
       [tokenHash, expiresAt, userId]
     );
 
-    // Create transporter
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
-
-    await transporter.verify();
-
-    // Build invite link
-    const inviteUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/complete-registration?token=${plainToken}&id=${userId}`;
-
-    const mailOptions = {
-      from: {
-        name: 'AptSync Support',
-        address: process.env.SMTP_USER,
-      },
-      to: email,
-      subject: 'You are invited to join AptSync',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #6d28d9;">You're Invited!</h2>
-          <p>You’ve been invited to join <b>AptSync</b> as a ${role}.</p>
-          <p>Click the button below to complete your registration. This link will expire in 24 hours.</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${inviteUrl}" 
-               style="background: #6d28d9; color: white; padding: 12px 24px; 
-                      text-decoration: none; border-radius: 6px; display: inline-block;">
-              Complete Registration
-            </a>
-          </div>
-          <p style="color: #666; font-size: 14px;">
-            Or copy and paste this link into your browser:<br>
-            <code style="background: #f5f5f5; padding: 5px; border-radius: 3px;">${inviteUrl}</code>
-          </p>
-        </div>
-      `,
-    };
-
-    await transporter.sendMail(mailOptions);
+    // Use email helper
+    await sendInvitationEmail(email, plainToken, userId, role);
     console.log(`Invite email sent to: ${email}`);
 
     res.status(201).json({ message: 'Invitation sent successfully' });
   } catch (err) {
     console.error('Invite error:', err);
     res.status(500).json({ message: 'Server error while inviting user' });
+  }
+});
+
+// Add this route to your auth.js before the complete-registration route
+router.post('/verify-invite-link', async (req, res) => {
+  try {
+    const { token, id } = req.body;
+    if (!token || !id) return res.status(400).json({ message: 'Invalid request' });
+
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    
+    const [rows] = await pool.execute(
+      'SELECT id, email, verification_token_hash, verification_token_expires, is_verified FROM users WHERE id = ?',
+      [id]
+    );
+    
+    if (!rows.length) return res.status(400).json({ message: 'Invalid invitation link' });
+
+    const user = rows[0];
+    
+    // Check if already verified
+    if (user.is_verified) {
+      return res.status(400).json({ message: 'This invitation has already been used' });
+    }
+
+    // Check token validity
+    if (!user.verification_token_hash || user.verification_token_hash !== tokenHash) {
+      return res.status(400).json({ message: 'Invalid invitation token' });
+    }
+
+    // Check expiration
+    if (new Date(user.verification_token_expires) < new Date()) {
+      return res.status(400).json({ message: 'Invitation link has expired' });
+    }
+
+    res.json({ 
+      success: true, 
+      email: user.email,
+      message: 'Invitation link is valid' 
+    });
+    
+  } catch (err) {
+    console.error('Verify invite error:', err);
+    res.status(500).json({ message: 'Server error while verifying invitation' });
   }
 });
 
@@ -523,13 +572,21 @@ router.post('/complete-registration', async (req, res) => {
     if (!users.length) return res.status(404).json({ message: 'User not found' });
 
     const user = users[0];
-    if (!user.is_verified) return res.status(400).json({ message: 'Email not verified' });
+    
+    // Check if user is already verified and has completed registration
+    if (user.is_verified) {
+      // Check if they already have a password (completed registration)
+      const [userDetails] = await pool.execute('SELECT password_hash FROM users WHERE id = ?', [user.id]);
+      if (userDetails[0].password_hash) {
+        return res.status(400).json({ message: 'Registration already completed' });
+      }
+    }
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
     await pool.execute(
       `UPDATE users 
-       SET firstname=?, lastname=?, country=?, mobile=?, password_hash=?, is_active=1 
+       SET firstname=?, lastname=?, country=?, mobile=?, password_hash=?, is_verified=1, is_active=1 
        WHERE id=?`,
       [firstname, lastname, country, mobile, hashedPassword, user.id]
     );
@@ -541,7 +598,170 @@ router.post('/complete-registration', async (req, res) => {
   }
 });
 
+// Update user
+// Update user
+router.put('/users/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { firstname, lastname, email, country, mobile, role, password } = req.body;
+    
+    // Check if user exists
+    const [users] = await pool.execute('SELECT id, company_id, email as current_email FROM users WHERE id = ?', [id]);
+    if (!users.length) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
 
+    const user = users[0];
+    
+    // Check if user belongs to the same company
+    if (user.company_id !== req.user.company_id) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
 
+    // Check if email is already taken by another user (only if email is being changed)
+    if (email && email !== user.current_email) {
+      const [existing] = await pool.execute(
+        'SELECT id FROM users WHERE email = ? AND id != ? AND company_id = ?',
+        [email, id, req.user.company_id]
+      );
+      if (existing.length) {
+        return res.status(409).json({ success: false, message: 'Email already taken' });
+      }
+    }
 
-module.exports = router;
+    let updateQuery = `
+      UPDATE users SET 
+      firstname = ?, lastname = ?, country = ?, mobile = ?, role = ?
+    `;
+    let queryParams = [firstname, lastname, country, mobile, role];
+
+    // Add email to update if it's provided (it will be included in all cases)
+    if (email) {
+      updateQuery += ', email = ?';
+      queryParams.push(email);
+    }
+
+    // If password is provided, update it
+    if (password) {
+      const password_hash = await bcrypt.hash(password, 12);
+      updateQuery += ', password_hash = ?';
+      queryParams.push(password_hash);
+      
+      // Only require verification if password changed AND email also changed
+      if (email && email !== user.current_email) {
+        updateQuery += ', is_verified = 0';
+      }
+    } else {
+      // If no password change, only require verification if email changed
+      if (email && email !== user.current_email) {
+        updateQuery += ', is_verified = 0';
+      }
+    }
+
+    updateQuery += ' WHERE id = ?';
+    queryParams.push(id);
+
+    await pool.execute(updateQuery, queryParams);
+
+    // Prepare response data
+    const responseData = { 
+      id, 
+      firstname, 
+      lastname, 
+      country, 
+      mobile, 
+      role 
+    };
+
+    // Only include email in response if it was actually updated
+    if (email && email !== user.current_email) {
+      responseData.email = email;
+      responseData.requires_verification = true;
+    } else {
+      responseData.email = user.current_email;
+    }
+
+    res.json({
+      success: true,
+      message: 'User updated successfully',
+      data: responseData
+    });
+
+  } catch (err) {
+    console.error('Error updating user:', err);
+    res.status(500).json({ success: false, message: 'Server error while updating user' });
+  }
+});
+
+// Toggle user active status
+router.patch('/users/:id/toggle', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check if user exists and belongs to same company
+    const [users] = await pool.execute(
+      'SELECT id, company_id, is_active FROM users WHERE id = ? AND company_id = ?',
+      [id, req.user.company_id]
+    );
+    
+    if (!users.length) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const user = users[0];
+    const newStatus = !user.is_active;
+
+    await pool.execute(
+      'UPDATE users SET is_active = ? WHERE id = ?',
+      [newStatus, id]
+    );
+
+    res.json({
+      success: true,
+      message: `User ${newStatus ? 'activated' : 'deactivated'} successfully`,
+      data: { is_active: newStatus }
+    });
+
+  } catch (err) {
+    console.error('Error toggling user:', err);
+    res.status(500).json({ success: false, message: 'Server error while updating user status' });
+  }
+});
+
+// Delete user
+router.delete('/users/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check if user exists and belongs to same company
+    const [users] = await pool.execute(
+      'SELECT id, company_id, email FROM users WHERE id = ? AND company_id = ?',
+      [id, req.user.company_id]
+    );
+    
+    if (!users.length) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const user = users[0];
+    
+    // Prevent user from deleting themselves
+    if (user.id === req.user.id) {
+      return res.status(400).json({ success: false, message: 'You cannot delete your own account' });
+    }
+
+    // Delete the user
+    await pool.execute('DELETE FROM users WHERE id = ?', [id]);
+
+    res.json({
+      success: true,
+      message: 'User deleted successfully'
+    });
+
+  } catch (err) {
+    console.error('Error deleting user:', err);
+    res.status(500).json({ success: false, message: 'Server error while deleting user' });
+  }
+});
+
+module.exports=router;

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import api from '../api/axios';
 import { toast } from 'react-toastify';
 
-export default function CreateUser({ onClose, onCreated,company_id }) {
+export default function CreateUser({ onClose, onCreated}) {
   const [formData, setFormData] = useState({
     email: '',
     role: '',
@@ -27,7 +27,7 @@ export default function CreateUser({ onClose, onCreated,company_id }) {
       // no need for FormData since we’re sending simple JSON
       const response = await api.post('/auth/invite', {
         email: formData.email,
-        role: formData.role,
+        role: formData.role
       });
 
       toast.success('Invitation sent successfully!');

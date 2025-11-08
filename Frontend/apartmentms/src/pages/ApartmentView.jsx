@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { Building2, Plus, Edit, Trash2, Eye, Image, Loader, ToggleRight, ToggleLeft } from 'lucide-react';
+import { Building2, Plus, Edit, Trash2, Eye, Image, Loader, ToggleRight, ToggleLeft, Upload } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import { AuthContext } from '../contexts/AuthContext';
@@ -8,6 +8,7 @@ import api from '../api/axios';
 import CreateApartment from '../Apartments/CreateApartment';
 import EditApartment from '../Apartments/EditApartment';
 import { toast, ToastContainer } from 'react-toastify';
+import BulkImportModal from '../Apartments/BulkImportModal';
 // import ViewApartment from '../Apartments/ViewApartment';
 
 export default function ApartmentView() {
@@ -25,11 +26,21 @@ export default function ApartmentView() {
     // const [showViewModal, setShowViewModal] = useState(false);
     const [showDeactivateModal,setShowDeactivateModal] = useState(false);
     const [deactivatingApartment, setDeactivatingApartment] = useState(null);
+    const [showBulkImportModal, setShowBulkImportModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deletingApartment, setDeletingApartment] = useState(null);
 
-
-     const handleAddNew = () => {
+    const handleAddNew = () => {
     setShowCreateModal(true);
   };
+
+    const handleUploadExcel = () => {
+        setShowBulkImportModal(true);
+    };
+
+    const handleBulkImportModalClose = () => {
+        setShowBulkImportModal(false);
+    };
 
   const handleEdit = (apartment) => {
   setEditingApartment(apartment);
@@ -68,6 +79,11 @@ export default function ApartmentView() {
         setShowEditModal(false);
         setEditingApartment(null);
         toast.success('Apartment updated successfully!');
+    };
+
+     const handleBulkImportSuccess = () => {
+        loadApartments(); // Refresh the apartments list after successful import
+        toast.success('Bulk import completed successfully!');
     };
 
     const confirmDeactivate = (apartment) => {
@@ -123,6 +139,32 @@ export default function ApartmentView() {
         toast.error('Failed to toggle apartment status');
     }
 };
+
+ //Delete apartment
+  const handleDeleteClick = (apartment) => {
+    setDeletingApartment(apartment);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      if (!deletingApartment) return;
+      await api.delete(`/apartments/${deletingApartment.id}`);
+      toast.success('Apartment deleted successfully');
+      setShowDeleteModal(false);
+      setDeletingApartment(null);
+      loadApartments();
+    } catch (err) {
+      console.error('Delete apartment error:', err);
+      toast.error('Failed to delete apartment');
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+    setDeletingApartment(null);
+  };
+
     
     return (
         <div className="flex h-screen bg-gray-100 dark:bg-gray-900 w-screen transition-colors duration-200">
@@ -136,10 +178,19 @@ export default function ApartmentView() {
                                 <Building2 size={40} className='text-purple-600 dark:text-purple-400 mr-3'/>
                                 <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Apartments</h1>
                             </div>
-                            <button onClick={handleAddNew} className='flex items-center gap-2 px-4 py-2 rounded-lg font-semibold shadow-md transition-all duration-300 text-white bg-purple-600 hover:bg-purple-700 hover:scale-105'>
-                                <Plus size={20}/>
-                                <span>Add New</span>
-                            </button>
+                            <div className='flex gap-3'>
+                                <button 
+                                 onClick={handleUploadExcel} 
+                                className='flex items-center gap-2 px-4 py-2 rounded-md font-semibold shadow-md transition-all duration-300 text-white bg-green-600 hover:bg-green-700 hover:scale-105'
+                                >
+                                    <Upload size={20}/>
+                                    <span>Upload Excel</span>
+                                </button>
+                                <button onClick={handleAddNew} className='flex items-center gap-2 px-4 py-2 rounded-lg font-semibold shadow-md transition-all duration-300 text-white bg-purple-600 hover:bg-purple-700 hover:scale-105'>
+                                    <Plus size={20}/>
+                                    <span>Add New</span>
+                                </button>
+                            </div>
                         </div>
                         <div className='bg-white dark:bg-gray-800 rounded-2xl p-6'>
                             {loading ? (
@@ -168,12 +219,12 @@ export default function ApartmentView() {
                                     <table className="w-full table-auto">
                                         <thead className="bg-gray-50 dark:bg-gray-700">
                                             <tr>
+                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Picture</th>
                                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Name</th>
                                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Address</th>
                                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">City</th>
                                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Floors</th>
                                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Units</th>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Picture</th>
                                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
                                             </tr>
                                         </thead>
@@ -188,21 +239,6 @@ export default function ApartmentView() {
                                                             : 'opacity-50 cursor-not-allowed'
                                                     }`}
                                                 >
-                                                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                                        {apartment.name}
-                                                    </td>
-                                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                                                        {apartment.address}
-                                                    </td>
-                                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                                                        {apartment.city || 'N/A'}
-                                                    </td>
-                                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                                                        {apartment.floors}
-                                                    </td>
-                                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                                                        {apartment.houses}
-                                                    </td>
                                                     {/* ApartmentView.jsx - Update the image display part */}
                                                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
                                                         {apartment.picture ? (
@@ -223,6 +259,21 @@ export default function ApartmentView() {
                                                                 <Image size={20} className="text-gray-400" />
                                                             </div>
                                                         )}
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                                        {apartment.name}
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                                                        {apartment.address}
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                                                        {apartment.city || 'N/A'}
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                                                        {apartment.floors}
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                                                        {apartment.houses}
                                                     </td>
                                                     <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                                                         <div className="flex space-x-2">
@@ -246,6 +297,16 @@ export default function ApartmentView() {
                                                                 title={apartment.is_active ? 'Deactivate' : 'Activate'}
                                                                 >
                                                                 {apartment.is_active ? <ToggleRight size={25} /> : <ToggleLeft size={25} />}
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDeleteClick(apartment);
+                                                                }}
+                                                                className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                                                title="Delete"
+                                                            >
+                                                                <Trash2 size={20} />
                                                             </button>
                                                         </div>
                                                     </td>
@@ -309,6 +370,12 @@ export default function ApartmentView() {
                 </div>
             )} */}
 
+            <BulkImportModal
+                isOpen={showBulkImportModal}
+                onClose={handleBulkImportModalClose}
+                onImportSuccess={handleBulkImportSuccess}
+            />
+
             {showDeactivateModal && (
                 <div className="fixed inset-0 bg-white/0 backdrop-blur-lg flex items-center justify-center z-50">
                     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm relative">
@@ -348,6 +415,33 @@ export default function ApartmentView() {
                     </div>
                     </div>
                 </div>
+                )}
+
+                {showDeleteModal && deletingApartment && (
+                    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm relative">
+                            <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                            Confirm Deletion
+                            </h2>
+                            <p className="text-gray-600 dark:text-gray-300 mb-6">
+                            Are you sure you want to delete "{deletingApartment.name}"?
+                            </p>
+                            <div className="flex justify-end space-x-3">
+                            <button
+                                onClick={handleCancelDelete}
+                                className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleConfirmDelete}
+                                className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors duration-200"
+                            >
+                                Delete
+                            </button>
+                            </div>
+                        </div>
+                    </div>
                 )}
 
             <ToastContainer position="top-center" autoClose={3000} />

@@ -275,6 +275,34 @@ const houseController = {
                 message: 'Server error while toggling house status'
             });
         }
+    },
+
+    //Delete Floor
+    async deleteHouse(req,res){
+        try{
+            const {id} = req.params;
+
+            //check if house exists
+            const existingHouse= await House.findById(id);
+            if(!existingHouse){
+                return res.status(404).json({
+                    success:false,
+                    message:'House not found'
+                });
+            }
+
+            await House.delete(id);
+            res.json({
+                success:true,
+                message:'House deleted successfully'
+            });
+        }catch(err){
+            console.error('Delete house error:',err);
+            res.status(500).json({
+                success:false,
+                message:'Server error while deleting house'
+            });
+        }
     }
 }
 

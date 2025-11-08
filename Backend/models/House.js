@@ -80,6 +80,15 @@ class House{
         );
         return true;
     }
+
+    //delete house
+    static async delete(id) {
+        await pool.execute(
+            'DELETE FROM houses WHERE id = ?',
+            [id]
+        );
+        return true;
+    }
 }
 
 module.exports = House;
