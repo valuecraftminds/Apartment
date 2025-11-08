@@ -24,6 +24,9 @@ import ManageBills from './Bills/ManageBills'
 import BillsAndCalculations from './Bills/BillsAndCalculations'
 import BillRange from './Bills/BillRange'
 import BillPrice from './Bills/BillPrice'
+import OwnerDashboard from './Apartment_Owner/OwnerPages/OwnerDashboard'
+import ManagerDashboard from './Apartment_Manager/ManagerPages/ManagerDashboard'
+import TechDashboard from './Apartment_Technician/TechPages/TechDashboard'
 
 export default function App() {
   return (
@@ -50,7 +53,10 @@ export default function App() {
         <Route path='/manage-bills' element={<ManageBills/>}/>
         <Route path='/bills-and-calculations' element={<BillsAndCalculations/>}/>
         <Route path="/billranges/:bill_id" element={<BillRange />} />
-        <Route path="/billprice/:bill_id/:billrange_id" element={<BillPrice />} />
+        <Route path="/billprice/:bill_id/:billrange_id" element={<BillPrice />} />        
+        <Route path="/owner-dashboard" element={<OwnerDashboard />} />
+        <Route path="/manager-dashboard" element={<ManagerDashboard />} />
+        <Route path="/technician-dashboard" element={<TechDashboard/>} />
 
 
       </Routes>

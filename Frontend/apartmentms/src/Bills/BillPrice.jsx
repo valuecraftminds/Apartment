@@ -6,6 +6,7 @@ import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import { ToastContainer, toast } from "react-toastify";
 import CreateBillPrice from "./CreateBillPrice";
+import EditBillPrice from "./EditBillPrice";
 
 export default function BillPrice() {
   const { bill_id, billrange_id } = useParams();
@@ -16,6 +17,8 @@ export default function BillPrice() {
   const [error, setError] = useState(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingBillPrice, setEditingBillPrice] = useState(null);
 
   // Add this useEffect to debug the route parameters
   React.useEffect(() => {
@@ -61,12 +64,34 @@ export default function BillPrice() {
     navigate(-1);
   };
 
+  //create bill price
   const handleCreateBillPrice = () => {
     loadBillPrices();
     setShowCreateModal(false);
     toast.success('Bill price created successfully!');
   }
 
+  // Handle edit button click
+  const handleEditClick = (billPrice) => {
+    setEditingBillPrice(billPrice);
+    setShowEditModal(true);
+  };
+
+  //handle edit
+  const handleEditBillPrice = () => {
+    loadBillPrices();
+    setShowEditModal(false);
+    setEditingBillPrice(null);
+    toast.success('Updated!');
+  }
+
+   // Handle modal close
+  const handleEditModalClose = () => {
+    setShowEditModal(false);
+    setEditingBillPrice(null);
+  }
+
+  //handle delete
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this bill price?')) {
       return;
@@ -199,10 +224,7 @@ export default function BillPrice() {
                           <td className="px-4 py-4">
                             <div className="flex space-x-2">
                               <button
-                                onClick={() => {
-                                  // Implement edit functionality
-                                  toast.info('Edit functionality to be implemented');
-                                }}
+                                onClick={() => handleEditClick(bp)} 
                                 className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
                                 title="Edit"
                               >
@@ -236,6 +258,16 @@ export default function BillPrice() {
           bill_id={bill_id}
         />
       )}
+      {showEditModal && editingBillPrice && (
+        <EditBillPrice
+          onClose={handleEditModalClose}
+          onUpdated={handleEditBillPrice}
+          billrange_id={billrange_id}
+          bill_id={bill_id}
+          billPrice={editingBillPrice} 
+        />
+      )}
+
 
       <ToastContainer position="top-center" autoClose={3000} />
     </div>

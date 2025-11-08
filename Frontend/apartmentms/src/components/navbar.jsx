@@ -115,12 +115,14 @@ export default function Navbar() {
             <div className="flex items-center space-x-2">
               <div className="h-8 w-8 bg-purple-600 rounded-full flex items-center justify-center">
                 <span className="text-white text-sm font-medium">
-                  {auth?.user?.name?.[0] || auth?.user?.email?.[0]?.toUpperCase()}
+                  {auth?.user?.firstname?.toUpperCase()}
+                  {/* {auth?.user?.name?.[0] || auth?.user?.email?.[0]?.toUpperCase()} */}
                 </span>
               </div>
               <div className="hidden md:block text-left">
                 <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                  {auth?.user?.name || auth?.user?.email?.split('@')[0]}
+                  {auth?.user?.firstname}
+                  {/* {auth?.user?.name || auth?.user?.email?.split('@')[0]} */}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
                   {auth?.user?.role}

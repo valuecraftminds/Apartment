@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import api from "../api/axios";
 
-export default function EditBillPrice({ bill_id, billrange_id, onClose, onCreated }) {
+export default function EditBillPrice({ bill_id, billrange_id, billPrice, onClose, onUpdated }) {
   const [formData, setFormData] = useState({
     year: "",
     month: "",
@@ -13,10 +13,27 @@ export default function EditBillPrice({ bill_id, billrange_id, onClose, onCreate
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Initialize form with bill price data when component mounts or billPrice changes
+  useEffect(() => {
+    if (billPrice) {
+      setFormData({
+        year: billPrice.year || "",
+        month: billPrice.month || "",
+        unitprice: billPrice.unitprice || "",
+        fixedamount: billPrice.fixedamount || "",
+      });
+    }
+  }, [billPrice]);
+
   // Add this useEffect to debug the props
-  React.useEffect(() => {
-    console.log('CreateBillPrice props:', { bill_id, billrange_id });
-  }, [bill_id, billrange_id]);
+  useEffect(() => {
+    console.log('EditBillPrice props:', { 
+      bill_id, 
+      billrange_id, 
+      billPrice,
+      formData 
+    });
+  }, [bill_id, billrange_id, billPrice, formData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -31,44 +48,51 @@ export default function EditBillPrice({ bill_id, billrange_id, onClose, onCreate
     setLoading(true);
     setError("");
 
+    if (!billPrice || !billPrice.id) {
+      setError("No bill price selected for editing");
+      setLoading(false);
+      return;
+    }
+
     // Debug the data before sending
     const requestData = {
       ...formData,
       bill_id,
       billrange_id,
+      id: billPrice.id // Include the bill price ID for update
     };
     
-    console.log('Submitting bill price data:', requestData);
+    console.log('Updating bill price data:', requestData);
 
     try {
       const result = await api.put(
-        "/billprice",
+        `/billprice/${billPrice.id}`, // Use the specific bill price ID in the URL
         requestData,
         {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         }
       );
 
       if (result.data.success) {
-        onCreated?.(result.data.data);
-        setFormData({ year: "", month: "", unitprice: "", fixedamount: "" });
+        onUpdated?.(result.data.data);
         onClose();
       } else {
-        setError(result.data.message || "Failed to save bill price");
+        setError(result.data.message || "Failed to update bill price");
       }
     } catch (err) {
-      console.error("Error saving bill price:", err);
+      console.error("Error updating bill price:", err);
       console.error("Error response:", err.response?.data);
       
       if (err.response?.status === 400) {
         setError(err.response.data?.message || "Bad request. Please check all required fields.");
       } else if (err.response?.status === 403) {
         setError("Access denied. Please check your login or permissions.");
+      } else if (err.response?.status === 404) {
+        setError("Bill price not found. It may have been deleted.");
       } else {
-        setError("Error saving bill price. Please try again.");
+        setError("Error updating bill price. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -81,7 +105,7 @@ export default function EditBillPrice({ bill_id, billrange_id, onClose, onCreate
         {/* Header */}
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
-            Create Bill Price
+            Edit Bill Price
           </h2>
           <button
             onClick={onClose}
@@ -94,6 +118,7 @@ export default function EditBillPrice({ bill_id, billrange_id, onClose, onCreate
         {/* Debug info - remove this in production */}
         {/* <div className="mb-4 p-2 bg-yellow-100 dark:bg-yellow-900 rounded text-xs">
           <strong>Debug Info:</strong><br />
+          Bill Price ID: {billPrice?.id || 'UNDEFINED'}<br />
           Bill ID: {bill_id || 'UNDEFINED'}<br />
           Bill Range ID: {billrange_id || 'UNDEFINED'}
         </div> */}
@@ -192,14 +217,14 @@ export default function EditBillPrice({ bill_id, billrange_id, onClose, onCreate
             </button>
             <button
               type="submit"
-              disabled={loading || !bill_id || !billrange_id}
+              disabled={loading || !bill_id || !billrange_id || !billPrice}
               className={`px-4 py-2 rounded-lg text-white transition ${
-                loading || !bill_id || !billrange_id
+                loading || !bill_id || !billrange_id || !billPrice
                   ? "bg-purple-400 cursor-not-allowed"
                   : "bg-purple-600 hover:bg-purple-700"
               }`}
             >
-              {loading ? "Saving..." : "Save"}
+              {loading ? "Updating..." : "Update"}
             </button>
           </div>
         </form>
