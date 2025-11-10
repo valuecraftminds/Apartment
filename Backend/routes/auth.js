@@ -79,27 +79,66 @@ router.post('/register', async (req, res) => {
 router.post('/verify', async (req, res) => {
   try {
     const { token, id } = req.body;
-    if (!token || !id) return res.status(400).json({ message: 'Invalid request' });
+    console.log('Verification request:', { token: token ? 'present' : 'missing', id: id ? 'present' : 'missing' });
+    
+    if (!token || !id) {
+      console.log('Missing token or id');
+      return res.status(400).json({ message: 'Token and ID are required' });
+    }
 
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-    const [rows] = await pool.execute('SELECT verification_token_hash, verification_token_expires, is_verified FROM users WHERE id = ?', [id]);
-    if (!rows.length) return res.status(400).json({ message: 'Invalid verification link' });
+    console.log('Looking for user with id:', id);
+    
+    const [rows] = await pool.execute(
+      'SELECT verification_token_hash, verification_token_expires, is_verified FROM users WHERE id = ?', 
+      [id]
+    );
+    
+    if (!rows.length) {
+      console.log('No user found with id:', id);
+      return res.status(400).json({ message: 'Invalid verification link' });
+    }
 
     const user = rows[0];
-    if (user.is_verified) return res.status(200).json({ message: 'Already verified' });
+    console.log('User found:', { 
+      hasToken: !!user.verification_token_hash,
+      isVerified: user.is_verified,
+      expires: user.verification_token_expires 
+    });
 
-    if (!user.verification_token_hash || user.verification_token_hash !== tokenHash) {
+    if (user.is_verified) {
+      return res.status(200).json({ message: 'Already verified' });
+    }
+
+    if (!user.verification_token_hash) {
+      console.log('No verification token hash in database');
       return res.status(400).json({ message: 'Invalid token' });
     }
+
+    if (user.verification_token_hash !== tokenHash) {
+      console.log('Token mismatch:', {
+        expected: user.verification_token_hash,
+        received: tokenHash
+      });
+      return res.status(400).json({ message: 'Invalid token' });
+    }
+
     if (new Date(user.verification_token_expires) < new Date()) {
+      console.log('Token expired');
       return res.status(400).json({ message: 'Token expired' });
     }
 
-    await pool.execute('UPDATE users SET is_verified = 1, verification_token_hash = NULL, verification_token_expires = NULL WHERE id = ?', [id]);
-    return res.json({ message: 'Email verified' });
+    await pool.execute(
+      'UPDATE users SET is_verified = 1, verification_token_hash = NULL, verification_token_expires = NULL WHERE id = ?', 
+      [id]
+    );
+    
+    console.log('User verified successfully:', id);
+    return res.json({ message: 'Email verified successfully' });
+    
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: 'Server error' });
+    console.error('Verification error:', err);
+    return res.status(500).json({ message: 'Server error during verification' });
   }
 });
 

@@ -27,6 +27,7 @@ import BillPrice from './Bills/BillPrice'
 import OwnerDashboard from './Apartment_Owner/OwnerPages/OwnerDashboard'
 import ManagerDashboard from './Apartment_Manager/ManagerPages/ManagerDashboard'
 import TechDashboard from './Apartment_Technician/TechPages/TechDashboard'
+import Role from './pages/Role'
 
 export default function App() {
   return (
@@ -36,7 +37,7 @@ export default function App() {
         <Route path='/login' element={<Login />} />
         {/* <Route path='/companyregistration' element={<CompanyRegistration />}/> */}
         <Route path='/register' element={<Register />}/>
-        {/* <Route path='/verify' element={<Verify />}/> */}
+        <Route path='/verify' element={<Verify />}/>
         <Route path='/sidebar' element={<Sidebar/>}/>
         <Route path='/navbar' element={<NavBar />}/>
         <Route path='/admindashboard' element={<AdminDashboard />}/>
@@ -57,8 +58,7 @@ export default function App() {
         <Route path="/owner-dashboard" element={<OwnerDashboard />} />
         <Route path="/manager-dashboard" element={<ManagerDashboard />} />
         <Route path="/technician-dashboard" element={<TechDashboard/>} />
-
-
+        <Route path='/role' element={<Role/>}/>
       </Routes>
     </BrowserRouter>
   )

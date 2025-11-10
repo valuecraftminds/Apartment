@@ -155,7 +155,8 @@ import {
   Wrench,
   ClipboardList,
   CreditCard,
-  BarChart3
+  BarChart3,
+  UserCog
 } from 'lucide-react';
 import { AuthContext } from '../contexts/AuthContext';
 
@@ -175,6 +176,7 @@ export default function Sidebar() {
       Admin: [
         { name: 'Dashboard', path: '/admindashboard', icon: Home, roles: ['Admin'] },
         { name: 'Users', path: '/userview', icon: Users, roles: ['Admin'] },
+        { name: 'Roles', path: '/role', icon: UserCog, roles: ['Admin']},
         { name: 'Apartments', path: '/apartmentview', icon: Building2, roles: ['Admin'] },
         { 
           name: 'Expenses', 
