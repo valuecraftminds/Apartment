@@ -10,18 +10,31 @@ const { sendVerificationEmail, sendPasswordResetEmail, sendInvitationEmail } = r
 require('dotenv').config();
 
 // helpers for JWT
+// function signAccessToken(user) {
+//   return jwt.sign({ 
+//     id: user.id, 
+//     email: user.email, 
+//     role: user.role,
+//     company_id:user.company_id
+//    }, 
+//     process.env.ACCESS_TOKEN_SECRET, 
+//     { 
+//       expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN
+//     });
+// }
+
 function signAccessToken(user) {
   return jwt.sign({ 
     id: user.id, 
     email: user.email, 
-    role: user.role,
-    company_id:user.company_id
-   }, 
-    process.env.ACCESS_TOKEN_SECRET, 
-    { 
-      expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN
-    });
+    role: user.role_name || user.role, // Support both structures
+    role_id: user.role_id,
+    company_id: user.company_id
+  }, process.env.ACCESS_TOKEN_SECRET, { 
+    expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN
+  });
 }
+
 function signRefreshToken(user) {
   return jwt.sign({ 
     id: user.id
@@ -30,6 +43,50 @@ function signRefreshToken(user) {
     expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN 
   });
 }
+
+/* Register: create user, store hashed verification token, send email */
+// router.post('/register', async (req, res) => {
+//   try {
+//     const { firstname, lastname, country, mobile, email, password, company_id } = req.body;
+//     if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
+
+//     const [exists] = await pool.execute('SELECT id FROM users WHERE email = ?', [email]);
+//     if (exists.length) return res.status(409).json({ message: 'Email already registered' });
+
+//     const password_hash = await bcrypt.hash(password, 12);
+    
+//     // FIXED: Handle company_id properly - convert undefined to null
+//     const [ins] = await pool.execute(
+//       'INSERT INTO users (firstname, lastname, country, mobile, email, password_hash, is_verified, is_active,company_id) VALUES (?, ?, ?, ?, ?, ?, 0, 1, ?)',
+//       [
+//         firstname || null, 
+//         lastname || null, 
+//         country || null, 
+//         mobile || null, 
+//         email, 
+//         password_hash,
+//         company_id || null // Convert undefined to null
+//       ]
+//     );
+    
+//     const userId = ins.insertId;
+
+//     // create verification token (plain->email, hash->DB)
+//     const plainToken = crypto.randomBytes(32).toString('hex');
+//     const tokenHash = crypto.createHash('sha256').update(plainToken).digest('hex');
+//     const expiresAt = new Date(Date.now() + (Number(process.env.VERIFICATION_TOKEN_EXPIRES_HOURS || 24) * 3600 * 1000));
+
+//     await pool.execute('UPDATE users SET verification_token_hash = ?, verification_token_expires = ? WHERE id = ?', [tokenHash, expiresAt, userId]);
+
+//     // send verification email
+//     await sendVerificationEmail(email, plainToken, userId);
+
+//     res.status(201).json({ message: 'User registered, check email to verify' });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
 
 /* Register: create user, store hashed verification token, send email */
 router.post('/register', async (req, res) => {
@@ -44,7 +101,7 @@ router.post('/register', async (req, res) => {
     
     // FIXED: Handle company_id properly - convert undefined to null
     const [ins] = await pool.execute(
-      'INSERT INTO users (firstname, lastname, country, mobile, email, password_hash, is_verified, is_active,company_id) VALUES (?, ?, ?, ?, ?, ?, 0, 1, ?)',
+      'INSERT INTO users (firstname, lastname, country, mobile, email, password_hash, is_verified, is_active, company_id) VALUES (?, ?, ?, ?, ?, ?, 0, 1, ?)',
       [
         firstname || null, 
         lastname || null, 
@@ -58,6 +115,64 @@ router.post('/register', async (req, res) => {
     
     const userId = ins.insertId;
 
+    // NEW: Create default Admin role if this is the first user for the company
+    let roleId = null;
+    if (company_id) {
+      // Check if this is the first user for this company
+      const [companyUsers] = await pool.execute(
+        'SELECT COUNT(*) as userCount FROM users WHERE company_id = ?',
+        [company_id]
+      );
+      
+      // If this is the first user for the company, create default Admin role
+      if (companyUsers[0].userCount === 1) {
+        const { v4: uuidv4 } = require('uuid');
+        roleId = uuidv4().replace(/-/g, '').substring(0, 10);
+        
+        // Create default Admin role
+        await pool.execute(
+          'INSERT INTO roles (id, company_id, role_name, is_active) VALUES (?, ?, "Admin", 1)',
+          [roleId, company_id]
+        );
+        
+        console.log(`Default Admin role created for company ${company_id}`);
+        
+        // Also create some other default roles
+        const defaultRoles = [
+          { id: uuidv4().replace(/-/g, '').substring(0, 10), name: 'Apartment_manager' },
+          { id: uuidv4().replace(/-/g, '').substring(0, 10), name: 'Apartment_technician' },
+        ];
+        
+        for (const role of defaultRoles) {
+          await pool.execute(
+            'INSERT INTO roles (id, company_id, role_name, is_active) VALUES (?, ?, ?, 1)',
+            [role.id, company_id, role.name]
+          );
+        }
+        
+        console.log(`Default roles created for company ${company_id}`);
+      } else {
+        // If not the first user, find the existing Admin role
+        const [adminRole] = await pool.execute(
+          'SELECT id FROM roles WHERE company_id = ? AND role_name = "Admin" AND is_active = 1 LIMIT 1',
+          [company_id]
+        );
+        
+        if (adminRole.length > 0) {
+          roleId = adminRole[0].id;
+        }
+      }
+      
+      // Assign the role to the user
+      if (roleId) {
+        await pool.execute(
+          'UPDATE users SET role_id = ? WHERE id = ?',
+          [roleId, userId]
+        );
+        console.log(`Assigned role ${roleId} to user ${userId}`);
+      }
+    }
+
     // create verification token (plain->email, hash->DB)
     const plainToken = crypto.randomBytes(32).toString('hex');
     const tokenHash = crypto.createHash('sha256').update(plainToken).digest('hex');
@@ -68,7 +183,11 @@ router.post('/register', async (req, res) => {
     // send verification email
     await sendVerificationEmail(email, plainToken, userId);
 
-    res.status(201).json({ message: 'User registered, check email to verify' });
+    res.status(201).json({ 
+      message: 'User registered, check email to verify',
+      user_id: userId,
+      role_assigned: !!roleId
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
@@ -187,12 +306,58 @@ router.post('/resend', async (req, res) => {
 });
 
 /* Login (enforce verification) */
+// router.post('/login', async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+//     if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
+
+//     const [rows] = await pool.execute('SELECT id, email, password_hash, is_verified, role, company_id FROM users WHERE email = ?', [email]);
+//     const user = rows[0];
+//     if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+//     if (!user.is_verified) return res.status(403).json({ message: 'Please verify your email first' });
+
+//     const ok = await bcrypt.compare(password, user.password_hash);
+//     if (!ok) return res.status(401).json({ message: 'Invalid credentials' });
+
+//     const accessToken = signAccessToken(user);
+//     const refreshToken = signRefreshToken(user);
+
+//     await pool.execute('UPDATE users SET refresh_token = ? WHERE id = ?', [refreshToken, user.id]);
+
+//     // NEW: send it in a cookie
+//   res.cookie('accessToken', accessToken, {
+//     httpOnly: true,
+//     sameSite: 'lax',   // adjust if you have cross-site frontend/backend
+//     secure: false      // set to true if using HTTPS
+//   });
+
+
+//     res.cookie('refreshToken', refreshToken, {
+//       httpOnly: true,
+//       secure: process.env.NODE_ENV === 'production',
+//       sameSite: 'strict',
+//       maxAge: 1000 * 60 * 60 * 24 * 7
+//     });
+
+//     res.json({ accessToken, user: { id: user.id, email: user.email, role: user.role, company_id:user.company_id} });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
 
-    const [rows] = await pool.execute('SELECT id, email, password_hash, is_verified, role, company_id FROM users WHERE email = ?', [email]);
+    const [rows] = await pool.execute(
+      `SELECT u.id, u.email, u.password_hash, u.is_verified, u.company_id, u.role_id, r.role_name 
+       FROM users u 
+       LEFT JOIN roles r ON u.role_id = r.id 
+       WHERE u.email = ?`,
+      [email]
+    );
+    
     const user = rows[0];
     if (!user) return res.status(401).json({ message: 'Invalid credentials' });
     if (!user.is_verified) return res.status(403).json({ message: 'Please verify your email first' });
@@ -205,13 +370,11 @@ router.post('/login', async (req, res) => {
 
     await pool.execute('UPDATE users SET refresh_token = ? WHERE id = ?', [refreshToken, user.id]);
 
-    // NEW: send it in a cookie
-  res.cookie('accessToken', accessToken, {
-    httpOnly: true,
-    sameSite: 'lax',   // adjust if you have cross-site frontend/backend
-    secure: false      // set to true if using HTTPS
-  });
-
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: false
+    });
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
@@ -220,7 +383,16 @@ router.post('/login', async (req, res) => {
       maxAge: 1000 * 60 * 60 * 24 * 7
     });
 
-    res.json({ accessToken, user: { id: user.id, email: user.email, role: user.role, company_id:user.company_id} });
+    res.json({ 
+      accessToken, 
+      user: { 
+        id: user.id, 
+        email: user.email, 
+        role: user.role_name, 
+        role_id: user.role_id,
+        company_id: user.company_id 
+      } 
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
@@ -228,6 +400,40 @@ router.post('/login', async (req, res) => {
 });
 
 /* refresh token */
+// router.post('/refresh', async (req, res) => {
+//   try {
+//     const token = req.cookies.refreshToken;
+//     if (!token) return res.status(401).json({ message: 'No refresh token' });
+
+//     let payload;
+//     try {
+//       payload = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
+//     } catch (e) {
+//       return res.status(403).json({ message: 'Invalid refresh token' });
+//     }
+
+//     const [rows] = await pool.execute('SELECT id, refresh_token, email, role FROM users WHERE id = ?', [payload.id]);
+//     const user = rows[0];
+//     if (!user || user.refresh_token !== token) return res.status(403).json({ message: 'Refresh token not valid' });
+
+//     const accessToken = signAccessToken(user);
+//     const newRefresh = signRefreshToken(user);
+//     await pool.execute('UPDATE users SET refresh_token = ? WHERE id = ?', [newRefresh, user.id]);
+
+//     res.cookie('refreshToken', newRefresh, {
+//       httpOnly: true,
+//       secure: process.env.NODE_ENV === 'production',
+//       sameSite: 'strict',
+//       maxAge: 1000 * 60 * 60 * 24 * 7
+//     });
+
+//     res.json({ accessToken, user: { id: user.id, email: user.email, role: user.role, company_id:user.company_id} });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
+
 router.post('/refresh', async (req, res) => {
   try {
     const token = req.cookies.refreshToken;
@@ -240,7 +446,14 @@ router.post('/refresh', async (req, res) => {
       return res.status(403).json({ message: 'Invalid refresh token' });
     }
 
-    const [rows] = await pool.execute('SELECT id, refresh_token, email, role FROM users WHERE id = ?', [payload.id]);
+    const [rows] = await pool.execute(
+      `SELECT u.id, u.refresh_token, u.email, u.company_id, r.role_name, u.role_id 
+       FROM users u 
+       LEFT JOIN roles r ON u.role_id = r.id 
+       WHERE u.id = ?`,
+      [payload.id]
+    );
+    
     const user = rows[0];
     if (!user || user.refresh_token !== token) return res.status(403).json({ message: 'Refresh token not valid' });
 
@@ -255,7 +468,16 @@ router.post('/refresh', async (req, res) => {
       maxAge: 1000 * 60 * 60 * 24 * 7
     });
 
-    res.json({ accessToken, user: { id: user.id, email: user.email, role: user.role, company_id:user.company_id} });
+    res.json({ 
+      accessToken, 
+      user: { 
+        id: user.id, 
+        email: user.email, 
+        role: user.role_name, 
+        role_id: user.role_id,
+        company_id: user.company_id 
+      } 
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
@@ -281,6 +503,49 @@ router.post('/logout', async (req, res) => {
 });
 
 //get users according to the company id
+// router.get('/users', authenticateToken, async (req, res) => {
+//   try {
+//     const company_id = req.user.company_id;
+    
+//     if (!company_id) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Company ID is required'
+//       });
+//     }
+
+//     // Get users (excluding password and other sensitive info)
+//     const [users] = await pool.execute(
+//       `SELECT 
+//         id, 
+//         firstname, 
+//         lastname, 
+//         email, 
+//         country,
+//         mobile,
+//         role, 
+//         is_verified, 
+//         is_active,
+//         created_at 
+//        FROM users 
+//        WHERE company_id = ? 
+//        ORDER BY created_at DESC`,
+//       [company_id]
+//     );
+
+//     res.json({
+//       success: true,
+//       data: users
+//     });
+    
+//   } catch (err) {
+//     console.error('Get users error:', err);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Failed to fetch users'
+//     });
+//   }
+// });
 router.get('/users', authenticateToken, async (req, res) => {
   try {
     const company_id = req.user.company_id;
@@ -292,22 +557,23 @@ router.get('/users', authenticateToken, async (req, res) => {
       });
     }
 
-    // Get users (excluding password and other sensitive info)
     const [users] = await pool.execute(
       `SELECT 
-        id, 
-        firstname, 
-        lastname, 
-        email, 
-        country,
-        mobile,
-        role, 
-        is_verified, 
-        is_active,
-        created_at 
-       FROM users 
-       WHERE company_id = ? 
-       ORDER BY created_at DESC`,
+        u.id, 
+        u.firstname, 
+        u.lastname, 
+        u.email, 
+        u.country,
+        u.mobile,
+        r.role_name as role,
+        u.role_id,
+        u.is_verified, 
+        u.is_active,
+        u.created_at 
+       FROM users u
+       LEFT JOIN roles r ON u.role_id = r.id
+       WHERE u.company_id = ? 
+       ORDER BY u.created_at DESC`,
       [company_id]
     );
 
@@ -315,7 +581,6 @@ router.get('/users', authenticateToken, async (req, res) => {
       success: true,
       data: users
     });
-    
   } catch (err) {
     console.error('Get users error:', err);
     res.status(500).json({
@@ -510,12 +775,60 @@ router.post('/reset-password',resetPasswordLimiter, async (req, res) => {
 //   }
 // });
 
+// router.post('/invite', authenticateToken, async (req, res) => {
+//   try {
+//     const { email, role } = req.body;
+//     const company_id = req.user.company_id; 
+
+//     if (!email || !role) {
+//       return res.status(400).json({ message: 'Email and role are required' });
+//     }
+
+//     if (!company_id) {
+//       return res.status(400).json({ message: 'Company ID is required' });
+//     }
+
+//     // Check if user already exists
+//     const [exists] = await pool.execute('SELECT id FROM users WHERE email = ?', [email]);
+//     if (exists.length) {
+//       return res.status(409).json({ message: 'User already exists' });
+//     }
+
+//     // Insert invited user with company_id
+//     const [ins] = await pool.execute(
+//       'INSERT INTO users (email, role, is_verified, is_active, company_id, password_hash) VALUES (?, ?, 0, 1, ?, NULL)',
+//       [email, role, company_id]
+//     );
+
+//     const userId = ins.insertId;
+
+//     // Generate verification token
+//     const plainToken = crypto.randomBytes(32).toString('hex');
+//     const tokenHash = crypto.createHash('sha256').update(plainToken).digest('hex');
+//     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+//     await pool.execute(
+//       'UPDATE users SET verification_token_hash=?, verification_token_expires=? WHERE id=?',
+//       [tokenHash, expiresAt, userId]
+//     );
+
+//     // Use email helper
+//     await sendInvitationEmail(email, plainToken, userId, role);
+//     console.log(`Invite email sent to: ${email}`);
+
+//     res.status(201).json({ message: 'Invitation sent successfully' });
+//   } catch (err) {
+//     console.error('Invite error:', err);
+//     res.status(500).json({ message: 'Server error while inviting user' });
+//   }
+// });
+
 router.post('/invite', authenticateToken, async (req, res) => {
   try {
-    const { email, role } = req.body;
+    const { email, role_id } = req.body; // Now using role_id instead of role name
     const company_id = req.user.company_id; 
 
-    if (!email || !role) {
+    if (!email || !role_id) {
       return res.status(400).json({ message: 'Email and role are required' });
     }
 
@@ -529,10 +842,22 @@ router.post('/invite', authenticateToken, async (req, res) => {
       return res.status(409).json({ message: 'User already exists' });
     }
 
-    // Insert invited user with company_id
+    // Verify the role exists and belongs to company
+    const [roleCheck] = await pool.execute(
+      'SELECT role_name FROM roles WHERE id = ? AND company_id = ? AND is_active = 1',
+      [role_id, company_id]
+    );
+
+    if (!roleCheck.length) {
+      return res.status(400).json({ message: 'Invalid role' });
+    }
+
+    const role_name = roleCheck[0].role_name;
+
+    // Insert invited user with role_id
     const [ins] = await pool.execute(
-      'INSERT INTO users (email, role, is_verified, is_active, company_id, password_hash) VALUES (?, ?, 0, 1, ?, NULL)',
-      [email, role, company_id]
+      'INSERT INTO users (email, role_id, is_verified, is_active, company_id, password_hash) VALUES (?, ?, 0, 1, ?, NULL)',
+      [email, role_id, company_id]
     );
 
     const userId = ins.insertId;
@@ -547,8 +872,8 @@ router.post('/invite', authenticateToken, async (req, res) => {
       [tokenHash, expiresAt, userId]
     );
 
-    // Use email helper
-    await sendInvitationEmail(email, plainToken, userId, role);
+    // Use email helper with role_name
+    await sendInvitationEmail(email, plainToken, userId, role_name);
     console.log(`Invite email sent to: ${email}`);
 
     res.status(201).json({ message: 'Invitation sent successfully' });
@@ -602,12 +927,54 @@ router.post('/verify-invite-link', async (req, res) => {
   }
 });
 
+// router.post('/complete-registration', async (req, res) => {
+//   try {
+//     const { email, firstname, lastname, country, mobile, password } = req.body;
+//     if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
+
+//     const [users] = await pool.execute('SELECT id, is_verified FROM users WHERE email = ?', [email]);
+//     if (!users.length) return res.status(404).json({ message: 'User not found' });
+
+//     const user = users[0];
+    
+//     // Check if user is already verified and has completed registration
+//     if (user.is_verified) {
+//       // Check if they already have a password (completed registration)
+//       const [userDetails] = await pool.execute('SELECT password_hash FROM users WHERE id = ?', [user.id]);
+//       if (userDetails[0].password_hash) {
+//         return res.status(400).json({ message: 'Registration already completed' });
+//       }
+//     }
+
+//     const hashedPassword = await bcrypt.hash(password, 12);
+
+//     await pool.execute(
+//       `UPDATE users 
+//        SET firstname=?, lastname=?, country=?, mobile=?, password_hash=?, is_verified=1, is_active=1 
+//        WHERE id=?`,
+//       [firstname, lastname, country, mobile, hashedPassword, user.id]
+//     );
+
+//     res.json({ message: 'Registration completed successfully' });
+//   } catch (err) {
+//     console.error('Complete registration error:', err);
+//     res.status(500).json({ message: 'Server error while completing registration' });
+//   }
+// });
+
 router.post('/complete-registration', async (req, res) => {
   try {
     const { email, firstname, lastname, country, mobile, password } = req.body;
     if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
 
-    const [users] = await pool.execute('SELECT id, is_verified FROM users WHERE email = ?', [email]);
+    const [users] = await pool.execute(
+      `SELECT u.id, u.is_verified, u.role_id, r.role_name 
+       FROM users u 
+       LEFT JOIN roles r ON u.role_id = r.id 
+       WHERE u.email = ?`,
+      [email]
+    );
+    
     if (!users.length) return res.status(404).json({ message: 'User not found' });
 
     const user = users[0];
@@ -630,7 +997,15 @@ router.post('/complete-registration', async (req, res) => {
       [firstname, lastname, country, mobile, hashedPassword, user.id]
     );
 
-    res.json({ message: 'Registration completed successfully' });
+    res.json({ 
+      message: 'Registration completed successfully',
+      user: {
+        id: user.id,
+        email: email,
+        role: user.role_name,
+        role_id: user.role_id
+      }
+    });
   } catch (err) {
     console.error('Complete registration error:', err);
     res.status(500).json({ message: 'Server error while completing registration' });
@@ -639,13 +1014,113 @@ router.post('/complete-registration', async (req, res) => {
 
 // Update user
 // Update user
+// router.put('/users/:id', authenticateToken, async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const { firstname, lastname, email, country, mobile, role, password } = req.body;
+    
+//     // Check if user exists
+//     const [users] = await pool.execute('SELECT id, company_id, email as current_email FROM users WHERE id = ?', [id]);
+//     if (!users.length) {
+//       return res.status(404).json({ success: false, message: 'User not found' });
+//     }
+
+//     const user = users[0];
+    
+//     // Check if user belongs to the same company
+//     if (user.company_id !== req.user.company_id) {
+//       return res.status(403).json({ success: false, message: 'Access denied' });
+//     }
+
+//     // Check if email is already taken by another user (only if email is being changed)
+//     if (email && email !== user.current_email) {
+//       const [existing] = await pool.execute(
+//         'SELECT id FROM users WHERE email = ? AND id != ? AND company_id = ?',
+//         [email, id, req.user.company_id]
+//       );
+//       if (existing.length) {
+//         return res.status(409).json({ success: false, message: 'Email already taken' });
+//       }
+//     }
+
+//     let updateQuery = `
+//       UPDATE users SET 
+//       firstname = ?, lastname = ?, country = ?, mobile = ?, role = ?
+//     `;
+//     let queryParams = [firstname, lastname, country, mobile, role];
+
+//     // Add email to update if it's provided (it will be included in all cases)
+//     if (email) {
+//       updateQuery += ', email = ?';
+//       queryParams.push(email);
+//     }
+
+//     // If password is provided, update it
+//     if (password) {
+//       const password_hash = await bcrypt.hash(password, 12);
+//       updateQuery += ', password_hash = ?';
+//       queryParams.push(password_hash);
+      
+//       // Only require verification if password changed AND email also changed
+//       if (email && email !== user.current_email) {
+//         updateQuery += ', is_verified = 0';
+//       }
+//     } else {
+//       // If no password change, only require verification if email changed
+//       if (email && email !== user.current_email) {
+//         updateQuery += ', is_verified = 0';
+//       }
+//     }
+
+//     updateQuery += ' WHERE id = ?';
+//     queryParams.push(id);
+
+//     await pool.execute(updateQuery, queryParams);
+
+//     // Prepare response data
+//     const responseData = { 
+//       id, 
+//       firstname, 
+//       lastname, 
+//       country, 
+//       mobile, 
+//       role 
+//     };
+
+//     // Only include email in response if it was actually updated
+//     if (email && email !== user.current_email) {
+//       responseData.email = email;
+//       responseData.requires_verification = true;
+//     } else {
+//       responseData.email = user.current_email;
+//     }
+
+//     res.json({
+//       success: true,
+//       message: 'User updated successfully',
+//       data: responseData
+//     });
+
+//   } catch (err) {
+//     console.error('Error updating user:', err);
+//     res.status(500).json({ success: false, message: 'Server error while updating user' });
+//   }
+// });
+
 router.put('/users/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { firstname, lastname, email, country, mobile, role, password } = req.body;
+    const { firstname, lastname, email, country, mobile, role_id, password } = req.body;
     
     // Check if user exists
-    const [users] = await pool.execute('SELECT id, company_id, email as current_email FROM users WHERE id = ?', [id]);
+    const [users] = await pool.execute(
+      `SELECT u.id, u.company_id, u.email as current_email, r.role_name 
+       FROM users u 
+       LEFT JOIN roles r ON u.role_id = r.id 
+       WHERE u.id = ?`,
+      [id]
+    );
+    
     if (!users.length) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
@@ -657,7 +1132,7 @@ router.put('/users/:id', authenticateToken, async (req, res) => {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
 
-    // Check if email is already taken by another user (only if email is being changed)
+    // Check if email is already taken by another user
     if (email && email !== user.current_email) {
       const [existing] = await pool.execute(
         'SELECT id FROM users WHERE email = ? AND id != ? AND company_id = ?',
@@ -668,30 +1143,45 @@ router.put('/users/:id', authenticateToken, async (req, res) => {
       }
     }
 
+    // If role_id is provided, verify it belongs to company
+    if (role_id) {
+      const [roleCheck] = await pool.execute(
+        'SELECT id, role_name FROM roles WHERE id = ? AND company_id = ? AND is_active = 1',
+        [role_id, req.user.company_id]
+      );
+      if (!roleCheck.length) {
+        return res.status(400).json({ success: false, message: 'Invalid role' });
+      }
+    }
+
     let updateQuery = `
       UPDATE users SET 
-      firstname = ?, lastname = ?, country = ?, mobile = ?, role = ?
+      firstname = ?, lastname = ?, country = ?, mobile = ?
     `;
-    let queryParams = [firstname, lastname, country, mobile, role];
+    let queryParams = [firstname, lastname, country, mobile];
 
-    // Add email to update if it's provided (it will be included in all cases)
+    // Add role_id to update
+    if (role_id) {
+      updateQuery += ', role_id = ?';
+      queryParams.push(role_id);
+    }
+
+    // Add email to update
     if (email) {
       updateQuery += ', email = ?';
       queryParams.push(email);
     }
 
-    // If password is provided, update it
+    // Password and verification logic
     if (password) {
       const password_hash = await bcrypt.hash(password, 12);
       updateQuery += ', password_hash = ?';
       queryParams.push(password_hash);
       
-      // Only require verification if password changed AND email also changed
       if (email && email !== user.current_email) {
         updateQuery += ', is_verified = 0';
       }
     } else {
-      // If no password change, only require verification if email changed
       if (email && email !== user.current_email) {
         updateQuery += ', is_verified = 0';
       }
@@ -702,17 +1192,27 @@ router.put('/users/:id', authenticateToken, async (req, res) => {
 
     await pool.execute(updateQuery, queryParams);
 
-    // Prepare response data
+    // Get updated user data with role name
+    const [updatedUser] = await pool.execute(
+      `SELECT u.*, r.role_name 
+       FROM users u 
+       LEFT JOIN roles r ON u.role_id = r.id 
+       WHERE u.id = ?`,
+      [id]
+    );
+
+    const userData = updatedUser[0];
+
     const responseData = { 
       id, 
       firstname, 
       lastname, 
       country, 
-      mobile, 
-      role 
+      mobile,
+      role_id: userData.role_id,
+      role: userData.role_name
     };
 
-    // Only include email in response if it was actually updated
     if (email && email !== user.current_email) {
       responseData.email = email;
       responseData.requires_verification = true;
@@ -725,7 +1225,6 @@ router.put('/users/:id', authenticateToken, async (req, res) => {
       message: 'User updated successfully',
       data: responseData
     });
-
   } catch (err) {
     console.error('Error updating user:', err);
     res.status(500).json({ success: false, message: 'Server error while updating user' });

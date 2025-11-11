@@ -172,12 +172,14 @@ const roleController = {
     },
 
     //Delete role
+    
     async deleteRole(req,res){
         try{
             const {id} = req.params;
+            const company_id = req.user.company_id;
 
-            //check if house exists
-            const existingRole= await Roles.findById(id);
+            // Check if role exists
+            const existingRole = await Roles.findById(id);
             if(!existingRole){
                 return res.status(404).json({
                     success:false,
@@ -185,7 +187,26 @@ const roleController = {
                 });
             }
 
-            await Roles.delete(id);
+            // Check if any users are using this role
+            const pool = require('../db');
+            const [usersWithRole] = await pool.execute(
+                'SELECT id FROM users WHERE role_id = ? AND company_id = ?',
+                [id, company_id]
+            );
+
+            if (usersWithRole.length > 0) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'Cannot delete role. There are users assigned to this role.' 
+                });
+            }
+
+            // Use soft delete instead of hard delete
+            await pool.execute(
+                'UPDATE roles SET is_active = 0 WHERE id = ?',
+                [id]
+            );
+
             res.json({
                 success:true,
                 message:'Role deleted successfully'
@@ -197,7 +218,7 @@ const roleController = {
                 message:'Server error while deleting role'
             });
         }
-    },
+    }
     
 }
 module.exports=roleController;

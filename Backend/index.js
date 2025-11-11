@@ -94,3 +94,7 @@ app.use('/api/bill-assignments', billAssignmentsRoutes);
 //Routes for bulk imports
 const bulkImportRoutes = require('./routes/bulkImports');
 app.use('/api/bulk-import', bulkImportRoutes);
+
+//Routes for role
+const roleRoutes = require('./routes/roles')
+app.use('/api/roles',roleRoutes);

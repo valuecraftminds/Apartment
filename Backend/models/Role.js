@@ -36,10 +36,11 @@ class Roles{
         return rows.length > 0;
     }
 
-    static async findByRoleName(role_name){
+   
+    static async findByRoleName(role_name, company_id){
         const [rows] = await pool.execute(
-            'SELECT * FROM roles WHERE role_name=? & company_id=?',
-            [role_name]
+            'SELECT * FROM roles WHERE role_name = ? AND company_id = ?', // Fixed AND operator
+            [role_name, company_id]
         );
         return rows[0];
     }
