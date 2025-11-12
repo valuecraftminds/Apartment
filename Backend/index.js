@@ -98,3 +98,7 @@ app.use('/api/bulk-import', bulkImportRoutes);
 //Routes for role
 const roleRoutes = require('./routes/roles')
 app.use('/api/roles',roleRoutes);
+
+//Routes for role components
+const roleComponentRoutes = require('./routes/roleComponent');
+app.use('/api/role-components', roleComponentRoutes);

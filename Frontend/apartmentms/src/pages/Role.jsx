@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react'
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
-import { Edit, Image, Loader, Plus, Trash2, UserCog } from 'lucide-react';
+import { Edit, Image, Loader, Plus, Settings, Trash2, UserCog } from 'lucide-react';
 import api from '../api/axios';
 import CreateRoles from '../Roles/CreateRoles';
+import RoleAssignmentModal from '../Roles/RoleAssignmentModal';
 
 export default function Role() {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -14,6 +15,9 @@ export default function Role() {
     const [showEditModal, setShowEditModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deletingBill, setDeletingBill] = useState(null);
+    const [showAssignmentModal, setShowAssignmentModal] = useState(false); 
+    const [selectedRole, setSelectedRole] = useState(null);
+
 
     const loadRoles = async() => {
         try {
@@ -50,6 +54,17 @@ export default function Role() {
         loadRoles();
         setShowCreateModal(false);
     }
+
+    const handleRoleClick = (role) => {
+        setSelectedRole(role);
+        setShowAssignmentModal(true);
+    };
+
+    // Add this function to handle assignment completion
+    const handleAssignmentComplete = (roleId, components) => {
+        // You can update local state if needed
+        console.log(`Components assigned to role ${roleId}:`, components);
+    };
 
 
 
@@ -111,7 +126,7 @@ export default function Role() {
                                         {roles.map((role, index) => (
                                             <tr 
                                                 key={role.id || index} 
-                                                // onClick={() => apartment.is_active && handleFloorView(apartment)} 
+                                                onClick={() => handleRoleClick(role)}
                                                 className={`transition-colors cursor-pointer ${
                                                     role.is_active 
                                                         ? 'hover:bg-gray-50 dark:hover:bg-gray-700' 
@@ -149,6 +164,16 @@ export default function Role() {
                                                         >
                                                             <Trash2 size={20} />
                                                         </button>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleRoleClick(role);
+                                                            }}
+                                                            className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                                                            title="Assign Components"
+                                                        >
+                                                            <Settings size={20} />
+                                                        </button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -181,6 +206,13 @@ export default function Role() {
                     />
                 </div>
             </div>
+        )}
+         {showAssignmentModal && (
+            <RoleAssignmentModal
+                role={selectedRole}
+                onClose={() => setShowAssignmentModal(false)}
+                onAssign={handleAssignmentComplete}
+            />
         )}
     </div>
   )

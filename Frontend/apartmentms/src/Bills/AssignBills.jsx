@@ -253,7 +253,9 @@ export default function AssignBills({
             ) : (
               <div className="space-y-3">
                 {apartments.map(apartment => (
-                  <div key={apartment.id} className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+                  <div key={apartment.id} 
+                  //className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden"
+                  >
                     {/* Apartment Header */}
                     <div 
                       className={`flex items-center justify-between p-4 cursor-pointer transition-colors ${

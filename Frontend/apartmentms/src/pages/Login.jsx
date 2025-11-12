@@ -246,13 +246,13 @@ export default function Login() {
         navigate('/admindashboard');
         break;
       case 'Apartment_owner':
-        navigate('/owner-dashboard');
+        navigate('/employee-dashboard');
         break;
       case 'Apartment_manager':
-        navigate('/manager-dashboard');
+        navigate('/employee-dashboard');
         break;
       case 'Apartment_technician':
-        navigate('/technician-dashboard');
+        navigate('/employee-dashboard');
         break;
       default:
         navigate('/admindashboard'); // fallback

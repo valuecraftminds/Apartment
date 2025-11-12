@@ -89,7 +89,7 @@ export default function CreateRoles({ onClose, onCreated }) {
           name="role_name"
           value={formData.role_name}
           onChange={handleChange}
-          placeholder="Enter unique bill name (e.g., Electricity, Water, Maintenance)"
+          placeholder="Enter unique role name (e.g., Admin, Apartment_manager, Apartment_technician)"
           className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           required
         />
