@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { Building2, Plus, Edit, Trash2, Eye, Image, Loader, ToggleRight, ToggleLeft, Upload } from 'lucide-react';
+import { Building2, Plus, Edit, Trash2, Eye, Image, Loader, ToggleRight, ToggleLeft, Upload, FileText } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import { AuthContext } from '../contexts/AuthContext';
@@ -9,6 +9,7 @@ import CreateApartment from '../Apartments/CreateApartment';
 import EditApartment from '../Apartments/EditApartment';
 import { toast, ToastContainer } from 'react-toastify';
 import BulkImportModal from '../Apartments/BulkImportModal';
+import DocumentModal from '../Apartments/DocumentModal';
 // import ViewApartment from '../Apartments/ViewApartment';
 
 export default function ApartmentView() {
@@ -29,6 +30,8 @@ export default function ApartmentView() {
     const [showBulkImportModal, setShowBulkImportModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deletingApartment, setDeletingApartment] = useState(null);
+    const [showDocumentModal, setShowDocumentModal] = useState(false); // New state for document modal
+    const [selectedApartment, setSelectedApartment] = useState(null);
 
     const handleAddNew = () => {
     setShowCreateModal(true);
@@ -165,6 +168,26 @@ export default function ApartmentView() {
     setDeletingApartment(null);
   };
 
+
+  // New function to handle document button click
+    const handleDocumentClick = (apartment) => {
+        setSelectedApartment(apartment);
+        setShowDocumentModal(true);
+    };
+
+    // New function to handle document modal close
+    const handleDocumentModalClose = () => {
+        setShowDocumentModal(false);
+        setSelectedApartment(null);
+    };
+
+    // New function to handle successful document upload
+    const handleDocumentUploadSuccess = () => {
+        toast.success('Document uploaded successfully!');
+        // You can refresh documents list if needed
+    };
+
+
     
     return (
         <div className="flex h-screen bg-gray-100 dark:bg-gray-900 w-screen transition-colors duration-200">
@@ -277,6 +300,16 @@ export default function ApartmentView() {
                                                     </td>
                                                     <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                                                         <div className="flex space-x-2">
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleDocumentClick(apartment);
+                                                                }}
+                                                                className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                                                                title="Manage Documents"
+                                                            >
+                                                                <FileText size={20} />
+                                                            </button>
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation(); 
@@ -440,6 +473,24 @@ export default function ApartmentView() {
                                 Delete
                             </button>
                             </div>
+                        </div>
+                    </div>
+                )}
+                {/* Document Modal */}
+                {showDocumentModal && selectedApartment && (
+                    <div className="fixed inset-0 bg-white/0 backdrop-blur-lg flex items-center justify-center z-50">
+                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-4xl relative max-h-[90vh] overflow-y-auto">
+                            <button
+                                onClick={handleDocumentModalClose}
+                                className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 dark:hover:text-white z-10"
+                            >
+                                ✖
+                            </button>
+                            <DocumentModal
+                                apartment={selectedApartment}
+                                onClose={handleDocumentModalClose}
+                                onUploadSuccess={handleDocumentUploadSuccess}
+                            />
                         </div>
                     </div>
                 )}

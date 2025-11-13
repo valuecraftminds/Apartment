@@ -102,3 +102,11 @@ app.use('/api/roles',roleRoutes);
 //Routes for role components
 const roleComponentRoutes = require('./routes/roleComponent');
 app.use('/api/role-components', roleComponentRoutes);
+
+//Routes for apartment documents
+const apartmentDocumentRoutes = require('./routes/apartmentDocuments');
+app.use('/api/apartment-documents',apartmentDocumentRoutes)
+
+// Routes for floor documents
+const floorDocumentRoutes = require('./routes/floorDocuments');
+app.use('/api/floor-documents', floorDocumentRoutes);

@@ -72,7 +72,7 @@ export default function EmployeeDashboard() {
             <div className='flex items-center bg-white dark:bg-gray-800 rounded-2xl p-4 mb-6'>
               <Home size={40} className='text-purple-600 dark:text-purple-400 mr-3'/>
               <div>
-                <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Employee Dashboard</h1>
+                <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Dashboard</h1>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Welcome back! Here's your overview for today.</p>
               </div>
             </div>

@@ -7,6 +7,9 @@ import api from '../api/axios';
 import CreateFloors from './CreateFloors';
 import EditFloors from './EditFloors';
 import { toast, ToastContainer } from 'react-toastify';
+import { FileText } from 'lucide-react';
+import FloorDocumentModal from './FloorDocumentModal';
+
 
 export default function Floors() {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -23,7 +26,9 @@ export default function Floors() {
     const [showDeactivateModal, setShowDeactivateModal] = useState(false);
     const [deactivatingFloor, setDeactivatingFloor] = useState(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [deletingFloor, setDeletingFloor] = useState(null);    
+    const [deletingFloor, setDeletingFloor] = useState(null);   
+    const [showDocumentModal, setShowDocumentModal] = useState(false);
+    const [selectedFloorForDocs, setSelectedFloorForDocs] = useState(null); 
 
     useEffect(() => {
         const fetchApartment = async () => {
@@ -69,7 +74,7 @@ export default function Floors() {
     }, [id]);
 
     const handleHouseView = (floor) => {
-        navigate(`/houses/${id}/${floor.id}`); // pass both apartment id and floor id
+        navigate(`/houses/${id}/${floor.id}`); 
     };
 
     //Deactivate and activate the floors
@@ -150,6 +155,21 @@ export default function Floors() {
     setShowDeleteModal(false);
     setDeletingFloor(null);
   };
+
+  //handle floor document
+  const handleDocumentClick = (floor) => {
+    setSelectedFloorForDocs(floor);
+    setShowDocumentModal(true);
+    };
+
+    const handleDocumentModalClose = () => {
+        setShowDocumentModal(false);
+        setSelectedFloorForDocs(null);
+    };
+
+    const handleDocumentUploadSuccess = () => {
+        toast.success('Floor documents uploaded successfully!');
+    };
 
   return (    
     <div className='flex h-screen bg-gray-100 dark:bg-gray-900 w-screen transition-colors duration-200'>
@@ -247,6 +267,16 @@ export default function Floors() {
                                                         </td>
                                                         <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                                                             <div className="flex space-x-2">
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleDocumentClick(floor);
+                                                                    }}
+                                                                    className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                                                                    title="Manage Documents"
+                                                                >
+                                                                    <FileText size={20} />
+                                                                </button>
                                                                 <button
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
@@ -393,6 +423,19 @@ export default function Floors() {
                         Delete
                     </button>
                     </div>
+                </div>
+            </div>
+        )}
+        {/* handle floor document */}
+        {showDocumentModal && selectedFloorForDocs && (
+            <div className="fixed inset-0 bg-white/0 backdrop-blur-lg flex items-center justify-center z-50">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-4xl relative max-h-[90vh] overflow-y-auto">
+                    <FloorDocumentModal
+                        floor={selectedFloorForDocs}
+                        apartment={apartment}
+                        onClose={handleDocumentModalClose}
+                        onUploadSuccess={handleDocumentUploadSuccess}
+                    />
                 </div>
             </div>
         )}
