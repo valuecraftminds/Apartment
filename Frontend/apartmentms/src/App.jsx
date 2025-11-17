@@ -29,10 +29,13 @@ import ManagerDashboard from './Apartment_Manager/ManagerPages/ManagerDashboard'
 import TechDashboard from './Apartment_Technician/TechPages/TechDashboard'
 import Role from './pages/Role'
 import EmployeeDashboard from './pages/EmployeeDashboard'
+import { AuthProvider } from './contexts/AuthContext'
+import ProfilePage from './pages/ProfilePage'
 
 export default function App() {
   return (
     <BrowserRouter>
+    <AuthProvider>
       <Routes>
         <Route path="/" element={<Welcome />} />
         <Route path='/login' element={<Login />} />
@@ -61,7 +64,9 @@ export default function App() {
         <Route path="/technician-dashboard" element={<TechDashboard/>} /> */}
         <Route path='/employee-dashboard' element={<EmployeeDashboard/>}/>
         <Route path='/role' element={<Role/>}/>
+        <Route path='/profile-page' element={<ProfilePage/>}/>
       </Routes>
+      </AuthProvider>
     </BrowserRouter>
   )
 }

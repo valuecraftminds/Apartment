@@ -764,7 +764,7 @@ export default function UserView() {
                             </td>
 
                             <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
-                              <div className="flex space-x-2">
+                              <div className="flex">
                                 <button
                                   onClick={() => handleEditClick(user)}
                                   disabled={isCurrentUser || !user.is_active}

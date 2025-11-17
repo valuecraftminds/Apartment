@@ -50,7 +50,7 @@ export default function Sidebar() {
     profile: { 
       id: 'profile', 
       name: 'Profile', 
-      path: `/profile/${userId}`, 
+      path: `/profile-page`, 
       icon: Settings, 
       isConstant: true 
     },
@@ -66,7 +66,7 @@ export default function Sidebar() {
     admin_profile: { 
       id: 'admin_profile', 
       name: 'Profile', 
-      path: '/admin-profile', 
+      path: '/profile-page', 
       icon: Settings, 
       isConstant: true 
     },

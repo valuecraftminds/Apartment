@@ -9,23 +9,11 @@ const {authenticateToken} = require('../middleware/auth')
 const { sendVerificationEmail, sendPasswordResetEmail, sendInvitationEmail } = require('../helpers/email');
 require('dotenv').config();
 
-// helpers for JWT
-// function signAccessToken(user) {
-//   return jwt.sign({ 
-//     id: user.id, 
-//     email: user.email, 
-//     role: user.role,
-//     company_id:user.company_id
-//    }, 
-//     process.env.ACCESS_TOKEN_SECRET, 
-//     { 
-//       expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN
-//     });
-// }
 
 function signAccessToken(user) {
   return jwt.sign({ 
     id: user.id, 
+    firstname:user.firstname,
     email: user.email, 
     role: user.role_name || user.role, // Support both structures
     role_id: user.role_id,
@@ -373,7 +361,8 @@ router.post('/login', async (req, res) => {
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
       sameSite: 'lax',
-      secure: false
+      secure: false,
+      maxAge: 1000 * 60 * 15
     });
 
     res.cookie('refreshToken', refreshToken, {
@@ -387,6 +376,7 @@ router.post('/login', async (req, res) => {
       accessToken, 
       user: { 
         id: user.id, 
+        firstname: user.firstname,
         email: user.email, 
         role: user.role_name, 
         role_id: user.role_id,
@@ -395,7 +385,7 @@ router.post('/login', async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error, Refresh the page' });
   }
 });
 
@@ -468,10 +458,24 @@ router.post('/refresh', async (req, res) => {
       maxAge: 1000 * 60 * 60 * 24 * 7
     });
 
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: false,
+      maxAge: 1000 * 60 * 15  // 15 mins
+    });
+
+    res.clearCookie('accessToken', {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: false
+    });
+
     res.json({ 
       accessToken, 
       user: { 
         id: user.id, 
+        firstname: user.firstname,
         email: user.email, 
         role: user.role_name, 
         role_id: user.role_id,
@@ -1299,6 +1303,58 @@ router.delete('/users/:id', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error('Error deleting user:', err);
     res.status(500).json({ success: false, message: 'Server error while deleting user' });
+  }
+});
+
+router.get('/me', authenticateToken, async (req, res) => {
+  try {
+    const user_id = req.user.id;
+    
+    // if (!company_id) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: 'Company ID is required'
+    //   });
+    // }
+
+    const [users] = await pool.execute(
+       `SELECT 
+        u.id, 
+        u.firstname, 
+        u.lastname, 
+        u.email,
+        u.country,
+        u.mobile,
+        r.role_name as role,
+        u.role_id,
+        u.is_verified, 
+        u.is_active,
+        u.created_at
+       FROM users u
+       LEFT JOIN roles r ON u.role_id = r.id
+       WHERE u.id = ?`,
+      [user_id]
+    );
+
+      if (!users.length) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const user = users[0];
+
+    res.json({
+      success: true,
+      data: users
+    });
+  } catch (err) {
+    console.error('Get user error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch user'
+    });
   }
 });
 

@@ -34,7 +34,7 @@ app.use('/api/auth', authRoutes);
 app.get('/api/me', authenticateToken, async (req, res) => {
   // return user info example
   const pool = require('./db');
-  const [rows] = await pool.execute('SELECT id, name, email, role FROM users WHERE id = ?', [req.user.id]);
+  const [rows] = await pool.execute('SELECT id, firstname,lastname,country,mobile, email, role FROM users WHERE id = ?', [req.user.id]);
   res.json(rows[0]);
 });
 

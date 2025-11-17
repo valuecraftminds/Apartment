@@ -85,7 +85,7 @@ class ApartmentDocument {
       SELECT 
         ad.*,
         a.name as apartment_name,
-        u.name as uploaded_by_name
+        u.firstname as uploaded_by_name
       FROM apartment_documents ad
       LEFT JOIN apartments a ON ad.apartment_id = a.id
       LEFT JOIN users u ON ad.uploaded_by = u.id

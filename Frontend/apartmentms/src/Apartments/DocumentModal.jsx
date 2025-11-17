@@ -102,26 +102,26 @@ export default function DocumentModal({ apartment, onClose, onUploadSuccess }) {
     };
 
     // FIXED: Updated API endpoint
-    const handleDownload = async (document) => {
-        try {
-            const response = await api.get(`/apartment-documents/documents/${document.id}/download`, {
-                responseType: 'blob'
-            });
-            
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', document.original_name || document.file_name);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            window.URL.revokeObjectURL(url);
-        } catch (error) {
-            console.error('Download error:', error);
-            const errorMessage = error.response?.data?.message || 'Failed to download document';
-            toast.error(errorMessage);
-        }
-    };
+    const handleDownload = async (doc) => {  
+    try {
+        const response = await api.get(`/apartment-documents/documents/${doc.id}/download`, {
+            responseType: 'blob'
+        });
+        
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a'); 
+        link.href = url;
+        link.setAttribute('download', doc.original_name || doc.file_name);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error('Download error:', error);
+        const errorMessage = error.response?.data?.message || 'Failed to download document';
+        toast.error(errorMessage);
+    }
+};
 
     const formatFileSize = (bytes) => {
         if (bytes === 0) return '0 Bytes';
@@ -137,12 +137,6 @@ export default function DocumentModal({ apartment, onClose, onUploadSuccess }) {
                 <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
                     Documents - {apartment.name}
                 </h2>
-                <button
-                    onClick={onClose}
-                    className="text-gray-500 hover:text-gray-700 dark:hover:text-white"
-                >
-                    ✖
-                </button>
             </div>
 
             {/* Upload Section */}

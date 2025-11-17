@@ -99,16 +99,16 @@ export default function FloorDocumentModal({ floor, apartment, onClose, onUpload
         }
     };
 
-    const handleDownload = async (document) => {
+    const handleDownload = async (doc) => {
         try {
-            const response = await api.get(`/floor-documents/documents/${document.id}/download`, {
+            const response = await api.get(`/floor-documents/documents/${doc.id}/download`, {
                 responseType: 'blob'
             });
             
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', document.original_name || document.file_name);
+            link.setAttribute('download', doc.original_name || doc.file_name);
             document.body.appendChild(link);
             link.click();
             link.remove();

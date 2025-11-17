@@ -57,6 +57,7 @@ async function authenticateToken(req, res, next) {
       
       req.user = {
         id: user.id,
+        firstname:user.firstname,
         email: user.email,
         role: user.role,
         role_id: user.role_id,

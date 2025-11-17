@@ -89,7 +89,7 @@ class FloorDocument {
         fd.*,
         f.floor_id as floor_number,
         a.name as apartment_name,
-        u.name as uploaded_by_name
+        u.firstname as uploaded_by_name
       FROM floor_documents fd
       LEFT JOIN floors f ON fd.floor_id = f.id
       LEFT JOIN apartments a ON fd.apartment_id = a.id
