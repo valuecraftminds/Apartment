@@ -241,21 +241,26 @@ export default function Login() {
   }
 
   const navigateToDashboard = (role) => {
-    switch (role) {
-      case 'Admin':
-        navigate('/admindashboard');
-        break;
-      case 'Apartment_owner':
-        navigate('/employee-dashboard');
-        break;
-      case 'Apartment_manager':
-        navigate('/employee-dashboard');
-        break;
-      case 'Apartment_technician':
-        navigate('/employee-dashboard');
-        break;
-      default:
-        navigate('/admindashboard'); // fallback
+    // switch (role) {
+    //   case 'Admin':
+    //     navigate('/admindashboard');
+    //     break;
+    //   case 'Apartment_owner':
+    //     navigate('/employee-dashboard');
+    //     break;
+    //   case 'Apartment_manager':
+    //     navigate('/employee-dashboard');
+    //     break;
+    //   case 'Apartment_technician':
+    //     navigate('/employee-dashboard');
+    //     break;
+    //   default:
+    //     navigate('/admindashboard'); 
+    // }
+    if(role === 'Admin'){
+      navigate('/admindashboard')
+    }else{
+      navigate('/employee-dashboard')
     }
   };
 
