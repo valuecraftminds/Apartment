@@ -110,3 +110,7 @@ app.use('/api/apartment-documents',apartmentDocumentRoutes)
 // Routes for floor documents
 const floorDocumentRoutes = require('./routes/floorDocuments');
 app.use('/api/floor-documents', floorDocumentRoutes);
+
+//Routes for ouse documents
+const houseDocumentRoutes = require('./routes/houseDocuments');
+app.use('/api/house-doucments',houseDocumentRoutes);

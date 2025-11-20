@@ -3,7 +3,7 @@ import { Upload, FileText, X, Download, Trash2 } from 'lucide-react';
 import api from '../api/axios';
 import { toast } from 'react-toastify';
 
-export default function FloorDocumentModal({ floor, apartment, onClose, onUploadSuccess }) {
+export default function HouseDocumentModal({ house, apartment, floor, onClose, onUploadSuccess }) {
     const [uploading, setUploading] = useState(false);
     const [documents, setDocuments] = useState([]);
     const [selectedFiles, setSelectedFiles] = useState([]);
@@ -13,7 +13,7 @@ export default function FloorDocumentModal({ floor, apartment, onClose, onUpload
     // Load documents when component mounts
     useEffect(() => {
         loadDocuments();
-    }, [floor.id]);
+    }, [house.id]);
 
     const handleFileSelect = (event) => {
         const files = Array.from(event.target.files);
@@ -40,15 +40,15 @@ export default function FloorDocumentModal({ floor, apartment, onClose, onUpload
 
             formData.append('apartmentId', apartment.id);
             formData.append('floorId', floor.id);
+            formData.append('houseId', house.id);
 
-            const response = await api.post('/floor-documents/upload', formData, {
+            const response = await api.post('/house-documents/upload', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
             });
 
             if (response.data.success) {
-                // toast.success('Floor documents uploaded successfully!');
                 setSelectedFiles([]);
                 onUploadSuccess?.();
                 loadDocuments();
@@ -60,7 +60,7 @@ export default function FloorDocumentModal({ floor, apartment, onClose, onUpload
             }
         } catch (error) {
             console.error('Upload error:', error);
-            const errorMessage = error.response?.data?.message || 'Failed to upload floor documents';
+            const errorMessage = error.response?.data?.message || 'Failed to upload house documents';
             toast.error(errorMessage);
         } finally {
             setUploading(false);
@@ -70,13 +70,14 @@ export default function FloorDocumentModal({ floor, apartment, onClose, onUpload
     const loadDocuments = async () => {
         try {
             setLoadingDocuments(true);
-            const response = await api.get(`/floor-documents/${floor.id}/documents`);
+            // 🔥 FIXED: Use the same pattern as floor documents
+            const response = await api.get(`/house-documents/${house.id}/documents`);
             if (response.data.success) {
                 setDocuments(response.data.data);
             }
         } catch (error) {
-            console.error('Error loading floor documents:', error);
-            const errorMessage = error.response?.data?.message || 'Failed to load floor documents';
+            console.error('Error loading house documents:', error);
+            const errorMessage = error.response?.data?.message || 'Failed to load house documents';
             toast.error(errorMessage);
         } finally {
             setLoadingDocuments(false);
@@ -89,19 +90,19 @@ export default function FloorDocumentModal({ floor, apartment, onClose, onUpload
         }
 
         try {
-            await api.delete(`/floor-documents/documents/${documentId}`);
-            toast.success('Floor document deleted successfully');
+            await api.delete(`/house-documents/documents/${documentId}`);
+            toast.success('House document deleted successfully');
             loadDocuments();
         } catch (error) {
             console.error('Delete error:', error);
-            const errorMessage = error.response?.data?.message || 'Failed to delete floor document';
+            const errorMessage = error.response?.data?.message || 'Failed to delete house document';
             toast.error(errorMessage);
         }
     };
 
     const handleDownload = async (doc) => {
         try {
-            const response = await api.get(`/floor-documents/documents/${doc.id}/download`, {
+            const response = await api.get(`/house-documents/documents/${doc.id}/download`, {
                 responseType: 'blob'
             });
             
@@ -115,7 +116,7 @@ export default function FloorDocumentModal({ floor, apartment, onClose, onUpload
             window.URL.revokeObjectURL(url);
         } catch (error) {
             console.error('Download error:', error);
-            const errorMessage = error.response?.data?.message || 'Failed to download floor document';
+            const errorMessage = error.response?.data?.message || 'Failed to download house document';
             toast.error(errorMessage);
         }
     };
@@ -132,7 +133,7 @@ export default function FloorDocumentModal({ floor, apartment, onClose, onUpload
         <div className="w-full">
             <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
-                    Floor Documents - {floor.floor_id}
+                    House Documents - {house.house_id}
                 </h2>
                 <button
                     onClick={onClose}
@@ -142,11 +143,12 @@ export default function FloorDocumentModal({ floor, apartment, onClose, onUpload
                 </button>
             </div>
 
-            {apartment && (
+            {apartment && floor && (
                 <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
                     <p className="text-blue-800 dark:text-blue-200">
                         <strong>Apartment:</strong> {apartment.name} | 
-                        <strong> Floor:</strong> {floor.floor_id}
+                        <strong> Floor:</strong> {floor.floor_id} |
+                        <strong> House:</strong> {house.house_id}
                     </p>
                 </div>
             )}
@@ -154,7 +156,7 @@ export default function FloorDocumentModal({ floor, apartment, onClose, onUpload
             {/* Upload Section */}
             <div className="mb-8 p-6 bg-gray-50 dark:bg-gray-700 rounded-lg">
                 <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">
-                    Upload New Floor Documents
+                    Upload New House Documents
                 </h3>
                 
                 <div className="mb-4">
@@ -231,18 +233,18 @@ export default function FloorDocumentModal({ floor, apartment, onClose, onUpload
             {/* Existing Documents Section */}
             <div>
                 <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">
-                    Existing Floor Documents
+                    Existing House Documents
                 </h3>
                 
                 {loadingDocuments ? (
                     <div className="text-center py-8">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                        <p className="mt-2 text-gray-600 dark:text-gray-300">Loading floor documents...</p>
+                        <p className="mt-2 text-gray-600 dark:text-gray-300">Loading house documents...</p>
                     </div>
                 ) : documents.length === 0 ? (
                     <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                         <FileText size={48} className="mx-auto mb-4 opacity-50" />
-                        <p>No floor documents uploaded yet</p>
+                        <p>No house documents uploaded yet</p>
                     </div>
                 ) : (
                     <div className="space-y-3">

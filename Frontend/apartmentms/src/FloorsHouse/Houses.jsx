@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import Sidebar from '../components/Sidebar'
 import Navbar from '../components/Navbar'
-import { ChevronLeft, Edit, House, Image, Loader, Plus, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react'
+import { ChevronLeft, Edit, FileText, House, Image, Loader, Plus, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../api/axios';
 import HouseTypes from './HouseTypes';
@@ -10,6 +10,7 @@ import CreateHouse from './CreateHouse';
 import { toast, ToastContainer } from 'react-toastify';
 import EditHouse from './EditHouse';
 import Bills from '../Bills/Bills';
+import HouseDocumentModal from './HouseDocumentModal';
 
 export default function Houses() {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -30,10 +31,10 @@ export default function Houses() {
     const [deactivatingHouse, setDeactivatingHouse] = useState(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deletingHouse, setDeletingHouse] = useState(null);   
-
     const [activeTab, setActiveTab] = useState("houses");
-
-   const [selectedHouse, setSelectedHouse] = useState(null);
+    const [selectedHouse, setSelectedHouse] = useState(null);
+    const [showHouseDocumentModal, setShowHouseDocumentModal] = useState(false);
+    const [selectedHouseForDocuments, setSelectedHouseForDocuments] = useState(null);
 
     useEffect(() => {
         const fetchApartment = async () => {
@@ -196,6 +197,21 @@ export default function Houses() {
     setDeletingHouse(null);
   };
 
+  //handle house document
+    const handleDocumentClick = (house) => {
+      setSelectedHouseForDocuments(house);
+      setShowHouseDocumentModal(true);
+      };
+  
+    const handleDocumentModalClose = () => {
+        setShowHouseDocumentModal(false);
+        setSelectedHouseForDocuments(null);
+    };
+  
+    const handleDocumentUploadSuccess = () => {
+        toast.success('House documents uploaded successfully!');
+    };
+
 
     return (
         <div className='flex h-screen bg-gray-100 dark:bg-gray-900 w-screen transition-colors duration-200'>
@@ -315,6 +331,16 @@ export default function Houses() {
                                                             </td>
                                                             <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                                                                 <div className="flex space-x-2">
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleDocumentClick(house)
+                                                                        }}
+                                                                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                                                                        title="Manage Documents"
+                                                                    >
+                                                                        <FileText size={20} />
+                                                                    </button>
                                                                     <button
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
@@ -483,6 +509,20 @@ export default function Houses() {
                 </div>
             </div>
         )}            
+        {/* House Document Modal */}
+        {showHouseDocumentModal && selectedHouseForDocuments && (
+            <div className="fixed inset-0 bg-white/0 backdrop-blur-lg flex items-center justify-center z-50">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto relative">
+                    <HouseDocumentModal
+                        house={selectedHouseForDocuments}
+                        apartment={apartment}
+                        floor={floor}
+                        onClose={handleDocumentModalClose}
+                        onUploadSuccess={handleDocumentUploadSuccess}
+                        />
+                    </div>
+                </div>
+        )}
             <ToastContainer position="top-center" autoClose={3000} />
         </div>
     )
