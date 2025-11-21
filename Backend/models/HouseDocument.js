@@ -1,4 +1,4 @@
-// models/HouseDocument.js - Add missing methods
+// models/HouseDocument.js
 const pool = require('../db');
 const path = require('path');
 const fs = require('fs').promises;
@@ -39,10 +39,10 @@ class HouseDocument {
     }
 
     static async findById(id) {
-        const [rows] = await pool.execute(
-            `SELECT * FROM house_documents WHERE id = ?`,
-            [id]
-        );
+    const query = `
+      SELECT * FROM house_documents WHERE id = ?
+    `;
+        const [rows] = await pool.execute(query, [id]);
         return rows[0] || null;
     }
 
@@ -55,10 +55,9 @@ class HouseDocument {
     }
 
     static async delete(id) {
-        const [result] = await pool.execute(
-            `DELETE FROM house_documents WHERE id = ?`,
-            [id]
-        );
+        const query = 
+            `DELETE FROM house_documents WHERE id = ?`;
+        const [result] = await pool.execute(query,[id])
         return result.affectedRows > 0;
     }
 
@@ -72,7 +71,7 @@ class HouseDocument {
     }
 
     static async getDocumentWithDetails(documentId) {
-        const [rows] = await pool.execute(
+        const query = 
             `SELECT 
                 hd.*,
                 h.house_id as house_number,
@@ -84,9 +83,9 @@ class HouseDocument {
             LEFT JOIN floors f ON hd.floor_id = f.id
             LEFT JOIN apartments a ON hd.apartment_id = a.id
             LEFT JOIN users u ON hd.uploaded_by = u.id
-            WHERE hd.id = ?`,
-            [documentId]
-        );
+            WHERE hd.id = ?`;
+
+        const [rows] = await pool.execute(query,[documentId]);    
         return rows[0] || null;
     }
 }

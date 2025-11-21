@@ -113,4 +113,4 @@ app.use('/api/floor-documents', floorDocumentRoutes);
 
 //Routes for ouse documents
 const houseDocumentRoutes = require('./routes/houseDocuments');
-app.use('/api/house-doucments',houseDocumentRoutes);
+app.use('/api/house-documents',houseDocumentRoutes);

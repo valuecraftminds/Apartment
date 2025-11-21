@@ -1,4 +1,4 @@
-// controllers/houseDocumentController.js - Update to match floor pattern
+// controllers/houseDocumentController.js
 const HouseDocument = require('../models/HouseDocument');
 const fs = require('fs').promises;
 const path = require('path');
@@ -141,11 +141,11 @@ const getHouseDocuments = async (req, res) => {
 // Download a house document
 const downloadDocument = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { documentId } = req.params;
     const companyId = req.user.company_id;
 
     // Check if document belongs to user's company
-    const belongsToCompany = await HouseDocument.belongsToCompany(id, companyId);
+    const belongsToCompany = await HouseDocument.belongsToCompany(documentId, companyId);
     if (!belongsToCompany) {
       return res.status(404).json({
         success: false,
@@ -153,7 +153,7 @@ const downloadDocument = async (req, res) => {
       });
     }
 
-    const document = await HouseDocument.getDocumentWithDetails(id);
+    const document = await HouseDocument.getDocumentWithDetails(documentId);
     if (!document) {
       return res.status(404).json({
         success: false,
@@ -193,11 +193,11 @@ const downloadDocument = async (req, res) => {
 // Delete a house document
 const deleteDocument = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { documentId } = req.params;
     const companyId = req.user.company_id;
 
     // Check if document belongs to user's company
-    const belongsToCompany = await HouseDocument.belongsToCompany(id, companyId);
+    const belongsToCompany = await HouseDocument.belongsToCompany(documentId, companyId);
     if (!belongsToCompany) {
       return res.status(404).json({
         success: false,
@@ -205,7 +205,7 @@ const deleteDocument = async (req, res) => {
       });
     }
 
-    const document = await HouseDocument.findById(id);
+    const document = await HouseDocument.findById(documentId);
     if (!document) {
       return res.status(404).json({
         success: false,
@@ -222,7 +222,7 @@ const deleteDocument = async (req, res) => {
     }
 
     // Delete record from database
-    const deleted = await HouseDocument.delete(id);
+    const deleted = await HouseDocument.delete(documentId);
     if (!deleted) {
       return res.status(404).json({
         success: false,

@@ -1,11 +1,18 @@
+//routes/houseDocuments.js
 const express = require('express');
 const router = express.Router();
-const houseDocumentController = require('../controllers/houseDocumentController');
-const { authenticateToken } = require('../middleware/auth');
 const multer = require('multer');
 const path = require('path');
+const {
+  uploadDocuments,
+  getHouseDocuments,
+  downloadDocument,
+  deleteDocument
+} = require('../controllers/houseDocumentController');
+const { authenticateToken } = require('../middleware/auth');
 
-// Configure multer for file uploads - FIXED: Use same pattern as floor documents
+
+// Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     const uploadDir = path.join(__dirname, '../uploads/temp-house');
@@ -48,13 +55,13 @@ const upload = multer({
   }
 });
 
-// 🔥 CRITICAL FIX: Apply authentication middleware to all routes FIRST
+// Apply authentication middleware to all routes
 router.use(authenticateToken);
 
-// Routes - Now they work exactly like floor documents
-router.post('/upload', upload.array('documents', 10), houseDocumentController.uploadDocuments);
-router.get('/houses/:houseId/documents', houseDocumentController.getHouseDocuments);
-router.get('/documents/:id/download', houseDocumentController.downloadDocument);
-router.delete('/documents/:id', houseDocumentController.deleteDocument);
+// Routes - FIXED: Use same pattern as floor documents
+router.post('/upload', upload.array('documents', 10), uploadDocuments);
+router.get('/:houseId/documents', getHouseDocuments); 
+router.get('/documents/:documentId/download', downloadDocument);
+router.delete('/documents/:documentId', deleteDocument);
 
 module.exports = router;

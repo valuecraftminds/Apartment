@@ -559,17 +559,17 @@ export default function UserView() {
   const [sendVerificationLoading, setSendVerificationLoading] = useState(false);
 
   const handleSendVerification = async (user) => {
-    try {
-      setSendVerificationLoading(true);
-      await api.post('/auth/resend', { email: user.email });
-      toast.success('Verification email sent successfully!');
-    } catch (err) {
-      console.error('Error sending verification email:', err);
-      toast.error(err.response?.data?.message || 'Failed to send verification email');
-    } finally {
-      setSendVerificationLoading(false);
-    }
-  };
+  try {
+    setSendVerificationLoading(true);
+    await api.post('/auth/resend', { email: user.email });
+    toast.success('Verification email sent successfully!');
+  } catch (err) {
+    console.error('Error sending verification email:', err);
+    toast.error(err.response?.data?.message || 'Failed to send verification email');
+  } finally {
+    setSendVerificationLoading(false);
+  }
+};
 
   const handleToggleUser = async () => {
     if (!togglingUser) return;

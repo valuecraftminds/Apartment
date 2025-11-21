@@ -49,6 +49,7 @@ export default function HouseDocumentModal({ house, apartment, floor, onClose, o
             });
 
             if (response.data.success) {
+                toast.success('House documents uploaded successfully!');
                 setSelectedFiles([]);
                 onUploadSuccess?.();
                 loadDocuments();
@@ -70,15 +71,29 @@ export default function HouseDocumentModal({ house, apartment, floor, onClose, o
     const loadDocuments = async () => {
         try {
             setLoadingDocuments(true);
-            // 🔥 FIXED: Use the same pattern as floor documents
+            // 🔥 FIX: Add console.log to debug what ID is being sent
+            console.log('Loading documents for house ID:', house.id);
+            
             const response = await api.get(`/house-documents/${house.id}/documents`);
+            
+            console.log('Documents response:', response.data);
+            
             if (response.data.success) {
                 setDocuments(response.data.data);
+                console.log('Documents loaded:', response.data.data);
+            } else {
+                console.error('API response not successful:', response.data);
             }
         } catch (error) {
             console.error('Error loading house documents:', error);
             const errorMessage = error.response?.data?.message || 'Failed to load house documents';
             toast.error(errorMessage);
+            
+            // 🔥 ADDED: More detailed error logging
+            if (error.response) {
+                console.error('Error response:', error.response.data);
+                console.error('Error status:', error.response.status);
+            }
         } finally {
             setLoadingDocuments(false);
         }
@@ -148,7 +163,7 @@ export default function HouseDocumentModal({ house, apartment, floor, onClose, o
                     <p className="text-blue-800 dark:text-blue-200">
                         <strong>Apartment:</strong> {apartment.name} | 
                         <strong> Floor:</strong> {floor.floor_id} |
-                        <strong> House:</strong> {house.house_id}
+                        <strong> House:</strong> {house.house_id} 
                     </p>
                 </div>
             )}
@@ -245,6 +260,12 @@ export default function HouseDocumentModal({ house, apartment, floor, onClose, o
                     <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                         <FileText size={48} className="mx-auto mb-4 opacity-50" />
                         <p>No house documents uploaded yet</p>
+                        <button
+                            onClick={loadDocuments}
+                            className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                        >
+                            Retry Loading
+                        </button>
                     </div>
                 ) : (
                     <div className="space-y-3">

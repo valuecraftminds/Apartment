@@ -1,3 +1,4 @@
+//models/FloorDocument.js
 const pool = require('../db');
 
 class FloorDocument {

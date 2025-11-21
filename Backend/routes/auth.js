@@ -33,50 +33,6 @@ function signRefreshToken(user) {
 }
 
 /* Register: create user, store hashed verification token, send email */
-// router.post('/register', async (req, res) => {
-//   try {
-//     const { firstname, lastname, country, mobile, email, password, company_id } = req.body;
-//     if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
-
-//     const [exists] = await pool.execute('SELECT id FROM users WHERE email = ?', [email]);
-//     if (exists.length) return res.status(409).json({ message: 'Email already registered' });
-
-//     const password_hash = await bcrypt.hash(password, 12);
-    
-//     // FIXED: Handle company_id properly - convert undefined to null
-//     const [ins] = await pool.execute(
-//       'INSERT INTO users (firstname, lastname, country, mobile, email, password_hash, is_verified, is_active,company_id) VALUES (?, ?, ?, ?, ?, ?, 0, 1, ?)',
-//       [
-//         firstname || null, 
-//         lastname || null, 
-//         country || null, 
-//         mobile || null, 
-//         email, 
-//         password_hash,
-//         company_id || null // Convert undefined to null
-//       ]
-//     );
-    
-//     const userId = ins.insertId;
-
-//     // create verification token (plain->email, hash->DB)
-//     const plainToken = crypto.randomBytes(32).toString('hex');
-//     const tokenHash = crypto.createHash('sha256').update(plainToken).digest('hex');
-//     const expiresAt = new Date(Date.now() + (Number(process.env.VERIFICATION_TOKEN_EXPIRES_HOURS || 24) * 3600 * 1000));
-
-//     await pool.execute('UPDATE users SET verification_token_hash = ?, verification_token_expires = ? WHERE id = ?', [tokenHash, expiresAt, userId]);
-
-//     // send verification email
-//     await sendVerificationEmail(email, plainToken, userId);
-
-//     res.status(201).json({ message: 'User registered, check email to verify' });
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ message: 'Server error' });
-//   }
-// });
-
-/* Register: create user, store hashed verification token, send email */
 router.post('/register', async (req, res) => {
   try {
     const { firstname, lastname, country, mobile, email, password, company_id } = req.body;
@@ -250,6 +206,49 @@ router.post('/verify', async (req, res) => {
 });
 
 /* Resend verification (rate-limit this from main server) */
+// router.post('/resend', async (req, res) => {
+//   try {
+//     const { email } = req.body;
+//     console.log('Resend verification request for:', email);
+    
+//     if (!email) return res.status(400).json({ message: 'Email required' });
+
+//     const [rows] = await pool.execute('SELECT id, is_verified FROM users WHERE email = ?', [email]);
+//     if (!rows.length) {
+//       console.log('User not found for email:', email);
+//       return res.status(404).json({ message: 'User not found' });
+//     }
+
+//     const user = rows[0];
+//     console.log('User found:', { id: user.id, is_verified: user.is_verified });
+    
+//     if (user.is_verified) {
+//       console.log('User already verified');
+//       return res.status(400).json({ message: 'Already verified' });
+//     }
+
+//     const plainToken = crypto.randomBytes(32).toString('hex');
+//     const tokenHash = crypto.createHash('sha256').update(plainToken).digest('hex');
+//     const expiresAt = new Date(Date.now() + (Number(process.env.VERIFICATION_TOKEN_EXPIRES_HOURS || 24) * 3600 * 1000));
+    
+//     await pool.execute(
+//       'UPDATE users SET verification_token_hash = ?, verification_token_expires = ? WHERE id = ?', 
+//       [tokenHash, expiresAt, user.id]
+//     );
+
+//     console.log('Sending verification email to:', email);
+    
+//     // Use the email helper
+//     await sendVerificationEmail(email, plainToken, user.id);
+//     console.log(`Verification email sent successfully to: ${email}`);
+
+//     res.json({ message: 'Verification email resent' });
+//   } catch (err) {
+//     console.error('Resend verification error:', err);
+//     res.status(500).json({ message: 'Server error while sending verification email' });
+//   }
+// });
+/* Resend verification */
 router.post('/resend', async (req, res) => {
   try {
     const { email } = req.body;
@@ -257,7 +256,7 @@ router.post('/resend', async (req, res) => {
     
     if (!email) return res.status(400).json({ message: 'Email required' });
 
-    const [rows] = await pool.execute('SELECT id, is_verified FROM users WHERE email = ?', [email]);
+    const [rows] = await pool.execute('SELECT id, is_verified, email FROM users WHERE email = ?', [email]);
     if (!rows.length) {
       console.log('User not found for email:', email);
       return res.status(404).json({ message: 'User not found' });
@@ -282,57 +281,33 @@ router.post('/resend', async (req, res) => {
 
     console.log('Sending verification email to:', email);
     
-    // Use the email helper
-    await sendVerificationEmail(email, plainToken, user.id);
-    console.log(`Verification email sent successfully to: ${email}`);
-
-    res.json({ message: 'Verification email resent' });
+    try {
+      // Use the email helper
+      await sendVerificationEmail(email, plainToken, user.id);
+      console.log(`✅ Verification email sent successfully to: ${email}`);
+      
+      res.json({ 
+        success: true,
+        message: 'Verification email resent successfully' 
+      });
+    } catch (emailError) {
+      console.error('❌ Email sending failed:', emailError.message);
+      return res.status(500).json({ 
+        success: false,
+        message: 'Failed to send verification email. Please try again later.' 
+      });
+    }
+    
   } catch (err) {
     console.error('Resend verification error:', err);
-    res.status(500).json({ message: 'Server error while sending verification email' });
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error while sending verification email' 
+    });
   }
 });
 
 /* Login (enforce verification) */
-// router.post('/login', async (req, res) => {
-//   try {
-//     const { email, password } = req.body;
-//     if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
-
-//     const [rows] = await pool.execute('SELECT id, email, password_hash, is_verified, role, company_id FROM users WHERE email = ?', [email]);
-//     const user = rows[0];
-//     if (!user) return res.status(401).json({ message: 'Invalid credentials' });
-//     if (!user.is_verified) return res.status(403).json({ message: 'Please verify your email first' });
-
-//     const ok = await bcrypt.compare(password, user.password_hash);
-//     if (!ok) return res.status(401).json({ message: 'Invalid credentials' });
-
-//     const accessToken = signAccessToken(user);
-//     const refreshToken = signRefreshToken(user);
-
-//     await pool.execute('UPDATE users SET refresh_token = ? WHERE id = ?', [refreshToken, user.id]);
-
-//     // NEW: send it in a cookie
-//   res.cookie('accessToken', accessToken, {
-//     httpOnly: true,
-//     sameSite: 'lax',   // adjust if you have cross-site frontend/backend
-//     secure: false      // set to true if using HTTPS
-//   });
-
-
-//     res.cookie('refreshToken', refreshToken, {
-//       httpOnly: true,
-//       secure: process.env.NODE_ENV === 'production',
-//       sameSite: 'strict',
-//       maxAge: 1000 * 60 * 60 * 24 * 7
-//     });
-
-//     res.json({ accessToken, user: { id: user.id, email: user.email, role: user.role, company_id:user.company_id} });
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ message: 'Server error' });
-//   }
-// });
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -390,40 +365,6 @@ router.post('/login', async (req, res) => {
 });
 
 /* refresh token */
-// router.post('/refresh', async (req, res) => {
-//   try {
-//     const token = req.cookies.refreshToken;
-//     if (!token) return res.status(401).json({ message: 'No refresh token' });
-
-//     let payload;
-//     try {
-//       payload = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
-//     } catch (e) {
-//       return res.status(403).json({ message: 'Invalid refresh token' });
-//     }
-
-//     const [rows] = await pool.execute('SELECT id, refresh_token, email, role FROM users WHERE id = ?', [payload.id]);
-//     const user = rows[0];
-//     if (!user || user.refresh_token !== token) return res.status(403).json({ message: 'Refresh token not valid' });
-
-//     const accessToken = signAccessToken(user);
-//     const newRefresh = signRefreshToken(user);
-//     await pool.execute('UPDATE users SET refresh_token = ? WHERE id = ?', [newRefresh, user.id]);
-
-//     res.cookie('refreshToken', newRefresh, {
-//       httpOnly: true,
-//       secure: process.env.NODE_ENV === 'production',
-//       sameSite: 'strict',
-//       maxAge: 1000 * 60 * 60 * 24 * 7
-//     });
-
-//     res.json({ accessToken, user: { id: user.id, email: user.email, role: user.role, company_id:user.company_id} });
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ message: 'Server error' });
-//   }
-// });
-
 router.post('/refresh', async (req, res) => {
   try {
     const token = req.cookies.refreshToken;
@@ -507,49 +448,6 @@ router.post('/logout', async (req, res) => {
 });
 
 //get users according to the company id
-// router.get('/users', authenticateToken, async (req, res) => {
-//   try {
-//     const company_id = req.user.company_id;
-    
-//     if (!company_id) {
-//       return res.status(400).json({
-//         success: false,
-//         message: 'Company ID is required'
-//       });
-//     }
-
-//     // Get users (excluding password and other sensitive info)
-//     const [users] = await pool.execute(
-//       `SELECT 
-//         id, 
-//         firstname, 
-//         lastname, 
-//         email, 
-//         country,
-//         mobile,
-//         role, 
-//         is_verified, 
-//         is_active,
-//         created_at 
-//        FROM users 
-//        WHERE company_id = ? 
-//        ORDER BY created_at DESC`,
-//       [company_id]
-//     );
-
-//     res.json({
-//       success: true,
-//       data: users
-//     });
-    
-//   } catch (err) {
-//     console.error('Get users error:', err);
-//     res.status(500).json({
-//       success: false,
-//       message: 'Failed to fetch users'
-//     });
-//   }
-// });
 router.get('/users', authenticateToken, async (req, res) => {
   try {
     const company_id = req.user.company_id;
@@ -684,149 +582,6 @@ router.post('/reset-password',resetPasswordLimiter, async (req, res) => {
 });
 
 //user invite
-// router.post('/invite', authenticateToken, async (req, res) => {
-//   try {
-//     const { email, role } = req.body;
-//     const company_id = req.user.company_id; 
-
-//     //console.log('Invite request:', { email, role, company_id, user: req.user });
-
-//     if (!email || !role) {
-//       return res.status(400).json({ message: 'Email and role are required' });
-//     }
-
-//     // Validate company_id exists
-//     if (!company_id) {
-//       return res.status(400).json({ message: 'Company ID is required' });
-//     }
-
-//     // Check if user already exists
-//     const [exists] = await pool.execute('SELECT id FROM users WHERE email = ?', [email]);
-//     if (exists.length) {
-//       return res.status(409).json({ message: 'User already exists' });
-//     }
-
-//     // Insert invited user with company_id
-//     const [ins] = await pool.execute(
-//       'INSERT INTO users (email, role, is_verified, is_active, company_id, password_hash) VALUES (?, ?, 0, 1, ?, NULL)',
-//       [email, role, company_id]
-//     );
-
-
-//     const userId = ins.insertId;
-
-//     // Generate verification token
-//     const plainToken = crypto.randomBytes(32).toString('hex');
-//     const tokenHash = crypto.createHash('sha256').update(plainToken).digest('hex');
-//     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-//     await pool.execute(
-//       'UPDATE users SET verification_token_hash=?, verification_token_expires=? WHERE id=?',
-//       [tokenHash, expiresAt, userId]
-//     );
-
-//     // Create transporter
-//     const transporter = nodemailer.createTransport({
-//       host: process.env.SMTP_HOST,
-//       port: process.env.SMTP_PORT,
-//       secure: process.env.SMTP_SECURE === 'true',
-//       auth: {
-//         user: process.env.SMTP_USER,
-//         pass: process.env.SMTP_PASS,
-//       },
-//     });
-
-//     await transporter.verify();
-
-//     // Build invite link
-//     // const inviteUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/complete-registration?token=${plainToken}&id=${userId}`;
-//     const inviteUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/complete-registration?token=${plainToken}&id=${userId}`;
-
-//     const mailOptions = {
-//       from: {
-//         name: 'AptSync Support',
-//         address: process.env.SMTP_USER,
-//       },
-//       to: email,
-//       subject: 'You are invited to join AptSync',
-//       html: `
-//         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-//           <h2 style="color: #6d28d9;">You're Invited!</h2>
-//           <p>You’ve been invited to join <b>AptSync</b> as a ${role}.</p>
-//           <p>Click the button below to complete your registration. This link will expire in 24 hours.</p>
-//           <div style="text-align: center; margin: 30px 0;">
-//             <a href="${inviteUrl}" 
-//                style="background: #6d28d9; color: white; padding: 12px 24px; 
-//                       text-decoration: none; border-radius: 6px; display: inline-block;">
-//               Complete Registration
-//             </a>
-//           </div>
-//           <p style="color: #666; font-size: 14px;">
-//             Or copy and paste this link into your browser:<br>
-//             <code style="background: #f5f5f5; padding: 5px; border-radius: 3px;">${inviteUrl}</code>
-//           </p>
-//         </div>
-//       `,
-//     };
-
-//     await transporter.sendMail(mailOptions);
-//     console.log(`Invite email sent to: ${email}`);
-
-//     res.status(201).json({ message: 'Invitation sent successfully' });
-//   } catch (err) {
-//     console.error('Invite error:', err);
-//     res.status(500).json({ message: 'Server error while inviting user' });
-//   }
-// });
-
-// router.post('/invite', authenticateToken, async (req, res) => {
-//   try {
-//     const { email, role } = req.body;
-//     const company_id = req.user.company_id; 
-
-//     if (!email || !role) {
-//       return res.status(400).json({ message: 'Email and role are required' });
-//     }
-
-//     if (!company_id) {
-//       return res.status(400).json({ message: 'Company ID is required' });
-//     }
-
-//     // Check if user already exists
-//     const [exists] = await pool.execute('SELECT id FROM users WHERE email = ?', [email]);
-//     if (exists.length) {
-//       return res.status(409).json({ message: 'User already exists' });
-//     }
-
-//     // Insert invited user with company_id
-//     const [ins] = await pool.execute(
-//       'INSERT INTO users (email, role, is_verified, is_active, company_id, password_hash) VALUES (?, ?, 0, 1, ?, NULL)',
-//       [email, role, company_id]
-//     );
-
-//     const userId = ins.insertId;
-
-//     // Generate verification token
-//     const plainToken = crypto.randomBytes(32).toString('hex');
-//     const tokenHash = crypto.createHash('sha256').update(plainToken).digest('hex');
-//     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-//     await pool.execute(
-//       'UPDATE users SET verification_token_hash=?, verification_token_expires=? WHERE id=?',
-//       [tokenHash, expiresAt, userId]
-//     );
-
-//     // Use email helper
-//     await sendInvitationEmail(email, plainToken, userId, role);
-//     console.log(`Invite email sent to: ${email}`);
-
-//     res.status(201).json({ message: 'Invitation sent successfully' });
-//   } catch (err) {
-//     console.error('Invite error:', err);
-//     res.status(500).json({ message: 'Server error while inviting user' });
-//   }
-// });
-
 router.post('/invite', authenticateToken, async (req, res) => {
   try {
     const { email, role_id } = req.body; // Now using role_id instead of role name
@@ -931,41 +686,7 @@ router.post('/verify-invite-link', async (req, res) => {
   }
 });
 
-// router.post('/complete-registration', async (req, res) => {
-//   try {
-//     const { email, firstname, lastname, country, mobile, password } = req.body;
-//     if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
-
-//     const [users] = await pool.execute('SELECT id, is_verified FROM users WHERE email = ?', [email]);
-//     if (!users.length) return res.status(404).json({ message: 'User not found' });
-
-//     const user = users[0];
-    
-//     // Check if user is already verified and has completed registration
-//     if (user.is_verified) {
-//       // Check if they already have a password (completed registration)
-//       const [userDetails] = await pool.execute('SELECT password_hash FROM users WHERE id = ?', [user.id]);
-//       if (userDetails[0].password_hash) {
-//         return res.status(400).json({ message: 'Registration already completed' });
-//       }
-//     }
-
-//     const hashedPassword = await bcrypt.hash(password, 12);
-
-//     await pool.execute(
-//       `UPDATE users 
-//        SET firstname=?, lastname=?, country=?, mobile=?, password_hash=?, is_verified=1, is_active=1 
-//        WHERE id=?`,
-//       [firstname, lastname, country, mobile, hashedPassword, user.id]
-//     );
-
-//     res.json({ message: 'Registration completed successfully' });
-//   } catch (err) {
-//     console.error('Complete registration error:', err);
-//     res.status(500).json({ message: 'Server error while completing registration' });
-//   }
-// });
-
+//complete-registration of users by themselves 
 router.post('/complete-registration', async (req, res) => {
   try {
     const { email, firstname, lastname, country, mobile, password } = req.body;
@@ -1017,100 +738,6 @@ router.post('/complete-registration', async (req, res) => {
 });
 
 // Update user
-// Update user
-// router.put('/users/:id', authenticateToken, async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     const { firstname, lastname, email, country, mobile, role, password } = req.body;
-    
-//     // Check if user exists
-//     const [users] = await pool.execute('SELECT id, company_id, email as current_email FROM users WHERE id = ?', [id]);
-//     if (!users.length) {
-//       return res.status(404).json({ success: false, message: 'User not found' });
-//     }
-
-//     const user = users[0];
-    
-//     // Check if user belongs to the same company
-//     if (user.company_id !== req.user.company_id) {
-//       return res.status(403).json({ success: false, message: 'Access denied' });
-//     }
-
-//     // Check if email is already taken by another user (only if email is being changed)
-//     if (email && email !== user.current_email) {
-//       const [existing] = await pool.execute(
-//         'SELECT id FROM users WHERE email = ? AND id != ? AND company_id = ?',
-//         [email, id, req.user.company_id]
-//       );
-//       if (existing.length) {
-//         return res.status(409).json({ success: false, message: 'Email already taken' });
-//       }
-//     }
-
-//     let updateQuery = `
-//       UPDATE users SET 
-//       firstname = ?, lastname = ?, country = ?, mobile = ?, role = ?
-//     `;
-//     let queryParams = [firstname, lastname, country, mobile, role];
-
-//     // Add email to update if it's provided (it will be included in all cases)
-//     if (email) {
-//       updateQuery += ', email = ?';
-//       queryParams.push(email);
-//     }
-
-//     // If password is provided, update it
-//     if (password) {
-//       const password_hash = await bcrypt.hash(password, 12);
-//       updateQuery += ', password_hash = ?';
-//       queryParams.push(password_hash);
-      
-//       // Only require verification if password changed AND email also changed
-//       if (email && email !== user.current_email) {
-//         updateQuery += ', is_verified = 0';
-//       }
-//     } else {
-//       // If no password change, only require verification if email changed
-//       if (email && email !== user.current_email) {
-//         updateQuery += ', is_verified = 0';
-//       }
-//     }
-
-//     updateQuery += ' WHERE id = ?';
-//     queryParams.push(id);
-
-//     await pool.execute(updateQuery, queryParams);
-
-//     // Prepare response data
-//     const responseData = { 
-//       id, 
-//       firstname, 
-//       lastname, 
-//       country, 
-//       mobile, 
-//       role 
-//     };
-
-//     // Only include email in response if it was actually updated
-//     if (email && email !== user.current_email) {
-//       responseData.email = email;
-//       responseData.requires_verification = true;
-//     } else {
-//       responseData.email = user.current_email;
-//     }
-
-//     res.json({
-//       success: true,
-//       message: 'User updated successfully',
-//       data: responseData
-//     });
-
-//   } catch (err) {
-//     console.error('Error updating user:', err);
-//     res.status(500).json({ success: false, message: 'Server error while updating user' });
-//   }
-// });
-
 router.put('/users/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
