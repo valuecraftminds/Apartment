@@ -452,12 +452,13 @@
 import React, { useState, useEffect, useContext } from 'react';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
-import { Plus, Users, Loader, Edit, Trash2, User, Send, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Plus, Users, Loader, Edit, Trash2, User, Send, ToggleLeft, ToggleRight, Building2 } from 'lucide-react';
 import { toast, ToastContainer } from 'react-toastify';
 import api from '../api/axios';
 import { AuthContext } from '../contexts/AuthContext';
 import CreateUser from '../Users/CreateUser';
 import EditUser from '../Users/EditUser';
+import UserApartmentsModal from '../Users/UserApartmentModal';
 
 export default function UserView() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -473,7 +474,9 @@ export default function UserView() {
   const [error, setError] = useState(null);
   const { auth } = useContext(AuthContext);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deletingUser, setDeletingUser] = useState(null);  
+  const [deletingUser, setDeletingUser] = useState(null); 
+   const [showAssignModal, setShowAssignModal] = useState(false);
+  const [assigningUser, setAssigningUser] = useState(null); 
 
   // Load users and roles
   const loadUsers = async () => {
@@ -623,6 +626,22 @@ export default function UserView() {
     }
   };
 
+  const handleAssignClick = (user) => {
+    setAssigningUser(user);
+    setShowAssignModal(true);
+  };
+
+  const handleAssignModalClose = () => {
+    setShowAssignModal(false);
+    setAssigningUser(null);
+  };
+
+  const handleAssignSuccess = () => {
+    // Optional: Refresh user data or show success message
+    toast.success('Apartments assigned successfully!');
+  };
+
+
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-gray-900 w-screen transition-colors duration-200">
       <Sidebar onCollapse={setIsSidebarCollapsed} />
@@ -763,8 +782,23 @@ export default function UserView() {
                               {formatDate(user.created_at)}
                             </td>
 
-                            <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                            <td className="whitespace-nowrap text-sm font-medium">
                               <div className="flex">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleAssignClick(user);
+                                  }}
+                                  disabled={isCurrentUser || !user.is_active}
+                                  className={`flex items-center justify-center w-8 h-8 rounded ${
+                                    isCurrentUser || !user.is_active
+                                      ? 'text-gray-400 cursor-not-allowed bg-transparent'
+                                      : 'text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-300'
+                                  }`}
+                                  title={isCurrentUser ? "You can't assign to your own account" : !user.is_active ? "Cannot assign to inactive user" : 'Assign Apartments'}
+                                >
+                                  <Building2 size={20} />
+                                </button>
                                 <button
                                   onClick={() => handleEditClick(user)}
                                   disabled={isCurrentUser || !user.is_active}
@@ -775,7 +809,7 @@ export default function UserView() {
                                   }`}
                                   title={isCurrentUser ? "You can't edit your own account" : !user.is_active ? "Cannot edit inactive user" : 'Edit'}
                                 >
-                                  <Edit size={16} />
+                                  <Edit size={20} />
                                 </button>
 
                                 <button
@@ -790,7 +824,7 @@ export default function UserView() {
                                   }`}
                                   title={isCurrentUser ? "You can't modify your own account" : user.is_active ? 'Deactivate' : 'Activate'}
                                 >
-                                  {user.is_active ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
+                                  {user.is_active ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
                                 </button>
 
                                 <button
@@ -806,7 +840,7 @@ export default function UserView() {
                                   }`}
                                   title={isCurrentUser ? "You can't delete your own account" : !user.is_active ? "Cannot delete inactive user" : 'Delete'}
                                 >
-                                  <Trash2 size={16} />
+                                  <Trash2 size={20} />
                                 </button>
                               </div>
                             </td>
@@ -920,6 +954,15 @@ export default function UserView() {
           </div>
         </div>
       )}
+
+      {/* Assign apartments for users */}
+      {showAssignModal && assigningUser && (
+      <UserApartmentsModal
+        user={assigningUser}
+        onClose={handleAssignModalClose}
+        onAssignSuccess={handleAssignSuccess}
+      />
+    )}
       <ToastContainer position="top-center" autoClose={3000} />
     </div>
   );

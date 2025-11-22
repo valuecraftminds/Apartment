@@ -111,6 +111,10 @@ app.use('/api/apartment-documents',apartmentDocumentRoutes)
 const floorDocumentRoutes = require('./routes/floorDocuments');
 app.use('/api/floor-documents', floorDocumentRoutes);
 
-//Routes for ouse documents
+//Routes for house documents
 const houseDocumentRoutes = require('./routes/houseDocuments');
 app.use('/api/house-documents',houseDocumentRoutes);
+
+//Routes for assign apartments for users
+const userApartmentRoutes = require('./routes/userApartments');
+app.use('/api/user-apartments',userApartmentRoutes);

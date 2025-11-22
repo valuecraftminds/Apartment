@@ -31,6 +31,7 @@ import Role from './pages/Role'
 import EmployeeDashboard from './pages/EmployeeDashboard'
 import { AuthProvider } from './contexts/AuthContext'
 import ProfilePage from './pages/ProfilePage'
+import MyApartments from './Users/MyApartments'
 
 export default function App() {
   return (
@@ -65,6 +66,7 @@ export default function App() {
         <Route path='/employee-dashboard' element={<EmployeeDashboard/>}/>
         <Route path='/role' element={<Role/>}/>
         <Route path='/profile-page' element={<ProfilePage/>}/>
+        <Route path='/my-apartments' element={<MyApartments/>}/>
       </Routes>
       </AuthProvider>
     </BrowserRouter>

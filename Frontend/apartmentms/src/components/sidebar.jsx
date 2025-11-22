@@ -149,17 +149,17 @@ export default function Sidebar() {
       icon: ClipboardList, 
       isConstant: false 
     },
-    inventory_management: { 
-      id: 'inventory_management', 
-      name: 'Inventory', 
-      path: '/inventory', 
-      icon: FileText, 
-      isConstant: false 
-    },
+    // inventory_management: { 
+    //   id: 'inventory_management', 
+    //   name: 'Inventory', 
+    //   path: '/inventory', 
+    //   icon: FileText, 
+    //   isConstant: false 
+    // },
     my_apartments: { 
       id: 'my_apartments', 
       name: 'My Apartments', 
-      path: '/owner-apartments', 
+      path: '/my-apartments', 
       icon: Building2, 
       isConstant: false 
     },
