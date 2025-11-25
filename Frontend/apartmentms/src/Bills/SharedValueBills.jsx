@@ -148,7 +148,7 @@ export default function SharedValueBills() {
                             {sharedValueBills.map((bill, index) => (
                                 <tr key={bill.id}
                                     className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
-                                    onClick={() => handleRowClick(bill)}
+                                    // onClick={() => handleRowClick(bill)}
                                 >
                                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                                         {index + 1}

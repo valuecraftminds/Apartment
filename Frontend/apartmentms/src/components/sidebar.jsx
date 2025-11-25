@@ -324,18 +324,6 @@ export default function Sidebar() {
           })
         )}
       </nav>
-
-      {/* Role badge */}
-      {!isCollapsed && (
-        <div className="absolute bottom-4 left-4 right-4">
-          <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 text-center">
-            <p className="text-xs text-gray-600 dark:text-gray-300">Logged in as</p>
-            <p className="text-sm font-semibold text-purple-600 dark:text-purple-400">
-              {formatRoleName(userRole)}
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
