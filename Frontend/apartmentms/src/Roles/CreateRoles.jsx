@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import api from "../api/axios";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 
 export default function CreateRoles({ onClose, onCreated }) {
   const [formData, setFormData] = useState({
@@ -127,6 +127,7 @@ export default function CreateRoles({ onClose, onCreated }) {
           )}
         </button>
       </div>
+       <ToastContainer position="top-center" autoClose={3000} />
     </form>
   );
 }

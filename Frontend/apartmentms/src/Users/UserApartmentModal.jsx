@@ -266,7 +266,7 @@ export default function UserApartmentModal({ user, onClose, onAssignSuccess }) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750 rounded-b-xl">
+        <div className="flex items-center justify-between p-6 border-t border-gray-200 dark:border-gray-700 dark:bg-gray-750 rounded-b-xl">
           <div className="text-sm text-gray-600 dark:text-gray-300">
             {selectedApartments.size} apartment(s) selected
             {assignedApartments.length > 0 && (

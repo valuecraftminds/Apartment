@@ -98,14 +98,10 @@ export default function Sidebar() {
       name: 'Expenses', 
       icon: BanknoteArrowDown, 
       isConstant: false, 
-      children: [{ name: 'Bills', path: '/bills-and-calculations' }] 
-    },
-    reports_analytics: { 
-      id: 'reports_analytics', 
-      name: 'Reports', 
-      path: '/reports', 
-      icon: BarChart3, 
-      isConstant: false 
+      children: [
+        { name: 'Bills', path: '/bills-and-calculations' },
+        { name: 'Bill Payments', path:'/bill-payments'}
+      ] 
     },
     tenant_management: { 
       id: 'tenant_management', 
@@ -114,48 +110,6 @@ export default function Sidebar() {
       icon: Users, 
       isConstant: false 
     },
-    property_management: { 
-      id: 'property_management', 
-      name: 'Properties', 
-      path: '/manager-apartments', 
-      icon: Building2, 
-      isConstant: false 
-    },
-    financial_management: { 
-      id: 'financial_management', 
-      name: 'Finance', 
-      icon: BanknoteArrowDown, 
-      isConstant: false, 
-      children: [{ name: 'Bills', path: '/manager-bills' }, { name: 'Collections', path: '/collections' }] 
-    },
-    maintenance_management: { 
-      id: 'maintenance_management', 
-      name: 'Maintenance', 
-      path: '/maintenance-requests', 
-      icon: Wrench, 
-      isConstant: false 
-    },
-    maintenance_tasks: { 
-      id: 'maintenance_tasks', 
-      name: 'Maintenance Tasks', 
-      path: '/maintenance-tasks', 
-      icon: Wrench, 
-      isConstant: false 
-    },
-    work_orders: { 
-      id: 'work_orders', 
-      name: 'Work Orders', 
-      path: '/work-orders', 
-      icon: ClipboardList, 
-      isConstant: false 
-    },
-    // inventory_management: { 
-    //   id: 'inventory_management', 
-    //   name: 'Inventory', 
-    //   path: '/inventory', 
-    //   icon: FileText, 
-    //   isConstant: false 
-    // },
     my_apartments: { 
       id: 'my_apartments', 
       name: 'My Apartments', 
@@ -267,7 +221,7 @@ export default function Sidebar() {
         {!isCollapsed && (
           <div className="flex items-center justify-between w-full">
             <span className="text-xl font-bold text-gray-800 dark:text-gray-300">
-              {userRole === 'Admin' ? 'AptSync Admin' : 'AptSync Employee'}
+              AptSync
             </span>
             <button
               onClick={refreshComponents}

@@ -32,6 +32,8 @@ import EmployeeDashboard from './pages/EmployeeDashboard'
 import { AuthProvider } from './contexts/AuthContext'
 import ProfilePage from './pages/ProfilePage'
 import MyApartments from './Users/MyApartments'
+import SharedValueBillPrice from './Bills/SharedValueBillPrice'
+import BillPayments from './Bills/BillPayments'
 
 export default function App() {
   return (
@@ -67,6 +69,8 @@ export default function App() {
         <Route path='/role' element={<Role/>}/>
         <Route path='/profile-page' element={<ProfilePage/>}/>
         <Route path='/my-apartments' element={<MyApartments/>}/>
+        <Route path='/shared-value-bill-prices/:bill_id' element={<SharedValueBillPrice/>}/>
+        <Route path='/bill-payments' element={<BillPayments/>}/>
       </Routes>
       </AuthProvider>
     </BrowserRouter>

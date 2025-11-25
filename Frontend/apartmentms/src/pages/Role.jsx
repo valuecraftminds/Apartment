@@ -5,6 +5,8 @@ import { Edit, Image, Loader, Plus, Settings, Trash2, UserCog } from 'lucide-rea
 import api from '../api/axios';
 import CreateRoles from '../Roles/CreateRoles';
 import RoleAssignmentModal from '../Roles/RoleAssignmentModal';
+import EditRole from '../Roles/EditRole';
+import { toast, ToastContainer } from 'react-toastify';
 
 export default function Role() {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -13,8 +15,9 @@ export default function Role() {
     const [error, setError] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
+    const [editingRole, setEditRole] = useState(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [deletingBill, setDeletingBill] = useState(null);
+    const [deletingRole, setDeletingRole] = useState(null);
     const [showAssignmentModal, setShowAssignmentModal] = useState(false); 
     const [selectedRole, setSelectedRole] = useState(null);
 
@@ -54,7 +57,75 @@ export default function Role() {
         loadRoles();
         setShowCreateModal(false);
     }
+    
+    //Edit Roles
+    const handleEditModal = (role) =>{
+        setEditRole(role);
+        setShowEditModal(true);
+    }
 
+    const handleCloseEditModal = () =>{
+        setShowEditModal(false);
+         setEditRole(null);
+         
+    }
+
+    const handleEditRole = () =>{
+        toast.success('Role updated successfully!');
+        loadRoles();
+        setShowEditModal(false);
+        setEditRole(null);
+    }
+
+    //delete house
+        const handleDeleteClick = (role) => {
+        setDeletingRole(role);
+        setShowDeleteModal(true);
+      };
+    
+      // Update the handleConfirmDelete function in Role.jsx
+    const handleConfirmDelete = async () => {
+    try {
+        if (!deletingRole) return;
+        
+        const response = await api.delete(`/roles/${deletingRole.id}`);
+        
+        if (response.data.success) {
+        toast.success('Role deleted successfully');
+        setShowDeleteModal(false);
+        setDeletingRole(null);
+        loadRoles();
+        } else {
+        // Handle cases where the API returns success: false
+        toast.error(response.data.message || 'Failed to delete role');
+        }
+    } catch (err) {
+        console.error('Delete role error:', err);
+        
+        // Check if the error response contains the specific message about users assigned
+        if (err.response?.data?.message?.includes('users assigned') || 
+            err.response?.data?.message?.includes('Cannot delete role')) {
+        toast.error(err.response.data.message);
+        } else if (err.response?.data?.message) {
+        // Show other error messages from the server
+        toast.error(err.response.data.message);
+        } else {
+        // Generic error message for network issues etc.
+        toast.error('Failed to delete role. Please try again.');
+        }
+        
+        // Close the delete modal even on error
+        setShowDeleteModal(false);
+        setDeletingRole(null);
+    }
+    };
+    
+      const handleCancelDelete = () => {
+        setShowDeleteModal(false);
+        setDeletingRole(null);
+      };    
+
+    //Component Assignment
     const handleRoleClick = (role) => {
         setSelectedRole(role);
         setShowAssignmentModal(true);
@@ -99,7 +170,7 @@ export default function Role() {
                             <div className="text-center py-12 text-red-600 dark:text-red-400">
                                 {error}
                                 <button 
-                                    // onClick={loadApartments}
+                                    onClick={loadRoles}
                                     className="ml-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
                                 >
                                     Retry
@@ -145,20 +216,20 @@ export default function Role() {
                                                 <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                                                     <div className="flex space-x-2">
                                                         <button
-                                                            // onClick={(e) => {
-                                                            //     e.stopPropagation(); 
-                                                            //     handleEdit(apartment);
-                                                            // }}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation(); 
+                                                                handleEditModal(role);
+                                                            }}
                                                             className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
                                                             title="Edit"
                                                         >
                                                             <Edit size={20} />
                                                         </button>
                                                         <button
-                                                            // onClick={(e) => {
-                                                            // e.stopPropagation();
-                                                            // handleDeleteClick(apartment);
-                                                            // }}
+                                                            onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDeleteClick(role);
+                                                            }}
                                                             className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                                                             title="Delete"
                                                         >
@@ -214,6 +285,42 @@ export default function Role() {
                 onAssign={handleAssignmentComplete}
             />
         )}
+
+        {/* Edit Role Modal */}
+        {showEditModal && editingRole && (
+            <EditRole
+                role={editingRole}
+                onClose={handleCloseEditModal}
+                onUpdated={handleEditRole}
+            />
+        )}
+        {showDeleteModal && deletingRole && (
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm relative">
+                    <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                    Confirm Deletion
+                    </h2>
+                    <p className="text-gray-600 dark:text-gray-300 mb-6">
+                    Are you sure you want to delete "{deletingRole.role_name}"?
+                    </p>
+                    <div className="flex justify-end space-x-3">
+                    <button
+                        onClick={handleCancelDelete}
+                        className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleConfirmDelete}
+                        className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors duration-200"
+                    >
+                        Delete
+                    </button>
+                    </div>
+                </div>
+            </div>
+        )}
+        <ToastContainer position="top-center" autoClose={3000} />
     </div>
   )
 }

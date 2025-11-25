@@ -484,31 +484,31 @@ export default function Houses() {
                 </div>
             )}
             {showDeleteModal && deletingHouse && (
-            <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm relative">
-                    <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-                    Confirm Deletion
-                    </h2>
-                    <p className="text-gray-600 dark:text-gray-300 mb-6">
-                    Are you sure you want to delete "{deletingHouse.house_id}"?
-                    </p>
-                    <div className="flex justify-end space-x-3">
-                    <button
-                        onClick={handleCancelDelete}
-                        className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={handleConfirmDelete}
-                        className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors duration-200"
-                    >
-                        Delete
-                    </button>
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm relative">
+                        <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                        Confirm Deletion
+                        </h2>
+                        <p className="text-gray-600 dark:text-gray-300 mb-6">
+                        Are you sure you want to delete "{deletingHouse.house_id}"?
+                        </p>
+                        <div className="flex justify-end space-x-3">
+                        <button
+                            onClick={handleCancelDelete}
+                            className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleConfirmDelete}
+                            className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors duration-200"
+                        >
+                            Delete
+                        </button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        )}            
+            )}            
         {/* House Document Modal */}
         {showHouseDocumentModal && selectedHouseForDocuments && (
             <div className="fixed inset-0 bg-white/0 backdrop-blur-lg flex items-center justify-center z-50">

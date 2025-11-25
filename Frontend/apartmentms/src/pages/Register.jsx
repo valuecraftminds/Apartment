@@ -21,8 +21,7 @@ export default function CombinedRegistration() {
   const [companyData, setCompanyData] = useState({
     regNo: '',
     name: '',
-    address: '',
-    employees: ''
+    address: ''
   });
 
   const [errors, setErrors] = useState({
@@ -35,8 +34,7 @@ export default function CombinedRegistration() {
     confirmPassword: '',
     regNo:'',
     name: '',
-    address: '',
-    employees: ''
+    address: ''
   });
 
   const [touched, setTouched] = useState({
@@ -49,8 +47,7 @@ export default function CombinedRegistration() {
     confirmPassword: false,
     regNo:false,
     name: false,
-    address: false,
-    employees: false
+    address: false
   });
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -152,11 +149,11 @@ export default function CombinedRegistration() {
         else if (value.length < 3) error = 'Company address must be at least 3 characters';
         break;
 
-      case 'employees':
-        if (!value.trim()) error = 'Number of employees is required';
-        else if (!/^\d+$/.test(value)) error = 'Number of employees must be a valid number';
-        else if (parseInt(value) < 1) error = 'Number of employees must be at least 1';
-        break;
+      // case 'employees':
+      //   if (!value.trim()) error = 'Number of employees is required';
+      //   else if (!/^\d+$/.test(value)) error = 'Number of employees must be a valid number';
+      //   else if (parseInt(value) < 1) error = 'Number of employees must be at least 1';
+      //   break;
                                 
       default:
         break;
@@ -213,7 +210,7 @@ export default function CombinedRegistration() {
 
     // Mark all fields in current step as touched and validate them
     const stepFields = {
-      1: ['regNo','name', 'address', 'employees'], // Company details
+      1: ['regNo','name', 'address'], // Company details
       2: ['firstname','lastname','country','mobile','email'], // User details
       3: ['password', 'confirmPassword'], // Security
     }[step];
@@ -332,8 +329,7 @@ async function submit(e) {
     const companyPayload = {
       regNo: companyData.regNo,
       name: companyData.name,
-      address: companyData.address,
-      employees: parseInt(companyData.employees, 10)
+      address: companyData.address
     };
 
     console.log('Sending company data to /tenants:', companyPayload);
@@ -509,7 +505,7 @@ async function submit(e) {
                   )} */}
                 </div>
 
-                <div>
+                {/* <div>
                   <input 
                     name="employees" 
                     value={companyData.employees} 
@@ -523,12 +519,7 @@ async function submit(e) {
                       <X size={14} className="mr-1" /> {errors.employees}
                     </div>
                   )}
-                  {/* {touched.employees && !errors.employees && (
-                    <div className="text-green-500 text-sm mt-1 flex items-center">
-                      <Check size={14} className="mr-1" />
-                    </div>
-                  )} */}
-                </div>
+                </div> */}
               </div>
             )}
             {/* Step 2: User email */}

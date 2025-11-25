@@ -290,6 +290,32 @@ const billAssignmentController = {
         } finally {
             connection.release();
         }
+    },
+
+    // In your bill-assignments controller
+    async getAssignedHousesCountByBillId(req, res) {
+        try {
+            const { bill_id } = req.params;
+            
+            // Query to count assigned houses for this bill
+            const [rows] = await pool.execute(
+                'SELECT COUNT(*) as count FROM bill_assignments WHERE bill_id = ?',
+                [bill_id]
+            );
+            
+            res.json({
+                success: true,
+                data: {
+                    count: rows[0].count
+                }
+            });
+        } catch (err) {
+            console.error('Error fetching assigned houses count:', err);
+            res.status(500).json({
+                success: false,
+                message: 'Server error while fetching assigned houses count'
+            });
+        }
     }
 };
 
