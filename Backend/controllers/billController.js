@@ -1,3 +1,4 @@
+//controllers/billController.js
 const e = require('express');
 const bills = require('../models/Bill');
 const Bills = require('../models/Bill');

@@ -1,7 +1,7 @@
-// models/BillPayments.js
-const pool = require('../db');
+// models/BillPayment.js
+const pool = require('../db')
 
-class BillPayments {
+class BillPayment{
     static async findAllByCompany(company_id, filters = {}) {
         let query = `
             SELECT 
@@ -39,9 +39,20 @@ class BillPayments {
             params.push(filters.apartment_id);
         }
         
-        if (filters.bill_id) {
-            query += ' AND bp.bill_id = ?';
-            params.push(filters.bill_id);
+        if (filters.floor_id) {
+            query += ' AND bp.floor_id = ?';
+            params.push(filters.floor_id);
+        }
+        
+        if (filters.house_id) {
+            query += ' AND bp.house_id = ?';
+            params.push(filters.house_id);
+        }
+        
+        // ADD THIS: Filter by bill type
+        if (filters.billtype) {
+            query += ' AND b.billtype = ?';
+            params.push(filters.billtype);
         }
         
         if (filters.month) {
@@ -102,6 +113,29 @@ class BillPayments {
         return rows;
     }
 
+    // static async updatePaymentStatus(id, payment_status, paidAmount = null) {
+    //     let query = 'UPDATE bill_payments SET payment_status = ?';
+    //     const params = [payment_status];
+        
+    //     if (paidAmount !== null) {
+    //         query += ', paidAmount = ?, pendingAmount = unitPrice - ?';
+    //         params.push(paidAmount, paidAmount);
+    //     }
+        
+    //     if (payment_status === 'Paid') {
+    //         query += ', paid_at = CURRENT_TIMESTAMP';
+    //     } else {
+    //         query += ', paid_at = NULL';
+    //     }
+        
+    //     query += ' WHERE id = ?';
+    //     params.push(id);
+        
+    //     await pool.execute(query, params);
+        
+    //     return this.findById(id);
+    // }
+    
     static async updatePaymentStatus(id, payment_status, paidAmount = null) {
         let query = 'UPDATE bill_payments SET payment_status = ?';
         const params = [payment_status];
@@ -113,8 +147,12 @@ class BillPayments {
         
         if (payment_status === 'Paid') {
             query += ', paid_at = CURRENT_TIMESTAMP';
-        } else {
+        } else if (payment_status === 'Pending' && paidAmount === 0) {
             query += ', paid_at = NULL';
+        }
+        // For Partial payments, keep the existing paid_at or set to current timestamp if not set
+        else if (payment_status === 'Partial' && paidAmount > 0) {
+            query += ', paid_at = COALESCE(paid_at, CURRENT_TIMESTAMP)';
         }
         
         query += ' WHERE id = ?';
@@ -146,4 +184,4 @@ class BillPayments {
     }
 }
 
-module.exports = BillPayments;
+module.exports=BillPayment;

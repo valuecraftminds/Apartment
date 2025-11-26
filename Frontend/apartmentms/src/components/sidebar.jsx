@@ -18,7 +18,9 @@ import {
   BarChart3,
   UserCog,
   Shield,
-  RefreshCw
+  RefreshCw,
+  Menu,
+  X
 } from 'lucide-react';
 import { AuthContext } from '../contexts/AuthContext';
 import api from '../api/axios';
@@ -31,6 +33,8 @@ export default function Sidebar() {
   const [assignedComponents, setAssignedComponents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(Date.now());
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+
 
   const userRole = auth?.user?.role || 'Admin';
   const userId = auth?.user?.id;
@@ -117,13 +121,13 @@ export default function Sidebar() {
       icon: Building2, 
       isConstant: false 
     },
-    my_expenses: { 
-      id: 'my_expenses', 
-      name: 'My Expenses', 
-      icon: BanknoteArrowDown, 
-      isConstant: false, 
-      children: [{ name: 'My Bills', path: '/owner-bills' }, { name: 'Payment History', path: '/payment-history' }] 
-    },
+    bill_management: {
+      id: 'bill_management',
+      name: 'Measurable Bills',
+      path: '/measurable-bills',
+      icon: CreditCard,
+      isConstant: false
+    }
   };
 
   // Admin default nav items
@@ -190,6 +194,11 @@ export default function Sidebar() {
     fetchUserComponents();
   }, [userRole, userId, lastRefresh]); // Added lastRefresh dependency
 
+   // Close mobile sidebar when route changes
+  useEffect(() => {
+    setIsMobileOpen(false);
+  }, [location.pathname]);
+
   // Refresh components manually
   const refreshComponents = () => {
     setLastRefresh(Date.now());
@@ -211,9 +220,149 @@ export default function Sidebar() {
 
   const toggleDropdown = (name) => setOpenDropdown(openDropdown === name ? null : name);
 
-  const formatRoleName = (role) => role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  const toggleMobileSidebar = () => setIsMobileOpen(!isMobileOpen);
+
+  
+
+  // Mobile sidebar content (separate from desktop to avoid conflicts)
+  const MobileSidebarContent = () => (
+    <div className="bg-white dark:bg-gray-800 h-full w-64 shadow-lg border-r border-gray-200 dark:border-gray-700">
+      {/* Mobile Sidebar Header */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 pt-16">
+        <div className="flex items-center justify-between w-full">
+          <span className="text-xl font-bold text-gray-800 dark:text-gray-300">
+            AptSync
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={refreshComponents}
+              className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 text-gray-600 dark:text-gray-400"
+              title="Refresh components"
+            >
+              <RefreshCw size={16} />
+            </button>
+            <button
+              onClick={toggleMobileSidebar}
+              className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 text-purple-700 dark:text-purple-400"
+            >
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Navigation */}
+      <nav className="p-4 space-y-1">
+        {loading ? (
+          <div className="flex justify-center items-center py-4">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+            <span className="ml-2 text-sm text-gray-600">Loading...</span>
+          </div>
+        ) : navigationItems.length === 0 ? (
+          <div className="text-center py-4 text-gray-500 dark:text-gray-400 text-sm">
+            No components assigned
+          </div>
+        ) : (
+          navigationItems.map(item => {
+            if (!item) return null;
+            
+            const Icon = item.icon;
+            
+            if (item.children) {
+              const isDropdownActive = item.children.some(child => 
+                child.path && isActive(child.path)
+              );
+              
+              return (
+                <div key={item.id}>
+                  <button
+                    onClick={() => toggleDropdown(item.name)}
+                    className={`w-full flex items-center justify-between rounded-lg px-3 py-3 text-sm font-medium transition-colors duration-200 ${
+                      openDropdown === item.name || isDropdownActive
+                        ? 'bg-purple-100 text-purple-700 border-r-2 border-purple-600 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-500'
+                        : 'text-gray-600 hover:text-purple-600 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700 dark:hover:text-purple-300'
+                    }`}
+                  >
+                    <div className="flex items-center">
+                      <Icon size={20} className="mr-3" />
+                      <span>{item.name}</span>
+                    </div>
+                    {item.children && item.children.length > 0 && 
+                      (openDropdown === item.name ? <ChevronUp size={16} /> : <ChevronDown size={16} />)
+                    }
+                  </button>
+
+                  {openDropdown === item.name && item.children && (
+                    <div className="ml-8 mt-1 space-y-1">
+                      {item.children.map(child => (
+                        <Link
+                          key={child.name}
+                          to={child.path}
+                          className={`block rounded-lg px-3 py-2 text-sm transition-colors duration-200 ${
+                            isActive(child.path)
+                              ? 'bg-purple-100 text-purple-700 border-r-2 border-purple-600 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-500'
+                              : 'text-gray-600 hover:text-purple-600 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700 dark:hover:text-purple-300'
+                          }`}
+                        >
+                          {child.name}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            return (
+              <Link
+                key={item.id}
+                to={item.path}
+                className={`flex items-center rounded-lg px-3 py-3 text-sm font-medium transition-colors duration-200 ${
+                  isActive(item.path)
+                    ? 'bg-purple-100 text-purple-700 border-r-2 border-purple-600 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-500'
+                    : 'text-gray-600 hover:text-purple-600 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-700 dark:hover:text-purple-300'
+                }`}
+              >
+                <Icon size={20} className="mr-3" />
+                <span>{item.name}</span>
+              </Link>
+            );
+          })
+        )}
+      </nav>
+    </div>
+  );
 
   return (
+    <>
+      {/* Mobile Menu Button - Only visible on mobile */}
+      <div className="lg:hidden fixed top-4 left-4 z-50">
+        <button
+          onClick={toggleMobileSidebar}
+          className="p-2 rounded-md bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 text-purple-700 dark:text-purple-400"
+        >
+          <Menu size={24} />
+        </button>
+      </div>
+
+      {/* Mobile Sidebar Overlay */}
+      {isMobileOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+
+        {/* Mobile Sidebar */}
+        <div className={`
+          lg:hidden fixed left-0 top-0 h-full z-50
+          transform transition-transform duration-300 ease-in-out
+          ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}>
+          <MobileSidebarContent />
+        </div>
+
+
     <div className={`bg-white dark:bg-gray-800 shadow-lg border-r border-gray-200 dark:border-gray-700 fixed left-0 top-0 h-full z-50 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
       
       {/* Sidebar Header */}
@@ -325,5 +474,314 @@ export default function Sidebar() {
         )}
       </nav>
     </div>
+     <div className="lg:hidden h-16" />
+    </>
   );
 }
+
+// components/Sidebar.jsx
+// import React, { useState, useContext, useEffect } from 'react';
+// import { Link, useLocation } from 'react-router-dom';
+// import {
+//   Home,
+//   Users,
+//   Building2,
+//   BanknoteArrowDown,
+//   ChevronLeft,
+//   ChevronRight,
+//   ChevronDown,
+//   ChevronUp,
+//   Settings,
+//   RefreshCw,
+//   Menu,
+//   X
+// } from 'lucide-react';
+
+// import { AuthContext } from '../contexts/AuthContext';
+// import api from '../api/axios';
+
+// export default function Sidebar({ isCollapsed, setIsCollapsed }) {
+//   const { auth } = useContext(AuthContext);
+//   const location = useLocation();
+
+//   const [openDropdown, setOpenDropdown] = useState(null);
+//   const [assignedComponents, setAssignedComponents] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [lastRefresh, setLastRefresh] = useState(Date.now());
+//   const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+//   const userRole = auth?.user?.role || "Admin";
+//   const userId = auth?.user?.id;
+
+//   const CONSTANT_COMPONENTS = ["employee_dashboard", "profile"];
+
+//   const allComponents = {
+//     employee_dashboard: {
+//       id: "employee_dashboard",
+//       name: "Dashboard",
+//       path: "/employee-dashboard",
+//       icon: Home,
+//     },
+//     profile: {
+//       id: "profile",
+//       name: "Profile",
+//       path: "/profile-page",
+//       icon: Settings,
+//     },
+
+//     admin_dashboard: {
+//       id: "admin_dashboard",
+//       name: "Dashboard",
+//       path: "/admindashboard",
+//       icon: Home,
+//     },
+//     admin_profile: {
+//       id: "admin_profile",
+//       name: "Profile",
+//       path: "/profile-page",
+//       icon: Settings,
+//     },
+
+//     users_management: {
+//       id: "users_management",
+//       name: "Users",
+//       path: "/userview",
+//       icon: Users,
+//     },
+//     role_management: {
+//       id: "role_management",
+//       name: "Roles",
+//       path: "/role",
+//       icon: Users,
+//     },
+//     apartments_management: {
+//       id: "apartments_management",
+//       name: "Apartments",
+//       path: "/apartmentview",
+//       icon: Building2,
+//     },
+//     expenses_management: {
+//       id: "expenses_management",
+//       name: "Expenses",
+//       icon: BanknoteArrowDown,
+//       children: [
+//         { name: "Bills", path: "/bills-and-calculations" },
+//         { name: "Bill Payments", path: "/bill-payments" },
+//       ],
+//     },
+//   };
+
+//   const getAdminNavigationItems = () => [
+//     "admin_dashboard",
+//     "users_management",
+//     "role_management",
+//     "apartments_management",
+//     "expenses_management",
+//     "admin_profile",
+//   ];
+
+//   const fetchUserComponents = async () => {
+//     try {
+//       setLoading(true);
+
+//       if (userRole === "Admin") {
+//         setAssignedComponents(getAdminNavigationItems());
+//         return;
+//       }
+
+//       const response = await api.get("/role-components/user/components");
+//       const apiComponents = response.data?.data || [];
+
+//       const readableComponents = [
+//         ...CONSTANT_COMPONENTS,
+//         ...apiComponents
+//       ];
+
+//       setAssignedComponents(readableComponents);
+//     } catch (err) {
+//       setAssignedComponents(CONSTANT_COMPONENTS);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   useEffect(() => {
+//     fetchUserComponents();
+//   }, [userRole, userId, lastRefresh]);
+
+//   const navigationItems = assignedComponents.map(id => allComponents[id]).filter(Boolean);
+
+//   const isActive = (path) => location.pathname === path;
+
+//   const toggleDropdown = (name) => {
+//     setOpenDropdown(openDropdown === name ? null : name);
+//   };
+
+//   const refreshComponents = () => setLastRefresh(Date.now());
+
+//   const toggleMobileSidebar = () => setIsMobileOpen(!isMobileOpen);
+
+//   // MOBILE SIDEBAR CONTENT
+//   const MobileSidebarContent = () => (
+//     <div className="bg-white dark:bg-gray-800 h-full w-64 shadow-lg border-r border-gray-700 pt-16">
+//       <div className="flex items-center justify-between p-4 border-b border-gray-700">
+//         <span className="text-xl font-bold text-gray-300">AptSync</span>
+//         <button
+//           className="text-purple-400"
+//           onClick={toggleMobileSidebar}
+//         >
+//           <X size={22} />
+//         </button>
+//       </div>
+
+//       <nav className="p-4 space-y-1">
+//         {navigationItems.map(item => {
+//           const Icon = item.icon;
+
+//           if (item.children) {
+//             return (
+//               <div key={item.id}>
+//                 <button
+//                   onClick={() => toggleDropdown(item.name)}
+//                   className="w-full flex justify-between items-center p-3 rounded-lg text-gray-300 hover:bg-gray-700"
+//                 >
+//                   <span className="flex items-center gap-3">
+//                     <Icon size={20} />
+//                     {item.name}
+//                   </span>
+//                   {openDropdown === item.name ? <ChevronUp /> : <ChevronDown />}
+//                 </button>
+
+//                 {openDropdown === item.name && (
+//                   <div className="ml-6 mt-1 space-y-1">
+//                     {item.children.map(child => (
+//                       <Link key={child.name} to={child.path}
+//                         className="block p-2 rounded-lg text-gray-400 hover:bg-gray-700"
+//                       >
+//                         {child.name}
+//                       </Link>
+//                     ))}
+//                   </div>
+//                 )}
+//               </div>
+//             );
+//           }
+
+//           return (
+//             <Link
+//               key={item.id}
+//               to={item.path}
+//               className="flex items-center gap-3 p-3 text-gray-300 rounded-lg hover:bg-gray-700"
+//             >
+//               <Icon size={20} />
+//               {item.name}
+//             </Link>
+//           );
+//         })}
+//       </nav>
+//     </div>
+//   );
+
+//   return (
+//     <>
+//       {/* MOBILE */}
+//       <div className="lg:hidden fixed top-4 left-4 z-50">
+//         <button
+//           onClick={toggleMobileSidebar}
+//           className="p-2 bg-gray-800 text-purple-400 rounded-md"
+//         >
+//           <Menu size={22} />
+//         </button>
+//       </div>
+
+//       {isMobileOpen && (
+//         <div
+//           className="fixed inset-0 bg-black bg-opacity-50 z-40"
+//           onClick={toggleMobileSidebar}
+//         />
+//       )}
+
+//       <div className={`lg:hidden fixed left-0 top-0 h-full z-50 transform transition-transform duration-300 ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
+//         <MobileSidebarContent />
+//       </div>
+
+//       {/* DESKTOP SIDEBAR */}
+//       <div
+//         className={`hidden lg:flex flex-col bg-gray-900 border-r border-gray-700 fixed top-0 left-0 h-full transition-all duration-300 
+//           ${isCollapsed ? "w-20" : "w-64"}`}
+//       >
+//         {/* HEADER */}
+//         <div className="flex items-center justify-between p-4 border-b border-gray-700">
+//           {!isCollapsed && (
+//             <span className="text-xl font-bold text-gray-300">AptSync</span>
+//           )}
+//           <button
+//             onClick={() => setIsCollapsed(!isCollapsed)}
+//             className="text-purple-400"
+//           >
+//             {isCollapsed ? <ChevronRight size={22} /> : <ChevronLeft size={22} />}
+//           </button>
+//         </div>
+
+//         {/* NAV ITEMS */}
+//         <nav className="p-4 space-y-1">
+//           {navigationItems.map(item => {
+//             const Icon = item.icon;
+
+//             if (item.children) {
+//               return (
+//                 <div key={item.id}>
+//                   <button
+//                     onClick={() => toggleDropdown(item.name)}
+//                     className={`w-full flex items-center justify-between rounded-lg px-3 py-3
+//                       ${isCollapsed ? "justify-center" : "text-gray-300 hover:bg-gray-800"}`}
+//                   >
+//                     <div className="flex items-center">
+//                       <Icon size={20} className={isCollapsed ? "mx-auto" : "mr-3"} />
+//                       {!isCollapsed && <span>{item.name}</span>}
+//                     </div>
+//                     {!isCollapsed &&
+//                       (openDropdown === item.name ? (
+//                         <ChevronUp size={16} />
+//                       ) : (
+//                         <ChevronDown size={16} />
+//                       ))}
+//                   </button>
+
+//                   {!isCollapsed && openDropdown === item.name && (
+//                     <div className="ml-8 mt-1 space-y-1">
+//                       {item.children.map(child => (
+//                         <Link
+//                           key={child.name}
+//                           to={child.path}
+//                           className="block px-3 py-2 text-gray-400 hover:bg-gray-800 rounded-lg"
+//                         >
+//                           {child.name}
+//                         </Link>
+//                       ))}
+//                     </div>
+//                   )}
+//                 </div>
+//               );
+//             }
+
+//             return (
+//               <Link
+//                 key={item.id}
+//                 to={item.path}
+//                 className={`flex items-center px-3 py-3 rounded-lg text-gray-300 hover:bg-gray-800 
+//                   ${isCollapsed ? "justify-center" : ""}`}
+//               >
+//                 <Icon size={20} className={isCollapsed ? "mx-auto" : "mr-3"} />
+//                 {!isCollapsed && item.name}
+//               </Link>
+//             );
+//           })}
+//         </nav>
+//       </div>
+
+//       {/* SPACER FOR DESKTOP */}
+//       <div className={`hidden lg:block transition-all duration-300 ${isCollapsed ? "w-20" : "w-64"}`} />
+//     </>
+//   );
+// }

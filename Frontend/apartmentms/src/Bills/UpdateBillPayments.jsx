@@ -1,0 +1,281 @@
+import React, { useState, useEffect } from 'react';
+import { X, DollarSign, Calendar, Building, Home, Receipt } from 'lucide-react';
+import api from '../api/axios';
+import { toast } from 'react-toastify';
+
+export default function UpdateBillPayments({ payment, onClose, onUpdate }) {
+  const [formData, setFormData] = useState({
+    paidAmount: 0,
+    payment_status: 'Pending',
+    paid_at: ''
+  });
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (payment) {
+      // Convert string values to numbers and ensure they're valid
+      const paidAmount = parseFloat(payment.paidAmount) || 0;
+      const unitPrice = parseFloat(payment.unitPrice) || 0;
+      const pendingAmount = parseFloat(payment.pendingAmount) || 0;
+      
+      setFormData({
+        paidAmount: paidAmount,
+        payment_status: payment.payment_status || 'Pending',
+        paid_at: payment.paid_at ? new Date(payment.paid_at).toISOString().split('T')[0] : ''
+      });
+    }
+  }, [payment]);
+
+  if (!payment) return null;
+
+  // Convert string values to numbers for calculations
+  const totalAmount = parseFloat(payment.unitPrice) || 0;
+  const currentPaidAmount = parseFloat(payment.paidAmount) || 0;
+  const currentPendingAmount = parseFloat(payment.pendingAmount) || 0;
+  
+  // Calculate new pending amount
+  const newPendingAmount = totalAmount - formData.paidAmount;
+
+  // Helper function to format currency safely
+  const formatCurrency = (value) => {
+    const numValue = typeof value === 'string' ? parseFloat(value) : value;
+    return isNaN(numValue) ? '0.00' : numValue.toFixed(2);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (formData.paidAmount > totalAmount) {
+      toast.error('Paid amount cannot exceed unit price');
+      return;
+    }
+
+    if (formData.paidAmount < 0) {
+      toast.error('Paid amount cannot be negative');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      const updateData = {
+        paidAmount: parseFloat(formData.paidAmount),
+        payment_status: formData.payment_status,
+        paid_at: formData.payment_status === 'Paid' && formData.paid_at ? formData.paid_at : null
+      };
+
+      const response = await api.patch(`/bill-payments/${payment.id}/status`, updateData);
+      
+      if (response.data.success) {
+        toast.success('Payment updated successfully');
+        onUpdate(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error updating payment:', error);
+      toast.error('Failed to update payment');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePaidAmountChange = (value) => {
+    const paidAmount = parseFloat(value) || 0;
+    
+    // Determine status based on amounts
+    let newStatus = 'Pending';
+    if (paidAmount >= totalAmount) {
+      newStatus = 'Paid';
+    } else if (paidAmount > 0) {
+      newStatus = 'Partial';
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      paidAmount: paidAmount,
+      payment_status: newStatus
+    }));
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center space-x-2">
+            <Receipt className="text-purple-600 dark:text-purple-400" size={24} />
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Update Payment
+            </h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6">
+          {/* Payment Information */}
+          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
+            <h4 className="font-medium text-gray-900 dark:text-white mb-3">Payment Details</h4>
+            
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">Bill:</span>
+                <span className="font-medium text-gray-900 dark:text-white">
+                  {payment.bill_name} ({payment.billtype})
+                </span>
+              </div>
+              
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">Location:</span>
+                <span className="font-medium text-gray-900 dark:text-white">
+                  {payment.apartment_name} - Floor {payment.floor_id} - House {payment.house_number}
+                </span>
+              </div>
+              
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">Period:</span>
+                <span className="font-medium text-gray-900 dark:text-white">
+                  {payment.month} {payment.year}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Current Amounts */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
+                <div className="text-green-800 dark:text-green-300 text-sm font-medium">Current Paid</div>
+                <div className="text-green-600 dark:text-green-400 text-lg font-bold">
+                  ${formatCurrency(currentPaidAmount)}
+                </div>
+              </div>
+              
+              <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
+                <div className="text-red-800 dark:text-red-300 text-sm font-medium">Current Pending</div>
+                <div className="text-red-600 dark:text-red-400 text-lg font-bold">
+                  ${formatCurrency(currentPendingAmount)}
+                </div>
+              </div>
+            </div>
+
+            {/* Unit Price */}
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+              <div className="text-blue-800 dark:text-blue-300 text-sm font-medium">Unit Price</div>
+              <div className="text-blue-600 dark:text-blue-400 text-lg font-bold">
+                ${formatCurrency(totalAmount)}
+              </div>
+            </div>
+
+            {/* Paid Amount Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Paid Amount ($)
+              </label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max={totalAmount}
+                  value={formData.paidAmount}
+                  onChange={(e) => handlePaidAmountChange(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
+                  required
+                />
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Maximum: ${formatCurrency(totalAmount)}
+              </p>
+            </div>
+
+            {/* New Pending Amount Display */}
+            <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3">
+              <div className="text-orange-800 dark:text-orange-300 text-sm font-medium">New Pending Amount</div>
+              <div className={`text-lg font-bold ${
+                newPendingAmount > 0 
+                  ? 'text-orange-600 dark:text-orange-400' 
+                  : 'text-green-600 dark:text-green-400'
+              }`}>
+                ${formatCurrency(newPendingAmount)}
+              </div>
+              {newPendingAmount <= 0 && (
+                <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                  Payment will be fully paid!
+                </p>
+              )}
+            </div>
+
+            {/* Payment Status */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Payment Status
+              </label>
+              <select
+                value={formData.payment_status}
+                onChange={(e) => setFormData(prev => ({ ...prev, payment_status: e.target.value }))}
+                className="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
+              >
+                <option value="Pending">Pending</option>
+                <option value="Partial">Partial</option>
+                <option value="Paid">Paid</option>
+                <option value="Failed">Failed</option>
+                <option value="Refunded">Refunded</option>
+              </select>
+            </div>
+
+            {/* Payment Date */}
+            {formData.payment_status === 'Paid' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Payment Date
+                </label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                  <input
+                    type="date"
+                    value={formData.paid_at}
+                    onChange={(e) => setFormData(prev => ({ ...prev, paid_at: e.target.value }))}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
+                    required
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-6 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                disabled={loading}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-6 py-3 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 disabled:bg-purple-400 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Updating...</span>
+                  </>
+                ) : (
+                  <span>Update Payment</span>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}

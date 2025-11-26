@@ -11,7 +11,6 @@ import CompanyRegistration from './pages/CompanyRegistration'
 import { House, Sidebar } from 'lucide-react'
 import ApartmentView from './pages/ApartmentView'
 import UserView from './pages/UserView'
-import Layout from './pages/Layout'
 import Floors from './FloorsHouse/Floors'
 import Houses from './FloorsHouse/Houses'
 import HouseTypes from './FloorsHouse/HouseTypes'
@@ -34,6 +33,8 @@ import ProfilePage from './pages/ProfilePage'
 import MyApartments from './Users/MyApartments'
 import SharedValueBillPrice from './Bills/SharedValueBillPrice'
 import BillPayments from './Bills/BillPayments'
+import MeasurableBills from './Apartment_Technician/BillManagement/MeasurableBills'
+import CalculateMeasurableBill from './Apartment_Technician/BillManagement/CalculateMeasurableBill'
 
 export default function App() {
   return (
@@ -71,6 +72,8 @@ export default function App() {
         <Route path='/my-apartments' element={<MyApartments/>}/>
         <Route path='/shared-value-bill-prices/:bill_id' element={<SharedValueBillPrice/>}/>
         <Route path='/bill-payments' element={<BillPayments/>}/>
+        <Route path='/measurable-bills' element={<MeasurableBills/>}/>
+        <Route path='/calculate-measurable-bill/:bill_id' element={<CalculateMeasurableBill/>}/>
       </Routes>
       </AuthProvider>
     </BrowserRouter>

@@ -1,14 +1,16 @@
-// controllers/billPaymentsController.js
-const BillPayments = require('../models/BillPayments');
+//controllers/billPaymentController.js
+const BillPayment = require('../models/BillPayment');
 
-const billPaymentsController = {
+const billPaymentController = {
     async getAllPayments(req, res) {
         try {
             const company_id = req.user.company_id;
             const { 
                 payment_status, 
                 apartment_id, 
-                bill_id, 
+                billtype, 
+                floor_id,
+                house_id,
                 month, 
                 year 
             } = req.query;
@@ -16,11 +18,15 @@ const billPaymentsController = {
             const filters = {};
             if (payment_status) filters.payment_status = payment_status;
             if (apartment_id) filters.apartment_id = apartment_id;
-            if (bill_id) filters.bill_id = bill_id;
+            if (billtype) filters.billtype = billtype; // Changed from bill_id
+            if (floor_id) filters.floor_id = floor_id; // Added
+            if (house_id) filters.house_id = house_id; // Added
             if (month) filters.month = month;
             if (year) filters.year = year;
 
-            const payments = await BillPayments.findAllByCompany(company_id, filters);
+            console.log('Filters received:', filters); // Debug log
+
+            const payments = await BillPayment.findAllByCompany(company_id, filters);
             
             res.json({
                 success: true,
@@ -38,7 +44,7 @@ const billPaymentsController = {
     async getPaymentById(req, res) {
         try {
             const { id } = req.params;
-            const payment = await BillPayments.findById(id);
+            const payment = await BillPayment.findById(id);
 
             if (!payment) {
                 return res.status(404).json({
@@ -63,7 +69,7 @@ const billPaymentsController = {
     async getPaymentSummary(req, res) {
         try {
             const company_id = req.user.company_id;
-            const summary = await BillPayments.getPaymentSummary(company_id);
+            const summary = await BillPayment.getPaymentSummary(company_id);
             
             res.json({
                 success: true,
@@ -84,7 +90,7 @@ const billPaymentsController = {
             const { year } = req.query;
             const currentYear = year || new Date().getFullYear();
             
-            const summary = await BillPayments.getMonthlySummary(company_id, currentYear);
+            const summary = await BillPayment.getMonthlySummary(company_id, currentYear);
             
             res.json({
                 success: true,
@@ -119,7 +125,7 @@ const billPaymentsController = {
                 });
             }
 
-            const updatedPayment = await BillPayments.updatePaymentStatus(id, payment_status, paidAmount);
+            const updatedPayment = await BillPayment.updatePaymentStatus(id, payment_status, paidAmount);
             
             res.json({
                 success: true,
@@ -134,6 +140,5 @@ const billPaymentsController = {
             });
         }
     }
-};
-
-module.exports = billPaymentsController;
+}
+module.exports=billPaymentController;

@@ -127,6 +127,6 @@ app.use('/api/shared-value-prices',sharedValuePriceRoutes);
 const generateBillRoutes = require('./routes/generateBills');
 app.use('/api/generate-bills',generateBillRoutes);
 
-// app.js or your main routes file
-// const billPaymentsRoutes = require('./routes/billPayments')
-// app.use('/api/bill-payments', billPaymentsRoutes);
+//Routes for bill Payments
+const billPaymentRoutes = require('./routes/billPayments');
+app.use('/api/bill-payments',billPaymentRoutes);

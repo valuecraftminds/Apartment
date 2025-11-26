@@ -55,14 +55,6 @@ const RoleAssignmentModal = ({ role, onClose, onAssign }) => {
       category: 'Management',
       icon: 'Users'
     },
-    // { 
-    //   id: 'property_management', 
-    //   name: 'Property Management', 
-    //   description: 'Manage properties and units',
-    //   category: 'Management',
-    //   icon: 'Building'
-    // },
-
     // Financial Components
     { 
       id: 'expenses_management', 
@@ -71,62 +63,6 @@ const RoleAssignmentModal = ({ role, onClose, onAssign }) => {
       category: 'Financial',
       icon: 'DollarSign'
     },
-    // { 
-    //   id: 'financial_management', 
-    //   name: 'Financial Management', 
-    //   description: 'Comprehensive financial tools',
-    //   category: 'Financial',
-    //   icon: 'CreditCard'
-    // },
-    // { 
-    //   id: 'my_expenses', 
-    //   name: 'Personal Expenses', 
-    //   description: 'View personal bills and payments',
-    //   category: 'Financial',
-    //   icon: 'FileText'
-    // },
-
-    // Maintenance Components
-    // { 
-    //   id: 'maintenance_management', 
-    //   name: 'Maintenance Management', 
-    //   description: 'Manage maintenance requests',
-    //   category: 'Maintenance',
-    //   icon: 'Wrench'
-    // },
-    // { 
-    //   id: 'maintenance_tasks', 
-    //   name: 'Maintenance Tasks', 
-    //   description: 'View and manage maintenance tasks',
-    //   category: 'Maintenance',
-    //   icon: 'Tool'
-    // },
-    // { 
-    //   id: 'work_orders', 
-    //   name: 'Work Orders', 
-    //   description: 'Create and track work orders',
-    //   category: 'Maintenance',
-    //   icon: 'ClipboardList'
-    // },
-
-    // Reports & Analytics
-    // { 
-    //   id: 'reports_analytics', 
-    //   name: 'Reports & Analytics', 
-    //   description: 'View reports and analytics',
-    //   category: 'Analytics',
-    //   icon: 'BarChart3'
-    // },
-
-    // // Inventory
-    // { 
-    //   id: 'inventory_management', 
-    //   name: 'Inventory Management', 
-    //   description: 'Manage inventory and supplies',
-    //   category: 'Inventory',
-    //   icon: 'Package'
-    // },
-
     // Personal
     { 
       id: 'my_apartments', 
@@ -134,6 +70,13 @@ const RoleAssignmentModal = ({ role, onClose, onAssign }) => {
       description: 'View personal apartments',
       category: 'Personal',
       icon: 'Home'
+    },
+   {
+      id: 'bill_management',
+      name: 'Measurable Bills',
+      description: 'Manage measurable bills',
+      category: 'Financial',
+      icon: 'CreditCard',
     }
   ];
 

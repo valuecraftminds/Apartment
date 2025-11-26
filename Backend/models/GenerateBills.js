@@ -1,92 +1,4 @@
 // models/GenerateBills.js
-// const pool = require('../db');
-
-// class GenerateBills{
-//     static async create(generateBillData){
-//         const {company_id, bill_id, year, month, totalAmount, assignedHouses, unitPrice, apartment_id, floor_id, house_id} = generateBillData;
-       
-//         const [result] = await pool.execute(
-//             'INSERT INTO generate_bills (company_id, bill_id, year, month, totalAmount, assignedHouses, unitPrice, apartment_id, floor_id, house_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-//             [company_id, bill_id, year, month, totalAmount, assignedHouses, unitPrice, apartment_id, floor_id, house_id]
-//         );
-        
-//         return { 
-//             id: result.insertId, 
-//             company_id, 
-//             bill_id, 
-//             year, 
-//             month,
-//             totalAmount,
-//             assignedHouses,
-//             unitPrice,
-//             apartment_id,
-//             floor_id,
-//             house_id
-//         };        
-//     }
-
-//     static async findById(id) {
-//         const [rows] = await pool.execute(
-//             'SELECT * FROM generate_bills WHERE id = ?',
-//             [id]
-//         );
-//         return rows[0];
-//     }
-
-//     static async findByCompanyId(company_id){
-//         const [rows] = await pool.execute(
-//             'SELECT gb.*, b.bill_name, b.billtype FROM generate_bills gb LEFT JOIN bills b ON gb.bill_id = b.id WHERE gb.company_id = ? ORDER BY gb.created_at DESC',
-//             [company_id]
-//         );
-//         return rows;
-//     }
-
-//     static async findByBillId(bill_id) {
-//         const [rows] = await pool.execute(
-//             'SELECT * FROM generate_bills WHERE bill_id = ? ORDER BY created_at DESC',
-//             [bill_id]
-//         );
-//         return rows;
-//     }
-
-//     // Update duplicate check to include apartment_id
-//     static async checkDuplicate(company_id, bill_id, year, month, apartment_id) {
-//         const [rows] = await pool.execute(
-//             'SELECT * FROM generate_bills WHERE company_id = ? AND bill_id = ? AND year = ? AND month = ? AND apartment_id = ?',
-//             [company_id, bill_id, year, month, apartment_id]
-//         );
-//         return rows.length > 0;
-//     }
-
-//     static async update(id, generateBillData) {
-//         const { year, month, totalAmount, unitPrice } = generateBillData;
-//         await pool.execute(
-//             'UPDATE generate_bills SET year=?, month=?, totalAmount=?, unitPrice=? WHERE id = ?',
-//             [year, month, totalAmount, unitPrice, id]
-//         );
-//         return { id, ...generateBillData };
-//     }
-
-//     static async delete(id) {
-//         await pool.execute(
-//             'DELETE FROM generate_bills WHERE id = ?',
-//             [id]
-//         );
-//         return true;
-//     }
-
-//     // NEW: Get assigned houses count by bill and apartment
-//     static async getAssignedHousesCountByApartment(bill_id, apartment_id) {
-//         const [rows] = await pool.execute(
-//             'SELECT COUNT(*) as count FROM bill_assignments WHERE bill_id = ? AND apartment_id = ?',
-//             [bill_id, apartment_id]
-//         );
-//         return rows[0].count;
-//     }
-// }
-// module.exports = GenerateBills;
-
-// models/GenerateBills.js
 const pool = require('../db');
 
 class GenerateBills{
@@ -142,6 +54,23 @@ class GenerateBills{
             id: result.insertId + index,
             ...bill
         }));
+    }
+
+    //store bill payments
+    static async createBillPayment(billPaymentData) {
+        const {
+            id, company_id, apartment_id, floor_id, house_id, bill_id, 
+            generate_bills_id, pendingAmount, due_date
+        } = billPaymentData;
+        
+        const [result] = await pool.execute(
+            `INSERT INTO bill_payments 
+            (id, company_id, apartment_id, floor_id, house_id, bill_id, generate_bills_id, pendingAmount, due_date, payment_status, paidAmount, created_at, updated_at) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', 0.00, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+            [id, company_id, apartment_id, floor_id, house_id, bill_id, generate_bills_id, pendingAmount, due_date]
+        );
+        
+        return result.insertId;
     }
 
     static async findById(id) {

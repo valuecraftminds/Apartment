@@ -4,8 +4,8 @@ const GenerateBills = require('../models/GenerateBills');
 const generateBillController = {
     async generateBill(req, res){
         try{
-            const { bill_id, year, month, totalAmount, assignedHouses, unitPrice, apartment_id, floor_id, house_id } = req.body;
-            const company_id = req.user.company_id;
+           const { bill_id, year, month, totalAmount, assignedHouses, unitPrice, apartment_id, floor_id, house_id, due_date } = req.body;
+           const company_id = req.user.company_id;
 
             // Validation
             if (!bill_id || !month || year === undefined || !totalAmount || !apartment_id) {
@@ -24,7 +24,20 @@ const generateBillController = {
                 });
             }
 
-            const newGeneratedBill = await GenerateBills.create({
+            // const newGeneratedBill = await GenerateBills.create({
+            //     year: parseInt(year),
+            //     month,
+            //     company_id,
+            //     bill_id,
+            //     totalAmount: parseFloat(totalAmount),
+            //     assignedHouses: assignedHouses || 0,
+            //     unitPrice: parseFloat(unitPrice),
+            //     apartment_id,
+            //     floor_id: floor_id || null,
+            //     house_id: house_id || null
+            // });
+
+             const newGeneratedBill = await GenerateBills.create({
                 year: parseInt(year),
                 month,
                 company_id,
@@ -35,6 +48,20 @@ const generateBillController = {
                 apartment_id,
                 floor_id: floor_id || null,
                 house_id: house_id || null
+            });
+
+             //Create bill payment record
+            const billPaymentId = `billpay_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            await GenerateBills.createBillPayment({
+                id: billPaymentId,
+                company_id,
+                apartment_id,
+                floor_id: floor_id || null,
+                house_id: house_id || null,
+                bill_id,
+                generate_bills_id: newGeneratedBill.id,
+                pendingAmount: parseFloat(unitPrice), 
+                due_date: due_date || null 
             });
 
             res.status(201).json({
@@ -124,6 +151,22 @@ const generateBillController = {
 
             // Create bills
             const generatedBills = await GenerateBills.createMultiple(billsToCreate);
+
+              // Create bill payment records for each generated bill
+            for (const bill of generatedBills) {
+                const billPaymentId = `billpay_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                await GenerateBills.createBillPayment({
+                    id: billPaymentId,
+                    company_id,
+                    apartment_id: bill.apartment_id,
+                    floor_id: bill.floor_id || null,
+                    house_id: bill.house_id || null,
+                    bill_id: bill.bill_id,
+                    generate_bills_id: bill.id,
+                    pendingAmount: bill.unitPrice, 
+                    due_date: req.body.due_date || null
+                });
+            }
 
             res.status(201).json({
                 success: true,

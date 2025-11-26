@@ -1,16 +1,16 @@
 // routes/billPayments.js
 const express = require('express');
 const router = express.Router();
-const billPaymentsController = require('../controllers/billPaymentsController');
+const billPaymentController = require('../controllers/billPaymentController');
 const { authenticateToken } = require('../middleware/auth');
 
 router.use(authenticateToken);
 
-// Routes
-router.get('/', billPaymentsController.getAllPayments);
-router.get('/summary', billPaymentsController.getPaymentSummary);
-router.get('/monthly-summary', billPaymentsController.getMonthlySummary);
-router.get('/:id', billPaymentsController.getPaymentById);
-router.patch('/:id/status', billPaymentsController.updatePaymentStatus);
+//Routes
+router.get('/', billPaymentController.getAllPayments);
+router.get('/summary', billPaymentController.getPaymentSummary);
+router.get('/monthly-summary', billPaymentController.getMonthlySummary);
+router.get('/:id', billPaymentController.getPaymentById);
+router.patch('/:id/status', billPaymentController.updatePaymentStatus);
 
 module.exports = router;
