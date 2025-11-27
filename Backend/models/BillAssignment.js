@@ -138,6 +138,55 @@ class BillAssignment {
         return rows;
     }
 
+    // Add this method to your BillAssignment model
+    static async findActiveByHouseAndApartment(house_id, apartment_id) {
+        const query = `
+            SELECT ba.*, b.name as bill_name, b.amount, b.due_date, b.frequency 
+            FROM bill_assignments ba 
+            LEFT JOIN bills b ON ba.bill_id = b.id 
+            WHERE ba.house_id = ? AND ba.apartment_id = ? AND ba.is_active = 1
+        `;
+        
+        const [rows] = await pool.execute(query, [house_id, apartment_id]);
+        return rows;
+    }
+
+    // Add method to get assignments with bill details
+    static async findWithBillDetails(filters = {}) {
+        let query = `
+            SELECT 
+                ba.*,
+                b.name as bill_name, 
+                b.amount, 
+                b.due_date, 
+                b.frequency,
+                b.description as bill_description
+            FROM bill_assignments ba 
+            LEFT JOIN bills b ON ba.bill_id = b.id 
+            WHERE 1=1
+        `;
+        
+        const params = [];
+        
+        if (filters.house_id) {
+            query += ' AND ba.house_id = ?';
+            params.push(filters.house_id);
+        }
+        
+        if (filters.apartment_id) {
+            query += ' AND ba.apartment_id = ?';
+            params.push(filters.apartment_id);
+        }
+        
+        if (filters.is_active !== undefined) {
+            query += ' AND ba.is_active = ?';
+            params.push(filters.is_active);
+        }
+        
+        const [rows] = await pool.execute(query, params);
+        return rows;
+    }
+
     // Deactivate assignment (soft delete)
     static async deactivate(id) {
         await pool.execute(

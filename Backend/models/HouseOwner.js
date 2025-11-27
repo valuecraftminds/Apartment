@@ -44,12 +44,41 @@ class HouseOwner {
   //   }
 
     static async findByApartment(apartment_id) {
-    const [rows] = await pool.execute(
-        'SELECT * FROM houseowner WHERE apartment_id=?',
-        [apartment_id]
-    );
-    return rows;
-}
+      const [rows] = await pool.execute(
+          'SELECT * FROM houseowner WHERE apartment_id=?',
+          [apartment_id]
+      );
+      return rows;
+  }
+
+ 
+  // FIXED: Get house owner by house ID (using houseowner_id from houses table)
+  static async findByHouseId(house_id) {
+    const query = `
+      SELECT ho.* 
+      FROM houseowner ho
+      INNER JOIN houses h ON ho.id = h.houseowner_id
+      WHERE h.id = ?
+      LIMIT 1
+    `;
+    
+    const [rows] = await pool.execute(query, [house_id]);
+    return rows[0] || null;
+  }
+
+  // FIXED: Get house owner by house ID and apartment ID
+  static async findByHouseAndApartment(house_id, apartment_id) {
+    const query = `
+      SELECT ho.* 
+      FROM houseowner ho
+      INNER JOIN houses h ON ho.id = h.houseowner_id
+      WHERE h.id = ? AND h.apartment_id = ?
+      LIMIT 1
+    `;
+    
+    const [rows] = await pool.execute(query, [house_id, apartment_id]);
+    return rows[0] || null;
+  }
 
   // Update owner
   static async updateHouseOwner(id, houseOwnerData) {

@@ -46,6 +46,19 @@ class House{
         return rows; 
     }
 
+    // In your House model, add this method
+    static async findByIdWithDetails(id) {
+        const query = `
+            SELECT h.*, ht.name as house_type_name, ht.sqrfeet, ht.rooms, ht.bathrooms
+            FROM houses h
+            LEFT JOIN housetype ht ON h.housetype_id = ht.id
+            WHERE h.id = ?
+        `;
+        
+        const [rows] = await pool.execute(query, [id]);
+        return rows[0] || null;
+    }
+
     static async update(id, houseData) {
         const { house_id,houseowner_id,housetype_id,family_id,status } = houseData;
         await pool.execute(

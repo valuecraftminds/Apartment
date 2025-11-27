@@ -168,6 +168,74 @@ const billAssignmentController = {
         }
     },
 
+    // Get active bill assignments for a specific house
+async getActiveBillAssignmentsByHouse(req, res) {
+    try {
+        const { house_id, apartment_id } = req.query;
+
+        if (!house_id || !apartment_id) {
+            return res.status(400).json({
+                success: false,
+                message: 'House ID and Apartment ID are required'
+            });
+        }
+
+        // You need to implement this method in your BillAssignment model
+        const assignments = await BillAssignment.findActiveByHouseAndApartment(house_id, apartment_id);
+
+        res.json({
+            success: true,
+            data: assignments
+        });
+
+    } catch (err) {
+        console.error('Get active bill assignments error:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching bill assignments'
+        });
+    }
+},
+
+    // Get bill assignments with bill details for a house
+    async getHouseBillDetails(req, res) {
+        try {
+            const { house_id, apartment_id } = req.query;
+
+            if (!house_id || !apartment_id) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'House ID and Apartment ID are required'
+                });
+            }
+
+            // Query to get bill assignments with bill details
+            const query = `
+                SELECT 
+                    ba.*,
+                    b.bill_name, 
+                    b.billtype
+                FROM bill_assignments ba 
+                LEFT JOIN bills b ON ba.bill_id = b.id 
+                WHERE ba.house_id = ? AND ba.apartment_id = ? AND ba.is_active = 1
+            `;
+            
+            const [rows] = await pool.execute(query, [house_id, apartment_id]);
+            
+            res.json({
+                success: true,
+                data: rows
+            });
+
+        } catch (err) {
+            console.error('Get house bill details error:', err);
+            res.status(500).json({
+                success: false,
+                message: 'Server error while fetching house bill details'
+            });
+        }
+    },
+
     // Deactivate assignment
     async deactivateAssignment(req, res) {
         try {
