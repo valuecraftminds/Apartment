@@ -1,3 +1,4 @@
+//QRCodeGenerator.jsx
 import React, { useEffect, useState } from 'react'
 import { Loader, QrCode } from 'lucide-react'
 import api from '../api/axios'
@@ -8,9 +9,29 @@ export default function QRCodeGenerator({ houses, apartment, floor, onClose }) {
     const [loading, setLoading] = useState(false)
     const [generatingPDF, setGeneratingPDF] = useState(false)
     const [assignedBills, setAssignedBills] = useState({})
+    const [assignedBillsWithTypes, setAssignedBillsWithTypes] = useState({})
     const [qrCodeImages, setQrCodeImages] = useState({})
     const [housetypes, setHousetypes] = useState([])
     const [houseOwners, setHouseOwners] = useState({})
+    const [allBills, setAllBills] = useState([])
+
+    // -----------------------------
+    // Load All Bills
+    // -----------------------------
+    const loadAllBills = async () => {
+        try {
+            const result = await api.get('/bills')
+            if (result.data.success && Array.isArray(result.data.data)) {
+                setAllBills(result.data.data)
+                return result.data.data
+            }
+            return []
+        } catch (err) {
+            console.error('Error loading bills:', err)
+            toast.error('Failed to load bills')
+            return []
+        }
+    }
 
     // -----------------------------
     // Load House Types
@@ -68,49 +89,50 @@ export default function QRCodeGenerator({ houses, apartment, floor, onClose }) {
     }
 
     // -----------------------------
-    // Load Bills
+    // Load Bills with Types
     // -----------------------------
-    const loadAssignedBillsForHouse = async (houseId) => {
+    const loadAssignedBillsForHouse = async (houseId, billsList) => {
         try {
             const res = await api.get(
                 `/bill-assignments/house-details?house_id=${houseId}&apartment_id=${apartment.id}`
             )
+            
             if (res.data.success && Array.isArray(res.data.data)) {
-                return res.data.data
+                // Get bill names only (for backward compatibility)
+                const billNames = res.data.data
                     .filter(b => b.bill_name?.trim())
                     .map(b => b.bill_name)
+
+                // Get bills with types by matching with allBills
+                const billsWithTypes = res.data.data
+                    .filter(b => b.bill_name?.trim())
+                    .map(billAssignment => {
+                        // Find the corresponding bill from allBills to get the type
+                        const billDetails = billsList.find(bill => 
+                            bill.id === billAssignment.bill_id || 
+                            bill.bill_name === billAssignment.bill_name
+                        )
+                        
+                        return {
+                            name: billAssignment.bill_name,
+                            type: billDetails?.billtype || 'Unknown',
+                            is_meiered: billDetails?.is_meiered || false,
+                            id: billAssignment.bill_id
+                        }
+                    })
+
+                return {
+                    billNames,
+                    billsWithTypes
+                }
             }
-            return []
+            return { billNames: [], billsWithTypes: [] }
         } catch (err) {
-            console.error(`Error loading bills for house ${houseId}`)
-            return []
+            console.error(`Error loading bills for house ${houseId}`, err)
+            return { billNames: [], billsWithTypes: [] }
         }
     }
 
-    // -----------------------------
-    // Helper → Split text for PDF
-    // -----------------------------
-    const splitTextIntoLines = (text, maxWidth, pdf) => {
-        if (!text) return ['']
-        const words = text.split(' ')
-        const lines = []
-        let current = words[0]
-
-        for (let i = 1; i < words.length; i++) {
-            if (pdf.getTextWidth(current + ' ' + words[i]) < maxWidth) {
-                current += ' ' + words[i]
-            } else {
-                lines.push(current)
-                current = words[i]
-            }
-        }
-        lines.push(current)
-
-        return lines
-    }
-
-    const splitText = (text, max) =>
-        text?.length > max ? text.substring(0, max - 3) + '...' : text
     // -----------------------------
     useEffect(() => {
         const run = async () => {
@@ -119,56 +141,80 @@ export default function QRCodeGenerator({ houses, apartment, floor, onClose }) {
             setLoading(true)
 
             try {
-                // Load Types
-                const typeList = await loadHouseTypes()
+                // Load All Bills and Types first
+                const [billsList, typeList] = await Promise.all([
+                    loadAllBills(),
+                    loadHouseTypes()
+                ])
 
                 // Load Owners
                 const owners = await loadAllHouseOwners(houses)
 
                 const billsMap = {}
+                const billsWithTypesMap = {}
                 const qrMap = {}
                 const ownersMap = {}
 
                 for (const house of houses) {
-
-                    const [owner,bills] = await Promise.all([
+                    const [owner, billsData] = await Promise.all([
                         loadHouseOwner(house.id),
-                        loadAssignedBillsForHouse(house.id)
+                        loadAssignedBillsForHouse(house.id, billsList)
                     ])
                       
                     ownersMap[house.id] = owner
-                    billsMap[house.id] = bills
+                    billsMap[house.id] = billsData.billNames
+                    billsWithTypesMap[house.id] = billsData.billsWithTypes
 
                     const type = typeList.find(t => t.id === house.housetype_id)
 
-                    // Full QR payload
+                    // SIMPLIFIED QR DATA - Optimized for scanning
                     const qrData = {
-                        house_id: house.house_id,
-                        apartment: apartment.name,
-                        floor: floor.floor_id,
-                        status: house.status,
-                        house_type: type?.name || "N/A",
-                        owner_name: owner?.name || "No Owner Assigned",
-                        owner_nic: owner?.NIC || "N/A",
-                        assigned_bills: bills.length ? bills.join(', ') : 'No bills assigned',
-                        assigned_bills_type: bills?.billtype || "N/A",
-                        square_feet: type?.sqrfeet || "N/A",
-                        rooms: type?.rooms || "N/A",
-                        bathrooms: type?.bathrooms || "N/A",
+                        // Essential identifiers
+                        h_id: house.house_id, // Shortened key names
+                        apt: apartment.name, // Shortened
+                        fl: floor.floor_id, // Shortened
+                        apt_id: apartment.id,
+                        house_db_id: house.id,
+                        
+                        // Basic house info
+                        st: house.status, // status
+                        ht: type?.name || "N/A", // house_type
 
-                        // IDs for fresh API fetch on scan
-                        scan_type: "house_details",
-                        // house_db_id: h.id,
-                        // apartment_db_id: apartment.id,
-                        generated_at: new Date().toISOString()
+                          // House details (ADD THESE)
+                        sqf: type?.sqrfeet || "N/A", // square feet
+                        rms: type?.rooms || "N/A", // rooms
+                        bth: type?.bathrooms || "N/A", // bathrooms
+    
+                        
+                        // Owner info (shortened)
+                        own: owner?.name || "No Owner", // owner_name
+                        nic: owner?.NIC || "N/A", // owner_nic
+                        
+                        // Bills info - simplified structure
+                        bills: billsData.billsWithTypes.map(bill => ({
+                            n: bill.name, // name
+                            t: bill.type, // type
+                            m: bill.is_meiered // is_meiered
+                        })),
+                        
+                        // Scan metadata
+                        scan: "house", // scan_type
+                        ts: Date.now() // timestamp instead of ISO string
                     }
 
-                    // Generate QR
+                    // Generate QR with optimized settings
                     try {
-                        qrMap[house.id] = await QRCode.toDataURL(JSON.stringify(qrData), {
-                            width: 300,
-                            margin: 2,
-                            errorCorrectionLevel: "M",
+                        const qrString = JSON.stringify(qrData)
+                        console.log(`QR Data length for ${house.house_id}:`, qrString.length)
+                        
+                        qrMap[house.id] = await QRCode.toDataURL(qrString, {
+                            width: 400, // Increased size for better scanning
+                            margin: 4, // Increased margin
+                            errorCorrectionLevel: "H", // Highest error correction
+                            color: {
+                                dark: "#000000", // Pure black
+                                light: "#FFFFFF" // Pure white
+                            }
                         })
                     } catch (err) {
                         console.error("QR Gen Error:", err)
@@ -177,6 +223,7 @@ export default function QRCodeGenerator({ houses, apartment, floor, onClose }) {
                 }
 
                 setAssignedBills(billsMap)
+                setAssignedBillsWithTypes(billsWithTypesMap)
                 setQrCodeImages(qrMap)
 
             } catch (error) {
@@ -203,7 +250,7 @@ export default function QRCodeGenerator({ houses, apartment, floor, onClose }) {
             const cardW = 85
             const cardH = 70
             const margin = 12
-            const qrSize = 35
+            const qrSize = 40 // Increased QR size in PDF
             const pageW = pdf.internal.pageSize.getWidth()
             const pageH = pdf.internal.pageSize.getHeight()
             let yOffset = margin
@@ -240,13 +287,31 @@ export default function QRCodeGenerator({ houses, apartment, floor, onClose }) {
                 pdf.setFontSize(11)
                 pdf.text(h.house_id, x + cardW / 2, yOffset + 16, { align: 'center' })
 
-                // QR
+                // QR - Increased size and quality
                 if (qrCodeImages[h.id]) {
-                    pdf.addImage(qrCodeImages[h.id], "PNG", x + (cardW - qrSize) / 2, yOffset + 30, qrSize, qrSize)
+                    pdf.addImage(
+                        qrCodeImages[h.id], 
+                        "PNG", 
+                        x + (cardW - qrSize) / 2, 
+                        yOffset + 20, // Adjusted position
+                        qrSize, 
+                        qrSize
+                    )
                 }
 
-                // Bills
-                pdf.setFontSize(5)
+                // Bills info
+                const bills = assignedBillsWithTypes[h.id] || []
+                if (bills.length > 0) {
+                    pdf.setFontSize(4)
+                    pdf.setTextColor(100, 100, 100)
+                    let billY = yOffset + cardH - 5
+                    bills.slice(0, 2).forEach((bill, index) => {
+                        pdf.text(`${bill.name}: ${bill.type}`, x + 2, billY - (index * 2))
+                    })
+                    if (bills.length > 2) {
+                        pdf.text(`+${bills.length - 2} more...`, x + 2, yOffset + cardH - 2)
+                    }
+                }
             }
 
             pdf.save(
@@ -267,6 +332,7 @@ export default function QRCodeGenerator({ houses, apartment, floor, onClose }) {
     // ==========================================================
     const QRCodePreview = ({ house }) => {
         const bills = assignedBills[house.id] || []
+        const billsWithTypes = assignedBillsWithTypes[house.id] || []
         const qrImg = qrCodeImages[house.id]
         const type = housetypes.find(t => t.id === house.housetype_id)
         const owner = houseOwners[house.id]
@@ -297,28 +363,65 @@ export default function QRCodeGenerator({ houses, apartment, floor, onClose }) {
                     </div>
 
                     {qrImg ? (
-                        <img
-                            src={qrImg}
-                            className="mx-auto mb-2 rounded border"
-                            style={{ width: "100px", height: "100px" }}
-                        />
+                        <div className="flex flex-col items-center">
+                            <img
+                                src={qrImg}
+                                className="mx-auto mb-2 rounded border-2 border-gray-300"
+                                style={{ width: "150px", height: "150px" }} // Larger preview
+                                alt={`QR Code for ${house.house_id}`}
+                            />
+                            <div className="text-xs text-gray-500 mt-1">
+                                Scan this QR code
+                            </div>
+                        </div>
                     ) : (
-                        <div className="w-24 h-24 bg-gray-200 rounded flex items-center justify-center">
-                            <Loader size={20} className="animate-spin" />
+                        <div className="w-32 h-32 bg-gray-200 rounded flex items-center justify-center">
+                            <Loader size={24} className="animate-spin" />
                         </div>
                     )}
 
                     <div className="text-xs text-gray-600 dark:text-gray-300 mt-2">
                         <div className="font-semibold">Assigned Bills:</div>
                         <div className="mt-1 max-h-16 overflow-y-auto text-left">
-                            {bills.length
-                                ? bills.map((b, i) => <div key={i}>• {b}</div>)
-                                : "No bills assigned"}
+                            {billsWithTypes.length ? (
+                                billsWithTypes.map((bill, i) => (
+                                    <div key={i} className="flex justify-between items-start">
+                                        <span>• {bill.name}</span>
+                                        <span className="text-xs bg-blue-100 dark:bg-blue-800 px-1 rounded ml-1">
+                                            {bill.type}
+                                        </span>
+                                    </div>
+                                ))
+                            ) : (
+                                "No bills assigned"
+                            )}
                         </div>
                     </div>
                 </div>
             </div>
         )
+    }
+
+    // Test QR Code Scanning
+    const testQRCode = (houseId) => {
+        const qrImg = qrCodeImages[houseId]
+        if (qrImg) {
+            // Open QR code in new tab for testing
+            const newWindow = window.open()
+            newWindow.document.write(`
+                <html>
+                    <head><title>Test QR Code</title></head>
+                    <body style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column;">
+                        <h2>Test QR Code Scanning</h2>
+                        <img src="${qrImg}" style="width: 300px; height: 300px; border: 2px solid #000;" />
+                        <p>Try scanning this QR code with your phone</p>
+                        <button onclick="window.close()" style="margin-top: 20px; padding: 10px 20px; background: #6b46c1; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                            Close
+                        </button>
+                    </body>
+                </html>
+            `)
+        }
     }
 
     // ==========================================================
@@ -342,9 +445,17 @@ export default function QRCodeGenerator({ houses, apartment, floor, onClose }) {
                         Preview for {houses.length} selected house{houses.length !== 1 ? "s" : ""}
                     </p>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto p-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 max-h-96 overflow-y-auto p-2">
                         {houses.map(h => (
-                            <QRCodePreview key={h.id} house={h} />
+                            <div key={h.id} className="relative">
+                                <QRCodePreview house={h} />
+                                <button
+                                    onClick={() => testQRCode(h.id)}
+                                    className="absolute top-2 right-2 bg-blue-500 text-white p-1 rounded text-xs"
+                                >
+                                    Test Scan
+                                </button>
+                            </div>
                         ))}
                     </div>
                 </div>
@@ -352,7 +463,7 @@ export default function QRCodeGenerator({ houses, apartment, floor, onClose }) {
                 {/* Footer */}
                 <div className="flex justify-between items-center pt-4 border-t">
                     <div className="text-sm text-gray-500 dark:text-gray-300">
-                        The QR codes contain house, owner & bill information.
+                        The QR codes contain house, owner & bill information with bill types.
                     </div>
 
                     <div className="flex gap-3">
