@@ -63,7 +63,7 @@ export default function EmployeeDashboard() {
       {/* Main Content Area - Dynamic margin based on sidebar state */}
       <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${
         isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      }`}>
+        }`}>
         {/* Navbar */}
         <Navbar />
         
