@@ -532,6 +532,7 @@ export default function MeasurableBills() {
             // Use the IDs from QR code to fetch fresh data
             const houseDbId = qrData.house_db_id
             const apartmentId = qrData.apt_id || qrData.apartment_db_id
+            const billId= qrData.bill_db_id
 
             if (!houseDbId || !apartmentId) {
                 toast.error('Missing house or apartment ID in QR code')

@@ -91,35 +91,50 @@ export default function QRCodeGenerator({ houses, apartment, floor, onClose }) {
     // -----------------------------
     // Load Bills with Types
     // -----------------------------
+    // FIXED: Load Bills with Types AND actual bill_id
     const loadAssignedBillsForHouse = async (houseId, billsList) => {
         try {
             const res = await api.get(
                 `/bill-assignments/house-details?house_id=${houseId}&apartment_id=${apartment.id}`
             )
             
+            console.log(`DEBUG: API Response for house ${houseId}:`, res.data.data); // ADD THIS
+            
             if (res.data.success && Array.isArray(res.data.data)) {
+                // Debug: Check what fields are available
+                if (res.data.data.length > 0) {
+                    console.log('DEBUG: First assignment keys:', Object.keys(res.data.data[0]));
+                    console.log('DEBUG: First assignment:', res.data.data[0]);
+                }
+
                 // Get bill names only (for backward compatibility)
                 const billNames = res.data.data
                     .filter(b => b.bill_name?.trim())
                     .map(b => b.bill_name)
 
-                // Get bills with types by matching with allBills
+                // Get bills with types AND IDs
                 const billsWithTypes = res.data.data
                     .filter(b => b.bill_name?.trim())
                     .map(billAssignment => {
-                        // Find the corresponding bill from allBills to get the type
+                        console.log('DEBUG: Processing assignment:', billAssignment); // ADD THIS
+                        
+                        // Find the corresponding bill from allBills to get ALL details
                         const billDetails = billsList.find(bill => 
-                            bill.id === billAssignment.bill_id || 
-                            bill.bill_name === billAssignment.bill_name
+                            bill.id === billAssignment.bill_id ||  // Try matching by ID
+                            bill.bill_name === billAssignment.bill_name // Or by name
                         )
+                        
+                        console.log('DEBUG: Found bill details:', billDetails); // ADD THIS
                         
                         return {
                             name: billAssignment.bill_name,
                             type: billDetails?.billtype || 'Unknown',
                             is_meiered: billDetails?.is_meiered || false,
-                            id: billAssignment.bill_id
+                            id: billAssignment.bill_id || billDetails?.id // Use assignment's bill_id first
                         }
                     })
+
+                console.log('DEBUG: Final billsWithTypes:', billsWithTypes); // ADD THIS
 
                 return {
                     billNames,
@@ -132,7 +147,6 @@ export default function QRCodeGenerator({ houses, apartment, floor, onClose }) {
             return { billNames: [], billsWithTypes: [] }
         }
     }
-
     // -----------------------------
     useEffect(() => {
         const run = async () => {
@@ -192,9 +206,10 @@ export default function QRCodeGenerator({ houses, apartment, floor, onClose }) {
                         
                         // Bills info - simplified structure
                         bills: billsData.billsWithTypes.map(bill => ({
-                            n: bill.name, // name
-                            t: bill.type, // type
-                            m: bill.is_meiered // is_meiered
+                             n: bill.name,      // name
+                             t: bill.type,      // type
+                             m: bill.is_meiered, // is_meiered
+                             id: bill.id
                         })),
                         
                         // Scan metadata
