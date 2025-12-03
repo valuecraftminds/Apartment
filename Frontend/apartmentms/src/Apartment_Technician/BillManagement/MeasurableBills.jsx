@@ -525,6 +525,55 @@ export default function MeasurableBills() {
     }
 
     // Fetch measurable bills - UPDATED for new structure
+    // const fetchMeasurableBills = async (qrData) => {
+    //     try {
+    //         setLoading(true)
+
+    //         // Use the IDs from QR code to fetch fresh data
+    //         const houseDbId = qrData.house_db_id
+    //         const apartmentId = qrData.apt_id || qrData.apartment_db_id
+    //         const billId= qrData.bill_db_id
+
+    //         if (!houseDbId || !apartmentId) {
+    //             toast.error('Missing house or apartment ID in QR code')
+    //             return
+    //         }
+
+    //         const billsRes = await api.get(
+    //             `/bill-assignments/house-details?house_id=${houseDbId}&apartment_id=${apartmentId}`
+    //         )
+
+    //         // Filter measurable bills
+    //         if (billsRes.data.success && Array.isArray(billsRes.data.data)) {
+    //             const measurable = billsRes.data.data.filter(bill => 
+    //                 bill.billtype === 'Measurable' && bill.bill_name?.trim()
+    //             )
+    //             setMeasurableBills(measurable)
+                
+    //             if (measurable.length === 0) {
+    //                 toast.info('No measurable bills found for this house')
+    //             } else {
+    //                 toast.success(`Found ${measurable.length} measurable bill(s)`)
+    //             }
+    //         } else {
+    //             setMeasurableBills([])
+    //             toast.info('No bills assigned to this house')
+    //         }
+
+    //     } catch (error) {
+    //         console.error('Error fetching bill details:', error)
+    //         if (error.response?.status === 404) {
+    //             toast.error('House not found in the system')
+    //         } else {
+    //             toast.error('Failed to load bill details')
+    //         }
+    //         setMeasurableBills([])
+    //     } finally {
+    //         setLoading(false)
+    //     }
+    // }
+
+    // In fetchMeasurableBills function:
     const fetchMeasurableBills = async (qrData) => {
         try {
             setLoading(true)
@@ -532,7 +581,6 @@ export default function MeasurableBills() {
             // Use the IDs from QR code to fetch fresh data
             const houseDbId = qrData.house_db_id
             const apartmentId = qrData.apt_id || qrData.apartment_db_id
-            const billId= qrData.bill_db_id
 
             if (!houseDbId || !apartmentId) {
                 toast.error('Missing house or apartment ID in QR code')
@@ -545,9 +593,15 @@ export default function MeasurableBills() {
 
             // Filter measurable bills
             if (billsRes.data.success && Array.isArray(billsRes.data.data)) {
-                const measurable = billsRes.data.data.filter(bill => 
-                    bill.billtype === 'Measurable' && bill.bill_name?.trim()
-                )
+                const measurable = billsRes.data.data
+                    .filter(bill => bill.billtype === 'Measurable' && bill.bill_name?.trim())
+                    .map(bill => ({
+                        ...bill,
+                        // Ensure we have the actual bill_id
+                        actual_bill_id: bill.bill_id, // This is the actual bill ID
+                        assignment_id: bill.id // This is the assignment ID
+                    }))
+                
                 setMeasurableBills(measurable)
                 
                 if (measurable.length === 0) {
@@ -632,13 +686,21 @@ export default function MeasurableBills() {
     }
 
     const handleCalculateBill = (bill) => {
-        navigate(`/calculate-measurable-bill/${bill.id}`, {
-            state: {
-                scannedData: scannedData,
-                billData: bill
-            }
-        });
-    };
+    console.log('DEBUG: Bill object passed to calculate:', bill)
+    
+    // Check if bill has both id and bill_id
+    const billId = bill.bill_id || bill.id
+    
+    navigate(`/calculate-measurable-bill/${billId}`, {
+        state: {
+            scannedData: scannedData,
+            billData: bill,
+            // Pass both IDs to be safe
+            billAssignmentId: bill.id, // This is the assignment ID
+            actualBillId: bill.bill_id || bill.id // This should be the actual bill ID
+        }
+    });
+};
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

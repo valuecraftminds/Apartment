@@ -56,35 +56,88 @@ export default function CalculateMeasurableBill() {
             const result = await api.get(`/billranges/bills/${bill_id}`);
             console.log("Bill ranges API response FULL:", result);
             
+            // Debug: Log the exact structure
+            console.log("Full response object:", result);
+            console.log("Response data:", result.data);
+            console.log("Response data type:", typeof result.data);
+            
             // Debug: Save the response
             setApiDebug(prev => ({ ...prev, rangesResponse: result.data }));
             
-            if (result.data.success && Array.isArray(result.data.data)) {
+            // Check if data exists and is an array
+            let rangesData = [];
+            
+            // FIRST: Check if result.data itself is an array
+            if (Array.isArray(result.data)) {
+                console.log("result.data is an array directly");
+                rangesData = result.data;
+            }
+            // SECOND: Check if result.data.data exists and is an array
+            else if (result.data.data && Array.isArray(result.data.data)) {
+                console.log("result.data.data is an array");
+                rangesData = result.data.data;
+            }
+            // THIRD: Check if result.data has a success property
+            else if (result.data.success && result.data.data) {
+                console.log("result.data.success is true");
+                if (Array.isArray(result.data.data)) {
+                    rangesData = result.data.data;
+                } else if (typeof result.data.data === 'object') {
+                    // Convert object to array
+                    rangesData = Object.values(result.data.data);
+                }
+            }
+            // FOURTH: Try to extract data from any other property
+            else if (typeof result.data === 'object') {
+                console.log("result.data is an object, trying to find arrays...");
+                // Look for any array property in the response
+                for (const key in result.data) {
+                    if (Array.isArray(result.data[key])) {
+                        console.log(`Found array in property: ${key}`);
+                        rangesData = result.data[key];
+                        break;
+                    }
+                }
+            }
+            
+            console.log("Extracted rangesData:", rangesData);
+            console.log("Extracted rangesData length:", rangesData.length);
+            
+            if (rangesData.length > 0) {
                 // Sort ranges by fromRange in ascending order
-                const sortedRanges = result.data.data.sort((a, b) => 
-                    parseFloat(a.fromRange) - parseFloat(b.fromRange)
+                const sortedRanges = rangesData.sort((a, b) => 
+                    parseFloat(a.fromRange || a.from_range || a.from) - 
+                    parseFloat(b.fromRange || b.from_range || b.from)
                 );
                 
                 console.log("Sorted bill ranges:", sortedRanges);
+                console.log("Sample range object:", sortedRanges[0]);
+                console.log("Range object keys:", Object.keys(sortedRanges[0]));
+                
                 setBillRanges(sortedRanges);
                 
-                // Also log the structure of first range
                 if (sortedRanges.length > 0) {
-                    console.log("First range structure:", sortedRanges[0]);
-                    console.log("First range keys:", Object.keys(sortedRanges[0]));
                     setSelectedRange(sortedRanges[0]);
+                    console.log("First range set:", sortedRanges[0]);
+                } else {
+                    console.log("No ranges in the data");
+                    toast.warning("No bill ranges found in the response data");
                 }
             } else {
+                console.log("No ranges data found");
+                console.log("Available response keys:", Object.keys(result.data || {}));
                 setBillRanges([]);
-                console.log("No bill ranges found or wrong structure:", result.data);
-                toast.warning("No bill ranges found or data structure issue");
+                toast.warning("No bill ranges data available in response");
             }
         } catch (err) {
             console.error("Error loading bill ranges:", err);
+            console.error("Error response:", err.response?.data);
             setError("Failed to load bill ranges.");
             toast.error("Failed to load bill ranges. Check console for details.");
+            setBillRanges([]);
         }
     };
+
 
     // Load bill prices for selected month/year
     const loadAllPricesForMonthYear = async () => {
@@ -682,7 +735,7 @@ export default function CalculateMeasurableBill() {
                                         </div>
 
                                         {/* Bill Ranges Display - Table Format */}
-                                        {billRanges.length > 0 ? (
+                                        {Array.isArray(billRanges) && billRanges.length > 0 ? (
                                             <div className="space-y-3">
                                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                                     Bill Ranges for {currentMonthName} {formData.year}
@@ -694,23 +747,26 @@ export default function CalculateMeasurableBill() {
                                                                 <th className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-left">Range #</th>
                                                                 <th className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-left">From (Units)</th>
                                                                 <th className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-left">To (Units)</th>
-                                                                <th className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-left">Unit Price (Rs)</th>
-                                                                <th className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-left">Fixed Amount (Rs)</th>
-                                                                <th className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-left">Status</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
                                                             {billRanges.map((range, index) => {
-                                                                const price = billPrices.find(p => 
-                                                                    (p.billrange_id && p.billrange_id.toString() === range.id.toString()) ||
-                                                                    (p.range_id && p.range_id.toString() === range.id.toString()) ||
-                                                                    (p.id && p.id.toString() === range.id.toString())
-                                                                );
-                                                                const isSelected = selectedRange?.id === range.id;
+                                                                // Try multiple possible property names
+                                                                const fromRange = range.fromRange || range.from_range || range.from || 0;
+                                                                const toRange = range.toRange || range.to_range || range.to || '∞';
+                                                                const rangeId = range.id || range._id || range.range_id;
+                                                                
+                                                                const price = billPrices.find(p => {
+                                                                    // Try multiple possible ID fields
+                                                                    const priceRangeId = p.billrange_id || p.range_id || p.id;
+                                                                    return priceRangeId && priceRangeId.toString() === rangeId.toString();
+                                                                });
+                                                                
+                                                                const isSelected = selectedRange?.id === rangeId;
                                                                 
                                                                 return (
                                                                     <tr 
-                                                                        key={range.id}
+                                                                        key={rangeId || index}
                                                                         onClick={() => handleRangeSelect(range)}
                                                                         className={`cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
                                                                             isSelected 
@@ -727,59 +783,64 @@ export default function CalculateMeasurableBill() {
                                                                             </div>
                                                                         </td>
                                                                         <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
-                                                                            {range.fromRange}
+                                                                            {fromRange}
                                                                         </td>
                                                                         <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
-                                                                            {range.toRange || '∞'}
-                                                                        </td>
-                                                                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
-                                                                            {price ? (
-                                                                                <span className="font-medium text-green-600 dark:text-green-400">
-                                                                                    Rs. {price.unitprice || price.uniprice || '0.00'}
-                                                                                </span>
-                                                                            ) : (
-                                                                                <span className="text-yellow-600 dark:text-yellow-400 italic">
-                                                                                    Not set
-                                                                                </span>
-                                                                            )}
-                                                                        </td>
-                                                                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
-                                                                            {price && price.fixedamount ? (
-                                                                                <span className="font-medium text-green-600 dark:text-green-400">
-                                                                                    Rs. {price.fixedamount}
-                                                                                </span>
-                                                                            ) : (
-                                                                                <span className="text-gray-500 dark:text-gray-400 italic">
-                                                                                    Rs. 0.00
-                                                                                </span>
-                                                                            )}
-                                                                        </td>
-                                                                        <td className="border border-gray-300 dark:border-gray-600 px-4 py-2">
-                                                                            {price ? (
-                                                                                <span className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 text-xs rounded-full">
-                                                                                    Price Set
-                                                                                </span>
-                                                                            ) : (
-                                                                                <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300 text-xs rounded-full">
-                                                                                    No Price
-                                                                                </span>
-                                                                            )}
+                                                                            {toRange}
                                                                         </td>
                                                                     </tr>
                                                                 );
                                                             })}
                                                         </tbody>
                                                     </table>
+                                                    {/* Raw Data Display for Debugging */}
+                                                    {billRanges.length === 0 && apiDebug.rangesResponse && (
+                                                        <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                                                            <h4 className="font-medium text-red-700 dark:text-red-300 mb-2">No Ranges Found - Debug Info:</h4>
+                                                            <div className="text-xs">
+                                                                <p>API Response Structure:</p>
+                                                                <pre className="mt-1 p-2 bg-gray-100 dark:bg-gray-800 rounded overflow-auto max-h-40">
+                                                                    {JSON.stringify(apiDebug.rangesResponse, null, 2)}
+                                                                </pre>
+                                                                <button 
+                                                                    onClick={() => {
+                                                                        console.log("Trying to manually extract data...");
+                                                                        const data = apiDebug.rangesResponse;
+                                                                        
+                                                                        // Try different extraction methods
+                                                                        if (Array.isArray(data)) {
+                                                                            console.log("Data is array:", data);
+                                                                            setBillRanges(data);
+                                                                        } else if (data.data) {
+                                                                            console.log("data.data:", data.data);
+                                                                            if (Array.isArray(data.data)) {
+                                                                                setBillRanges(data.data);
+                                                                            }
+                                                                        }
+                                                                    }}
+                                                                    className="mt-2 px-3 py-1 bg-red-600 text-white rounded text-sm"
+                                                                >
+                                                                    Try Manual Extraction
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                                                     Click on any row to select a range and view its price details
                                                 </p>
                                             </div>
                                         ) : (
+                                            // Shows message otherwise
                                             <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
                                                 <p className="text-yellow-600 dark:text-yellow-400">
-                                                    No bill ranges found for this bill. Please add ranges first.
+                                                    {loading ? 'Loading bill ranges...' : 'No bill ranges found for this bill. Please add ranges first.'}
                                                 </p>
+                                                {/* Debug info */}
+                                                <div className="mt-2 text-xs">
+                                                    <p>Debug: Array? {Array.isArray(billRanges) ? 'Yes' : 'No'}</p>
+                                                    <p>Debug: Length? {billRanges?.length || 0}</p>
+                                                </div>
                                             </div>
                                         )}
 

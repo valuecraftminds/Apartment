@@ -130,7 +130,8 @@ export default function QRCodeGenerator({ houses, apartment, floor, onClose }) {
                             name: billAssignment.bill_name,
                             type: billDetails?.billtype || 'Unknown',
                             is_meiered: billDetails?.is_meiered || false,
-                            id: billAssignment.bill_id || billDetails?.id // Use assignment's bill_id first
+                            id: billAssignment.bill_id, // ← THIS IS CRITICAL: Use the assignment's bill_id
+                            assignment_id: billAssignment.id // ← Optional: include assignment id if needed
                         }
                     })
 
@@ -206,10 +207,11 @@ export default function QRCodeGenerator({ houses, apartment, floor, onClose }) {
                         
                         // Bills info - simplified structure
                         bills: billsData.billsWithTypes.map(bill => ({
+                            id: bill.id,
                              n: bill.name,      // name
                              t: bill.type,      // type
-                             m: bill.is_meiered, // is_meiered
-                             id: bill.id
+                             m: bill.is_meiered // is_meiered
+                             
                         })),
                         
                         // Scan metadata
