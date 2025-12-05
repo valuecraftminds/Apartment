@@ -154,7 +154,6 @@ app.use('/api/generate-bills',generateBillRoutes);
 const billPaymentRoutes = require('./routes/billPayments');
 app.use('/api/bill-payments',billPaymentRoutes);
 
+//Routes for generate measurable bills
 const generateMeasurableBillsRoutes = require('./routes/generateMeasurableBills');
-
-// Then use it:
 app.use('/api/generate-measurable-bills', generateMeasurableBillsRoutes);
