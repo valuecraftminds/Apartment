@@ -1,3 +1,4 @@
+//controllers/generateMeasubleBillController.js
 const GenerateMeasurableBill = require('../models/GenerateMeasurableBill')
 
 const generateMeasurableBillController = {
@@ -522,16 +523,16 @@ const generateMeasurableBillController = {
                 year,
                 month,
                 used_units,
-                total_amount,
-                calculation_details,
-                due_date
+                totalAmount,
+                // calculation_details,
+                // due_date
             } = req.body;
             
             const company_id = req.user.company_id;
 
             // Validation
             if (!house_id || !apartment_id || !bill_id || !year || !month || 
-                used_units === undefined || total_amount === undefined) {
+                used_units === undefined || totalAmount === undefined) {
                 return res.status(400).json({
                     success: false,
                     message: 'Required fields missing'
@@ -567,7 +568,7 @@ const generateMeasurableBillController = {
                 previous_reading,
                 current_reading,
                 used_units: parseFloat(used_units),
-                totalAmount: parseFloat(total_amount)
+                totalAmount: parseFloat(totalAmount)
             });
 
             // Create bill payment record

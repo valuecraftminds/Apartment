@@ -1,8 +1,9 @@
+//models/GenerateMeasurableBill.js
 const pool = require('../db');
 
 class GenerateMeasurableBill {
-    static async create(generateMeasuraleBillData){
-        const { company_id, apartment_id,floor_id,house_id,bill_id,year,month,previous_reading, current_reading, used_units, totalAmount } = generateMeasuraleBillData;
+    static async create(generateMeasurableBillData){
+        const { company_id, apartment_id,floor_id,house_id,bill_id,year,month,previous_reading, current_reading, used_units, totalAmount } = generateMeasurableBillData;
         const [result] = await pool.execute(
             `INSERT INTO generateMeasurable_bills 
             (company_id, apartment_id, floor_id, house_id, bill_id, year, month, 
@@ -16,7 +17,7 @@ class GenerateMeasurableBill {
         
         return {
             id: result.insertId,
-            ...measurableBillData
+            ...generateMeasurableBillData
         };
     }
 
@@ -327,7 +328,7 @@ class GenerateMeasurableBill {
              LEFT JOIN houses h ON gmb.house_id = h.id
              LEFT JOIN floors f ON gmb.floor_id = f.id
              LEFT JOIN apartments a ON gmb.apartment_id = a.id
-             LEFT JOIN bill_payments bp ON bp.generate_measurable_bills_id = gmb.id
+             LEFT JOIN bill_payments bp ON bp.id = gmb.id
              WHERE gmb.id = ?`,
             [id]
         );
