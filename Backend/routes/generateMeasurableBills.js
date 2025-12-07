@@ -27,4 +27,6 @@ router.get('/monthly-summary', generateMeasurableBillController.getMonthlySummar
 router.put('/:id', generateMeasurableBillController.updateMeasurableBill);
 router.delete('/:id', generateMeasurableBillController.deleteMeasurableBill);
 
+router.get('/verify-payment/:measurable_bill_id', generateMeasurableBillController.verifyBillPayment);
+
 module.exports = router;

@@ -187,7 +187,8 @@ export default function QRCodeGenerator({ houses, apartment, floor, onClose }) {
                         // Essential identifiers
                         h_id: house.house_id, // Shortened key names
                         apt: apartment.name, // Shortened
-                        fl: floor.floor_id, // Shortened
+                        fl: floor.floor_id,
+                        f_id: floor.id, // Shortened
                         apt_id: apartment.id,
                         house_db_id: house.id,
                         

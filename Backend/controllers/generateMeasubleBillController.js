@@ -77,7 +77,7 @@ const generateMeasurableBillController = {
                 floor_id: floor_id || null,
                 house_id,
                 bill_id,
-                generate_measurable_bills_id: newMeasurableBill.id,
+                generateMeasurable_bills_id: newMeasurableBill.id,
                 pendingAmount: parseFloat(totalAmount),
                 due_date: due_date || null
             });
@@ -188,7 +188,7 @@ const generateMeasurableBillController = {
                     floor_id: bill.floor_id || null,
                     house_id: bill.house_id,
                     bill_id: bill.bill_id,
-                    generate_measurable_bills_id: bill.id,
+                    generateMeasurable_bills_id: bill.id,
                     pendingAmount: bill.totalAmount,
                     due_date: due_date || null
                 });
@@ -560,7 +560,7 @@ const generateMeasurableBillController = {
             const measurableBill = await GenerateMeasurableBill.create({
                 company_id,
                 apartment_id,
-                floor_id: floor_id || null,
+                floor_id,
                 house_id,
                 bill_id,
                 year: parseInt(year),
@@ -580,9 +580,8 @@ const generateMeasurableBillController = {
                 floor_id: floor_id || null,
                 house_id,
                 bill_id,
-                generate_measurable_bills_id: measurableBill.id,
-                pendingAmount: parseFloat(total_amount),
-                due_date: due_date || null
+                generateMeasurable_bills_id: measurableBill.id,
+                pendingAmount: parseFloat(totalAmount)
             });
 
             res.status(201).json({
@@ -599,6 +598,36 @@ const generateMeasurableBillController = {
             res.status(500).json({
                 success: false,
                 message: 'Server error while generating bill from calculation'
+            });
+        }
+    },
+
+    async verifyBillPayment(req, res) {
+        try {
+            const { measurable_bill_id } = req.params;
+            
+            const [billPayments] = await pool.execute(
+                `SELECT bp.*, b.bill_name 
+                FROM bill_payments bp
+                LEFT JOIN bills b ON bp.bill_id = b.id
+                WHERE bp.generateMeasurable_bills_id = ?`,
+                [measurable_bill_id]
+            );
+            
+            res.json({
+                success: true,
+                data: {
+                    measurable_bill_id,
+                    bill_payments_count: billPayments.length,
+                    bill_payments: billPayments
+                }
+            });
+            
+        } catch (err) {
+            console.error('Verify bill payment error:', err);
+            res.status(500).json({
+                success: false,
+                message: 'Server error while verifying bill payment'
             });
         }
     }

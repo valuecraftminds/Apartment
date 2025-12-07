@@ -139,6 +139,37 @@ const billPaymentController = {
                 message: 'Server error while updating payment status'
             });
         }
+    },
+
+    async getMeasurableBillPayments(req, res) {
+        try {
+            const company_id = req.user.company_id;
+            const { 
+                payment_status, 
+                apartment_id, 
+                month, 
+                year 
+            } = req.query;
+
+            const filters = {};
+            if (payment_status) filters.payment_status = payment_status;
+            if (apartment_id) filters.apartment_id = apartment_id;
+            if (month) filters.month = month;
+            if (year) filters.year = year;
+
+            const payments = await BillPayment.findMeasurableBillPayments(company_id, filters);
+            
+            res.json({
+                success: true,
+                data: payments
+            });
+        } catch (err) {
+            console.error('Get measurable bill payments error:', err);
+            res.status(500).json({
+                success: false,
+                message: 'Server error while fetching measurable bill payments'
+            });
+        }
     }
 }
 module.exports=billPaymentController;

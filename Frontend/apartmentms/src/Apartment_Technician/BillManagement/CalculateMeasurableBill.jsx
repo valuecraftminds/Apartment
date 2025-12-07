@@ -600,24 +600,40 @@ export default function CalculateMeasurableBill() {
         }
         
         // Debug: Check what data we have
-        console.log("scannedData:", scannedData);
-        console.log("bill_id:", bill_id);
+        console.log("🔍 DEBUG - scannedData:", scannedData);
+        console.log("🔍 DEBUG - All scannedData keys:", Object.keys(scannedData || {}));
         
         // Check if we have all required data
-        const houseId = scannedData?.h_id || scannedData?.house_id;
-        const apartmentId = scannedData?.apartment_id
+        // Use the correct property names from your QR data structure
+        const houseId = scannedData?.house_db_id;
+        const apartmentId = scannedData?.apt_id || scannedData?.apartment_db_id || scannedData?.apartment_id;
+        const floorId = scannedData?.f_id || scannedData?.floor_db_id;
+
+        console.log("🔍 DEBUG - Extracted IDs:", { 
+            houseId, 
+            apartmentId,
+            h_id: scannedData?.h_id,
+            house_id: scannedData?.house_id,
+            house_db_id: scannedData?.house_db_id,
+            apt_id: scannedData?.apt_id,
+            apartment_db_id: scannedData?.apartment_db_id,
+            apartment_id: scannedData?.apartment_id,
+            f_id: scannedData?.f_id
+        });
         
-        if (!houseId || !apartmentId) {
-            toast.error("House information is missing");
-            console.error("Missing data:", { houseId, apartmentId });
+        if (!houseId || !apartmentId || !floorId) {
+            toast.error("House information is missing. Please scan the QR code again.");
+            console.error("❌ Missing data:", { 
+                houseId, 
+                apartmentId,
+                floorId,
+                fullScannedData: scannedData 
+            });
             return;
         }
         
         try {
             setGeneratingBill(true);
-            
-            // Get floor ID from scanned data
-            const floorId = scannedData?.floor_id || scannedData?.fl || scannedData?.floor || null;
             
             // Create payload for bill generation
             const payload = {
@@ -631,22 +647,29 @@ export default function CalculateMeasurableBill() {
                 current_reading: parseFloat(formData.current_reading) || 0,
                 used_units: parseFloat(formData.used_units) || calculation.used_units,
                 totalAmount: parseFloat(formData.total_amount) || calculation.total_amount,
-                //calculation_details: calculationDetails,
-                //due_date: new Date(formData.year, formData.month, 25).toISOString().split('T')[0] // Format as YYYY-MM-DD
             };
             
-            console.log("Generating bill with payload:", payload);
+            console.log("📤 Generating bill with payload:", payload);
             
             // Call the API endpoint
             const response = await api.post('/generate-measurable-bills/from-calculation', payload);
             
-            console.log("API Response:", response.data);
+            console.log("✅ API Response:", response.data);
             
             if (response.data.success) {
                 toast.success("Bill generated successfully!");
                 
                 // Show success details
                 toast.info(`Bill ID: ${response.data.data?.id || 'Generated'}`);
+
+                const billData = response.data.data;
+                    if (billData) {
+                        toast.info(`📊 Bill Details:
+        • Measurable Bill ID: ${billData.id || 'Generated'}
+        • Total Amount: Rs. ${billData.totalAmount || formData.total_amount}
+        • Used Units: ${billData.used_units || formData.used_units} units
+        • Bill payment record also created`);
+                    }
                 
                 // Reset form for next bill
                 setFormData({
@@ -674,8 +697,8 @@ export default function CalculateMeasurableBill() {
                 toast.error(response.data.message || "Failed to generate bill");
             }
         } catch (err) {
-            console.error("Error generating bill:", err);
-            console.error("Error details:", {
+            console.error("❌ Error generating bill:", err);
+            console.error("❌ Error details:", {
                 message: err.message,
                 response: err.response?.data,
                 status: err.response?.status
@@ -772,7 +795,9 @@ useEffect(() => {
             apt: scannedData.apt,
             apartment: scannedData.apartment,
             h_id: scannedData.h_id,
-            house_id: scannedData.house_id
+            house_id: scannedData.house_id,
+            f_id: scannedData.f_id,
+            floor: scannedData.floor
         });
     }
 }, [scannedData]);

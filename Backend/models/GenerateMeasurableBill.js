@@ -296,21 +296,26 @@ class GenerateMeasurableBill {
     static async createBillPayment(billPaymentData) {
         const {
             id, company_id, apartment_id, floor_id, house_id, bill_id, 
-            generate_measurable_bills_id, pendingAmount, due_date
+            generateMeasurable_bills_id, pendingAmount, due_date
         } = billPaymentData;
+        
+        console.log('Creating bill payment with data:', {
+            id, generateMeasurable_bills_id, pendingAmount
+        });
         
         const [result] = await pool.execute(
             `INSERT INTO bill_payments 
             (id, company_id, apartment_id, floor_id, house_id, bill_id, 
-             generate_measurable_bills_id, pendingAmount, due_date, 
-             payment_status, paidAmount, created_at, updated_at) 
+            generateMeasurable_bills_id, pendingAmount, due_date, 
+            payment_status, paidAmount, created_at, updated_at) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', 0.00, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
             [
                 id, company_id, apartment_id, floor_id, house_id, bill_id,
-                generate_measurable_bills_id, pendingAmount, due_date
+                generateMeasurable_bills_id, pendingAmount, due_date
             ]
         );
         
+        console.log('Bill payment created with ID:', result.insertId);
         return result.insertId;
     }
 
@@ -328,7 +333,7 @@ class GenerateMeasurableBill {
              LEFT JOIN houses h ON gmb.house_id = h.id
              LEFT JOIN floors f ON gmb.floor_id = f.id
              LEFT JOIN apartments a ON gmb.apartment_id = a.id
-             LEFT JOIN bill_payments bp ON bp.id = gmb.id
+             LEFT JOIN bill_payments bp ON bp.generateMeasurable_bills_id = gmb.id
              WHERE gmb.id = ?`,
             [id]
         );
