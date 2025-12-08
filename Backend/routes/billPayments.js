@@ -13,5 +13,6 @@ router.get('/monthly-summary', billPaymentController.getMonthlySummary);
 router.get('/:id', billPaymentController.getPaymentById);
 router.patch('/:id/status', billPaymentController.updatePaymentStatus);
 router.get('/measurable', billPaymentController.getMeasurableBillPayments);
+router.delete('/:id', billPaymentController.deletePayment);
 
 module.exports = router;

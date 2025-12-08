@@ -68,7 +68,7 @@ export default function EmployeeDashboard() {
         <Navbar />
         
         {/* Page Content */}
-        <div className="flex-1 overflow-y-auto p-4 lg:p-6 ml-16">
+        <div className="flex-1 overflow-y-auto p-4 lg:p-6">
           <div className="mx-auto max-w-7xl">
             {/* Your existing dashboard content remains the same */}
             <div className='flex items-center bg-white dark:bg-gray-800 rounded-2xl p-4 lg:p-6 mb-6'>

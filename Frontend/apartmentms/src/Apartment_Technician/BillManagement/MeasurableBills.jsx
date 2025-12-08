@@ -84,55 +84,6 @@ export default function MeasurableBills() {
         }
     }
 
-    // Fetch measurable bills - UPDATED for new structure
-    // const fetchMeasurableBills = async (qrData) => {
-    //     try {
-    //         setLoading(true)
-
-    //         // Use the IDs from QR code to fetch fresh data
-    //         const houseDbId = qrData.house_db_id
-    //         const apartmentId = qrData.apt_id || qrData.apartment_db_id
-    //         const billId= qrData.bill_db_id
-
-    //         if (!houseDbId || !apartmentId) {
-    //             toast.error('Missing house or apartment ID in QR code')
-    //             return
-    //         }
-
-    //         const billsRes = await api.get(
-    //             `/bill-assignments/house-details?house_id=${houseDbId}&apartment_id=${apartmentId}`
-    //         )
-
-    //         // Filter measurable bills
-    //         if (billsRes.data.success && Array.isArray(billsRes.data.data)) {
-    //             const measurable = billsRes.data.data.filter(bill => 
-    //                 bill.billtype === 'Measurable' && bill.bill_name?.trim()
-    //             )
-    //             setMeasurableBills(measurable)
-                
-    //             if (measurable.length === 0) {
-    //                 toast.info('No measurable bills found for this house')
-    //             } else {
-    //                 toast.success(`Found ${measurable.length} measurable bill(s)`)
-    //             }
-    //         } else {
-    //             setMeasurableBills([])
-    //             toast.info('No bills assigned to this house')
-    //         }
-
-    //     } catch (error) {
-    //         console.error('Error fetching bill details:', error)
-    //         if (error.response?.status === 404) {
-    //             toast.error('House not found in the system')
-    //         } else {
-    //             toast.error('Failed to load bill details')
-    //         }
-    //         setMeasurableBills([])
-    //     } finally {
-    //         setLoading(false)
-    //     }
-    // }
-
     // In fetchMeasurableBills function:
     const fetchMeasurableBills = async (qrData) => {
         try {
@@ -273,7 +224,7 @@ export default function MeasurableBills() {
                 <Sidebar />
                 
                 {/* Main content */}
-                <div className="flex-1 ml-16 p-4"> {/* ml-16 to account for sidebar width */}
+                <div className="flex-1 p-4"> {/* ml-16 to account for sidebar width */}
                     <div className="max-w-4xl mx-auto">
                         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
                             <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white flex items-center gap-3">
@@ -293,7 +244,7 @@ export default function MeasurableBills() {
                                     </h2>
                                     <button
                                         onClick={handleReset}
-                                        className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-gray-600"
+                                        className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700  text-gray-700 dark:text-gray-100 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-gray-600"
                                     >
                                         <ArrowLeft size={16} />
                                         <span>Cancel</span>
@@ -301,10 +252,10 @@ export default function MeasurableBills() {
                                 </div>
 
                                 <div className="relative">
-                                    <div id="qr-reader" className="rounded-lg overflow-hidden border-2 border-purple-500"></div>
+                                    <div id="qr-reader" className="rounded-lg overflow-hidden border-2 border-purple-500 text-gray-700 dark:text-gray-100"></div>
                                     
                                     <div className="absolute top-4 left-4 right-4 text-center z-10">
-                                        <div className="inline-block bg-black/70 text-white px-3 py-1 rounded-full text-sm">
+                                        <div className="inline-block bg-black/70 text-white  px-3 py-1 rounded-full text-sm">
                                             Position QR code within frame
                                         </div>
                                     </div>

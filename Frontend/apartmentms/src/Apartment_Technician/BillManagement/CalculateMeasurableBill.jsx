@@ -23,6 +23,7 @@ export default function CalculateMeasurableBill() {
     const [billPrices, setBillPrices] = useState([]);
     const [selectedRange, setSelectedRange] = useState(null);
     const [rangePrice, setRangePrice] = useState(null);
+    const [dueDate, setDueDate] = useState('');
     
     // Form state
     const [formData, setFormData] = useState({
@@ -256,11 +257,11 @@ export default function CalculateMeasurableBill() {
                 return monthMatch && yearMatch;
             });
             
-            console.log("✅ Filtered prices for current month/year:", filteredPrices);
+            console.log("Filtered prices for current month/year:", filteredPrices);
             
             if (filteredPrices.length > 0) {
                 setBillPrices(filteredPrices);
-                console.log("✅ Set billPrices state with", filteredPrices.length, "prices");
+                console.log("Set billPrices state with", filteredPrices.length, "prices");
                 
                 // If we have a selected range, find its price
                 if (selectedRange) {
@@ -269,7 +270,7 @@ export default function CalculateMeasurableBill() {
                 
             } else if (pricesData.length > 0) {
                 // If we got prices but they're not filtered properly, use all
-                console.log("⚠️ No filtering match, using all prices:", pricesData.length);
+                console.log("No filtering match, using all prices:", pricesData.length);
                 setBillPrices(pricesData);
                 
                 if (selectedRange) {
@@ -278,13 +279,13 @@ export default function CalculateMeasurableBill() {
                 
                 toast.success(`Loaded ${pricesData.length} price(s) for ${monthName}`);
             } else {
-                console.log("⚠️ No prices data found in response");
+                console.log("No prices data found in response");
                 setBillPrices([]);
                 toast.info(`No prices found for ${monthName} ${formData.year}. Please set prices first.`);
             }
         } catch (err) {
-            console.error("❌ Error loading bill prices:", err);
-            console.error("❌ Error details:", {
+            console.error("Error loading bill prices:", err);
+            console.error(" Error details:", {
                 message: err.message,
                 response: err.response?.data,
                 status: err.response?.status
@@ -308,24 +309,39 @@ export default function CalculateMeasurableBill() {
             return priceRangeId && priceRangeId.toString() === rangeId.toString();
         });
         
-        console.log("🔍 Looking for price for range:", selectedRange.id);
-        console.log("🔍 Available prices range IDs:", pricesData.map(p => p.billrange_id));
-        console.log("🔍 Found price for selected range:", foundPrice);
+        console.log("Looking for price for range:", selectedRange.id);
+        console.log("Available prices range IDs:", pricesData.map(p => p.billrange_id));
+        console.log("Found price for selected range:", foundPrice);
         setRangePrice(foundPrice || null);
     };
 
     // Load previous reading for the house
     const loadPreviousReading = async () => {
-        if (!scannedData?.h_id || !bill_id) return;
+        const houseId = scannedData?.house_db_id;
         
+        if (!houseId || !bill_id) {
+            console.log("Missing houseId or bill_id");
+            setFormData(prev => ({ ...prev, previous_reading: '0' }));
+            return;
+        }
+
         try {
             setLoadingPreviousReading(true);
+            
+            console.log("🔍 Loading previous reading for:", { 
+                houseId, 
+                bill_id,
+                scannedData 
+            });
+            
             const response = await api.get(`/generate-measurable-bills/previous-reading`, {
                 params: {
-                    house_id: scannedData.h_id,
+                    house_id: houseId,
                     bill_id: bill_id
                 }
             });
+            
+            console.log("✅ API Response:", response.data);
             
             if (response.data.success) {
                 const previousReading = response.data.data?.current_reading || 0;
@@ -333,18 +349,20 @@ export default function CalculateMeasurableBill() {
                     ...prev,
                     previous_reading: previousReading.toString()
                 }));
-                
-                if (previousReading > 0) {
-                    toast.info(`Previous reading loaded: ${previousReading} units`);
-                }
+                console.log(`✅ Previous reading set to: ${previousReading}`);
             }
         } catch (err) {
-            console.error("Error loading previous reading:", err);
-            // Set default to 0 if no previous reading found
-            setFormData(prev => ({
-                ...prev,
-                previous_reading: '0'
-            }));
+            console.error("❌ Error loading previous reading:", err);
+            
+            // Check if it's a 404 (no data found) or server error
+            if (err.response?.status === 404) {
+                console.log("No previous reading found (404). Starting from 0.");
+                setFormData(prev => ({ ...prev, previous_reading: '0' }));
+            } else {
+                // For other errors, show message
+                toast.error("Could not load previous reading");
+                setFormData(prev => ({ ...prev, previous_reading: '0' }));
+            }
         } finally {
             setLoadingPreviousReading(false);
         }
@@ -364,7 +382,7 @@ export default function CalculateMeasurableBill() {
         const yearChanged = field === 'year' && value !== prevYearRef.current;
         
         if (monthChanged || yearChanged) {
-            console.log("📅 Month/Year changed - Clearing and reloading data");
+            console.log("Month/Year changed - Clearing and reloading data");
             console.log("Old month:", prevMonthRef.current, "New month:", field === 'month' ? value : formData.month);
             console.log("Old year:", prevYearRef.current, "New year:", field === 'year' ? value : formData.year);
             
@@ -589,7 +607,7 @@ export default function CalculateMeasurableBill() {
         }));
         updateCalculation(usedUnits, totalAmount, details);
         
-        toast.success(`Calculated total: Rs. ${totalAmount.toFixed(2)}`);
+        // toast.success(`Calculated total: Rs. ${totalAmount.toFixed(2)}`);
     };
 
     // Generate bill handler
@@ -647,6 +665,7 @@ export default function CalculateMeasurableBill() {
                 current_reading: parseFloat(formData.current_reading) || 0,
                 used_units: parseFloat(formData.used_units) || calculation.used_units,
                 totalAmount: parseFloat(formData.total_amount) || calculation.total_amount,
+                due_date: dueDate || null
             };
             
             console.log("📤 Generating bill with payload:", payload);
@@ -654,22 +673,19 @@ export default function CalculateMeasurableBill() {
             // Call the API endpoint
             const response = await api.post('/generate-measurable-bills/from-calculation', payload);
             
-            console.log("✅ API Response:", response.data);
+            console.log("API Response:", response.data);
             
             if (response.data.success) {
                 toast.success("Bill generated successfully!");
-                
-                // Show success details
-                toast.info(`Bill ID: ${response.data.data?.id || 'Generated'}`);
 
-                const billData = response.data.data;
-                    if (billData) {
-                        toast.info(`📊 Bill Details:
-        • Measurable Bill ID: ${billData.id || 'Generated'}
-        • Total Amount: Rs. ${billData.totalAmount || formData.total_amount}
-        • Used Units: ${billData.used_units || formData.used_units} units
-        • Bill payment record also created`);
-                    }
+        //         const billData = response.data.data;
+        //             if (billData) {
+        //                 toast.info(`📊 Bill Details:
+        // • Measurable Bill ID: ${billData.id || 'Generated'}
+        // • Total Amount: Rs. ${billData.totalAmount || formData.total_amount}
+        // • Used Units: ${billData.used_units || formData.used_units} units
+        // • Bill payment record also created`);
+        //             }
                 
                 // Reset form for next bill
                 setFormData({
@@ -697,8 +713,8 @@ export default function CalculateMeasurableBill() {
                 toast.error(response.data.message || "Failed to generate bill");
             }
         } catch (err) {
-            console.error("❌ Error generating bill:", err);
-            console.error("❌ Error details:", {
+            console.error("Error generating bill:", err);
+            console.error("Error details:", {
                 message: err.message,
                 response: err.response?.data,
                 status: err.response?.status
@@ -917,6 +933,17 @@ useEffect(() => {
                                                         </option>
                                                     ))}
                                                 </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                                    Due Date (Optional)
+                                                </label>
+                                                <input
+                                                    type="date"
+                                                    value={dueDate}
+                                                    onChange={(e) => setDueDate(e.target.value)}
+                                                    className="w-full px-3 py-2 text-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                                                />
                                             </div>
                                         </div>
 

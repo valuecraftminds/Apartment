@@ -2,7 +2,6 @@
 const GenerateMeasurableBill = require('../models/GenerateMeasurableBill')
 
 const generateMeasurableBillController = {
-    // Create a single measurable bill
     async createMeasurableBill(req, res) {
         try {
             const {
@@ -326,6 +325,12 @@ const generateMeasurableBillController = {
         try {
             const { house_id, bill_id } = req.query;
             
+            console.log("🔍 getPreviousReading called with params:", { 
+                house_id, 
+                bill_id,
+                query: req.query 
+            });
+            
             if (!house_id || !bill_id) {
                 return res.status(400).json({
                     success: false,
@@ -333,7 +338,10 @@ const generateMeasurableBillController = {
                 });
             }
 
+            console.log("📊 Calling model.getPreviousReading with:", { house_id, bill_id });
             const previousReading = await GenerateMeasurableBill.getPreviousReading(house_id, bill_id);
+            
+            console.log("✅ Model returned:", previousReading);
             
             res.json({
                 success: true,
@@ -341,7 +349,8 @@ const generateMeasurableBillController = {
             });
 
         } catch (err) {
-            console.error('Get previous reading error:', err);
+            console.error('❌ Get previous reading error:', err);
+            console.error('Error stack:', err.stack);
             res.status(500).json({
                 success: false,
                 message: 'Server error while fetching previous reading'
@@ -524,8 +533,7 @@ const generateMeasurableBillController = {
                 month,
                 used_units,
                 totalAmount,
-                // calculation_details,
-                // due_date
+                due_date
             } = req.body;
             
             const company_id = req.user.company_id;
@@ -581,16 +589,19 @@ const generateMeasurableBillController = {
                 house_id,
                 bill_id,
                 generateMeasurable_bills_id: measurableBill.id,
-                pendingAmount: parseFloat(totalAmount)
+                pendingAmount: parseFloat(totalAmount),
+                due_date: due_date || null
             });
 
             res.status(201).json({
                 success: true,
                 message: 'Measurable bill generated from calculation successfully',
-                data: {
-                    ...measurableBill,
-                    calculation_details: calculation_details || []
-                }
+                data: measurableBill
+                // {
+                //     ...measurableBill,
+                //     calculation_details: calculation_details || []
+                // }
+
             });
 
         } catch (err) {

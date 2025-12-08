@@ -310,7 +310,7 @@ export default function MyApartments() {
         <Navbar />
         
         {/* Mobile Header - Below Navbar */}
-        <div className="lg:hidden ml-19 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4">
+        <div className="lg:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <div className="flex items-center">

@@ -55,15 +55,6 @@ export default function BillsAndCalculations() {
                         >
                             Generate Bills
                         </button>
-                        <button
-                            onClick={() => setActiveTab("calculateBill")}
-                            className={`px-4 py-2 font-semibold 
-                                ${activeTab === "calculateBill"
-                                    ? "text-purple-600 border-b-2 border-purple-600"
-                                    : "text-gray-600 dark:text-gray-300 hover:text-purple-600"}`}
-                        >
-                            Manage Bills for Whole Apartment 
-                        </button>
                     </div>
 
                     {activeTab === "bills" &&  (
@@ -71,9 +62,6 @@ export default function BillsAndCalculations() {
                     )}
                     {activeTab === "generateBill" && (
                         <GenerateBills/>
-                    )}
-                    {activeTab === 'calculateBill' && (
-                        <CalculateBill/>
                     )}
                 </div>
             </div>

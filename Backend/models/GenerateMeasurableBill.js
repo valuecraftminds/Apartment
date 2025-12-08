@@ -164,12 +164,14 @@ class GenerateMeasurableBill {
 
     // Get previous reading for a house and bill
     static async getPreviousReading(house_id, bill_id) {
+        console.log("🔍 Searching for previous reading for:", { house_id, bill_id });
+        
         const [rows] = await pool.execute(
             `SELECT current_reading, month, year 
-             FROM generateMeasurable_bills 
-             WHERE house_id = ? AND bill_id = ? 
-             ORDER BY year DESC, 
-                      CASE month 
+            FROM generateMeasurable_bills 
+            WHERE house_id = ? AND bill_id = ? 
+            ORDER BY year DESC, 
+                    CASE month 
                         WHEN 'January' THEN 1
                         WHEN 'February' THEN 2
                         WHEN 'March' THEN 3
@@ -182,10 +184,12 @@ class GenerateMeasurableBill {
                         WHEN 'October' THEN 10
                         WHEN 'November' THEN 11
                         WHEN 'December' THEN 12
-                      END DESC
-             LIMIT 1`,
+                    END DESC
+            LIMIT 1`,
             [house_id, bill_id]
         );
+        
+        console.log("📊 Database query result:", rows);
         return rows[0] || null;
     }
 
@@ -315,7 +319,6 @@ class GenerateMeasurableBill {
             ]
         );
         
-        console.log('Bill payment created with ID:', result.insertId);
         return result.insertId;
     }
 

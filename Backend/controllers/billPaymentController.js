@@ -108,7 +108,7 @@ const billPaymentController = {
     async updatePaymentStatus(req, res) {
         try {
             const { id } = req.params;
-            const { payment_status, paidAmount } = req.body;
+            const { payment_status, paidAmount, paid_at } = req.body;
 
             if (!payment_status) {
                 return res.status(400).json({
@@ -117,7 +117,7 @@ const billPaymentController = {
                 });
             }
 
-            const validStatuses = ['Pending', 'Paid', 'Failed', 'Refunded'];
+            const validStatuses = ['Pending', 'Partial', 'Paid', 'Failed', 'Refunded'];
             if (!validStatuses.includes(payment_status)) {
                 return res.status(400).json({
                     success: false,
@@ -125,7 +125,20 @@ const billPaymentController = {
                 });
             }
 
-            const updatedPayment = await BillPayment.updatePaymentStatus(id, payment_status, paidAmount);
+            // Validate paid_at if provided
+            if (paid_at && isNaN(Date.parse(paid_at))) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid payment date format'
+                });
+            }
+
+            const updatedPayment = await BillPayment.updatePaymentStatus(
+                id, 
+                payment_status, 
+                paidAmount, 
+                paid_at
+            );
             
             res.json({
                 success: true,
@@ -168,6 +181,52 @@ const billPaymentController = {
             res.status(500).json({
                 success: false,
                 message: 'Server error while fetching measurable bill payments'
+            });
+        }
+    },
+
+        async deletePayment(req, res) {
+        try {
+            const { id } = req.params;
+            const company_id = req.user.company_id;
+
+            // First check if payment exists and belongs to company
+            const payment = await BillPayment.findById(id);
+            
+            if (!payment) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Payment not found'
+                });
+            }
+
+            // Verify payment belongs to user's company (optional security check)
+            if (payment.company_id !== company_id) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Unauthorized to delete this payment'
+                });
+            }
+
+            const deleted = await BillPayment.delete(id);
+            
+            if (!deleted) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Payment not found'
+                });
+            }
+
+            res.json({
+                success: true,
+                message: 'Payment deleted successfully'
+            });
+
+        } catch (err) {
+            console.error('Delete payment error:', err);
+            res.status(500).json({
+                success: false,
+                message: 'Server error while deleting payment'
             });
         }
     }

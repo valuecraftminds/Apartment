@@ -5,6 +5,20 @@ const generateMeasurableBillController = require('../controllers/generateMeasubl
 const { authenticateToken } = require('../middleware/auth');
 
 router.use(authenticateToken);
+// Test route
+router.get('/test', (req, res) => {
+    console.log("✅ Test route hit!");
+    res.json({ 
+        success: true, 
+        message: "API is working",
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Utility endpoints
+router.get('/previous-reading', generateMeasurableBillController.getPreviousReading);
+router.get('/statistics', generateMeasurableBillController.getMeasurableBillsStatistics);
+router.get('/monthly-summary', generateMeasurableBillController.getMonthlySummary);
 
 // Create measurable bills
 router.post('/', generateMeasurableBillController.createMeasurableBill);
@@ -17,11 +31,6 @@ router.get('/bill/:bill_id', generateMeasurableBillController.getMeasurableBills
 router.get('/period', generateMeasurableBillController.getMeasurableBillsByPeriod);
 router.get('/house/:house_id', generateMeasurableBillController.getMeasurableBillsByHouseId);
 router.get('/:id', generateMeasurableBillController.getMeasurableBillById);
-
-// Utility endpoints
-router.get('/previous-reading', generateMeasurableBillController.getPreviousReading);
-router.get('/statistics', generateMeasurableBillController.getMeasurableBillsStatistics);
-router.get('/monthly-summary', generateMeasurableBillController.getMonthlySummary);
 
 // Update and delete
 router.put('/:id', generateMeasurableBillController.updateMeasurableBill);

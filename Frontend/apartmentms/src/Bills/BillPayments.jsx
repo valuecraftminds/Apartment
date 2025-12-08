@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Download, Eye, Edit, DollarSign, Calendar, Home, Building, Receipt } from 'lucide-react';
+import { Search, Filter, Download, Eye, Edit, DollarSign, Calendar, Home, Building, Receipt, Trash2, CheckCircle, Clock, RefreshCw } from 'lucide-react';
 import api from '../api/axios';
 import { toast, ToastContainer } from 'react-toastify';
 import Sidebar from '../components/Sidebar';
@@ -31,6 +31,9 @@ export default function BillPayments() {
   const [loadingHouses, setLoadingHouses] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [paymentToDelete, setPaymentToDelete] = useState(null);
 
   // Load all bills (to get bill types)
   const loadBills = async () => {
@@ -232,6 +235,36 @@ export default function BillPayments() {
     } catch (error) {
       console.error('Error updating payment status:', error);
       toast.error('Failed to update payment status');
+    }
+  };
+
+  // Handle delete payment
+  const handleDeleteClick = (payment) => {
+    setPaymentToDelete(payment);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeletePayment = async () => {
+    if (!paymentToDelete) return;
+
+    try {
+        setDeletingId(paymentToDelete.id);
+        const response = await api.delete(`/bill-payments/${paymentToDelete.id}`);
+        
+        if (response.data.success) {
+            toast.success('Payment deleted successfully');
+            // Remove from local state
+            setPayments(prev => prev.filter(payment => payment.id !== paymentToDelete.id));
+            // Reload summary
+            loadSummary();
+        }
+    } catch (error) {
+        console.error('Error deleting payment:', error);
+        toast.error(error.response?.data?.message || 'Failed to delete payment');
+    } finally {
+        setDeletingId(null);
+        setShowDeleteModal(false);
+        setPaymentToDelete(null);
     }
   };
 
@@ -563,7 +596,7 @@ export default function BillPayments() {
                               : new Date(payment.created_at).toLocaleDateString()
                             }
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          {/* <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div className="flex space-x-2">
                               {payment.payment_status === 'Pending' && (
                                 <button
@@ -584,11 +617,142 @@ export default function BillPayments() {
                                 </button>
                               )}
                               <button
-                                className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                                title="View Details"
+                                 onClick={() => handleDeleteClick(payment)}
+                                disabled={deletingId === payment.id}
+                                className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Delete Payment"
                               >
-                                <Eye size={16} />
+                                {deletingId === payment.id ? (
+                                  <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                                ) : (
+                                  <Trash2 size={16} />
+                                )}
                               </button>
+                            </div>
+                          </td> */}
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div className="flex space-x-1">
+                              {/* Mark as Paid for Pending status */}
+                              {payment.payment_status === 'Pending' && (
+                                <div className="relative group">
+                                  <button
+                                    onClick={() => handleUpdatePayment(payment)}
+                                    className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 p-2 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/30 transition-all duration-200"
+                                    title="Mark as Paid"
+                                  >
+                                    <CheckCircle size={18} />
+                                  </button>
+                                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-800 dark:bg-gray-700 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
+                                    Mark as Paid
+                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 dark:border-t-gray-700"></div>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Mark as Pending for Paid status */}
+                              {payment.payment_status === 'Paid' && (
+                                <div className="relative group">
+                                  <button
+                                    onClick={() => handleStatusUpdate(payment.id, 'Pending')}
+                                    className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300 p-2 rounded-lg hover:bg-yellow-50 dark:hover:bg-yellow-900/30 transition-all duration-200"
+                                    title="Mark as Pending"
+                                  >
+                                    <Clock size={18} />
+                                  </button>
+                                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-800 dark:bg-gray-700 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
+                                    Mark as Pending
+                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 dark:border-t-gray-700"></div>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Edit Partial payment */}
+                              {payment.payment_status === 'Partial' && (
+                                <div className="relative group">
+                                  <button
+                                    onClick={() => handleUpdatePayment(payment)}
+                                    className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all duration-200"
+                                    title="Edit Partial Payment"
+                                  >
+                                    <Edit size={18} />
+                                  </button>
+                                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-800 dark:bg-gray-700 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
+                                    Edit Partial
+                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 dark:border-t-gray-700"></div>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Retry Failed payment */}
+                              {payment.payment_status === 'Failed' && (
+                                <div className="relative group">
+                                  <button
+                                    onClick={() => handleStatusUpdate(payment.id, 'Pending')}
+                                    className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-all duration-200"
+                                    title="Retry Payment"
+                                  >
+                                    <RefreshCw size={18} />
+                                  </button>
+                                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-800 dark:bg-gray-700 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
+                                    Retry Payment
+                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 dark:border-t-gray-700"></div>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Edit Refunded payment */}
+                              {payment.payment_status === 'Refunded' && (
+                                <div className="relative group">
+                                  <button
+                                    onClick={() => handleUpdatePayment(payment)}
+                                    className="text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-300 p-2 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-all duration-200"
+                                    title="Edit Refund"
+                                  >
+                                    <Edit size={18} />
+                                  </button>
+                                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-800 dark:bg-gray-700 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
+                                    Edit Refund
+                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 dark:border-t-gray-700"></div>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Generic Edit button for other statuses */}
+                              {!['Partial', 'Refunded'].includes(payment.payment_status) && (
+                                <div className="relative group">
+                                  <button
+                                    onClick={() => handleUpdatePayment(payment)}
+                                    className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 p-2 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-all duration-200"
+                                    title="Edit Payment"
+                                  >
+                                    <Edit size={18} />
+                                  </button>
+                                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-800 dark:bg-gray-700 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
+                                    Edit Payment
+                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 dark:border-t-gray-700"></div>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Delete button */}
+                              <div className="relative group">
+                                <button
+                                  onClick={() => handleDeleteClick(payment)}
+                                  disabled={deletingId === payment.id}
+                                  className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="Delete Payment"
+                                >
+                                  {deletingId === payment.id ? (
+                                    <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                                  ) : (
+                                    <Trash2 size={18} />
+                                  )}
+                                </button>
+                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-800 dark:bg-gray-700 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
+                                  Delete Payment
+                                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 dark:border-t-gray-700"></div>
+                                </div>
+                              </div>
                             </div>
                           </td>
                         </tr>
@@ -608,6 +772,80 @@ export default function BillPayments() {
           onClose={handleCloseModal}
           onUpdate={handlePaymentUpdate}
         />
+      )}
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && paymentToDelete && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md">
+                  <div className="p-6">
+                      <div className="flex items-center mb-4">
+                          <div className="bg-red-100 dark:bg-red-900/30 p-2 rounded-lg mr-3">
+                              <Trash2 className="text-red-600 dark:text-red-400" size={24} />
+                          </div>
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                              Delete Payment
+                          </h3>
+                      </div>
+                      
+                      <p className="text-gray-600 dark:text-gray-300 mb-6">
+                          Are you sure you want to delete this payment record? This action cannot be undone.
+                      </p>
+                      
+                      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+                          <h4 className="font-medium text-red-800 dark:text-red-300 mb-2">
+                              Payment Details
+                          </h4>
+                          <div className="space-y-1 text-sm">
+                              <div className="flex justify-between">
+                                  <span className="text-gray-600 dark:text-gray-400">Bill:</span>
+                                  <span className="font-medium">{paymentToDelete.bill_name} ({paymentToDelete.billtype})</span>
+                              </div>
+                              <div className="flex justify-between">
+                                  <span className="text-gray-600 dark:text-gray-400">Location:</span>
+                                  <span className="font-medium">{paymentToDelete.apartment_name} - House {paymentToDelete.house_number}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                  <span className="text-gray-600 dark:text-gray-400">Amount:</span>
+                                  <span className="font-medium text-red-600 dark:text-red-400">${paymentToDelete.paidAmount} paid</span>
+                              </div>
+                              <div className="flex justify-between">
+                                  <span className="text-gray-600 dark:text-gray-400">Status:</span>
+                                  <span className={`font-medium ${paymentToDelete.payment_status === 'Paid' ? 'text-green-600' : 'text-yellow-600'}`}>
+                                      {paymentToDelete.payment_status}
+                                  </span>
+                              </div>
+                          </div>
+                      </div>
+                      
+                      <div className="flex justify-end space-x-3">
+                          <button
+                              onClick={() => {
+                                  setShowDeleteModal(false);
+                                  setPaymentToDelete(null);
+                              }}
+                              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                              disabled={deletingId === paymentToDelete.id}
+                          >
+                              Cancel
+                          </button>
+                          <button
+                              onClick={handleDeletePayment}
+                              disabled={deletingId === paymentToDelete.id}
+                              className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
+                          >
+                              {deletingId === paymentToDelete.id ? (
+                                  <>
+                                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                                      Deleting...
+                                  </>
+                              ) : (
+                                  'Delete Payment'
+                              )}
+                          </button>
+                      </div>
+                  </div>
+              </div>
+          </div>
       )}
       <ToastContainer position="top-center" autoClose={3000} />
     </div>
