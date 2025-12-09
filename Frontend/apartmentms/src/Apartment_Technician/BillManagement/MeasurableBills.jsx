@@ -67,7 +67,7 @@ export default function MeasurableBills() {
             const data = JSON.parse(decodedText)
             
             // Validate required fields for NEW structure
-            if (!data.h_id && !data.house_id) {
+            if (!data.h_db_id) {
                 toast.error('Invalid QR code: Missing house ID')
                 return
             }
@@ -174,26 +174,11 @@ export default function MeasurableBills() {
             // Floor - support both old and new structures
             floor: qrData.fl || qrData.floor,
             
-            // Status - support both old and new structures
-            status: qrData.st || qrData.status,
-            
-            // House Type - support both old and new structures
-            houseType: qrData.ht || qrData.house_type,
-            
             // Owner Name - support both old and new structures
             ownerName: qrData.own || qrData.owner_name,
             
-            // Owner NIC - support both old and new structures
-            ownerNic: qrData.nic || qrData.owner_nic,
-            
-            // Square Feet - support both old and new structures
-            squareFeet: qrData.sqf || qrData.square_feet,
-            
-            // Rooms - support both old and new structures
-            rooms: qrData.rms || qrData.rooms,
-            
-            // Bathrooms - support both old and new structures
-            bathrooms: qrData.bth || qrData.bathrooms
+
+    
         }
     }
 
