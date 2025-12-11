@@ -916,52 +916,66 @@ export default function QRCodeGenerator({ houses, apartment, floor, onClose }) {
         return url.toString();
     };
 
-    // -----------------------------
-    useEffect(() => {
-        const run = async () => {
-            if (!houses.length) return
+    // In QRCodeGenerator.jsx - Backward compatible
+useEffect(() => {
+    const run = async () => {
+        if (!houses.length) return
 
-            setLoading(true)
+        setLoading(true)
 
-            try {
-                const qrMap = {}
+        try {
+            const qrMap = {}
 
-                for (const house of houses) {
-                    // Create a secure URL instead of raw JSON data
-                    const secureURL = createSecureURL(house);
+            for (const house of houses) {
+                // Create BOTH URL and JSON data
+                const qrData = {
+                    // For backward compatibility with existing code
+                    h_id: house.house_id,
+                    apt: apartment.name,
+                    fl: floor.floor_id,
+                    f_id: floor.id,
+                    apt_id: apartment.id,
+                    house_db_id: house.id,
+                    apartment_db_id: apartment.id,
+                    floor_db_id: floor.id,
                     
-                    console.log(`QR URL for House ${house.house_id}:`, secureURL);
-
-                    // Generate QR code with the URL
-                    try {
-                        qrMap[house.id] = await QRCode.toDataURL(secureURL, {
-                            width: 400,
-                            margin: 4,
-                            errorCorrectionLevel: "H",
-                            color: {
-                                dark: "#000000",
-                                light: "#FFFFFF"
-                            }
-                        })
-                    } catch (err) {
-                        console.error("QR Generation Error:", err)
-                        qrMap[house.id] = ""
-                        toast.error(`Failed to generate QR for house ${house.house_id}`)
-                    }
+                    // Additional info
+                    type: "house_qr",
+                    timestamp: Date.now()
                 }
 
-                setQrCodeImages(qrMap)
-
-            } catch (error) {
-                console.error("Error generating QR codes", error)
-                toast.error("Failed to generate QR codes")
+                // Generate QR code with JSON
+                try {
+                    const qrString = JSON.stringify(qrData)
+                    
+                    qrMap[house.id] = await QRCode.toDataURL(qrString, {
+                        width: 400,
+                        margin: 4,
+                        errorCorrectionLevel: "H",
+                        color: {
+                            dark: "#000000",
+                            light: "#FFFFFF"
+                        }
+                    })
+                } catch (err) {
+                    console.error("QR Generation Error:", err)
+                    qrMap[house.id] = ""
+                    toast.error(`Failed to generate QR for house ${house.house_id}`)
+                }
             }
 
-            setLoading(false)
+            setQrCodeImages(qrMap)
+
+        } catch (error) {
+            console.error("Error generating QR codes", error)
+            toast.error("Failed to generate QR codes")
         }
 
-        run()
-    }, [houses, apartment, floor])
+        setLoading(false)
+    }
+
+    run()
+}, [houses, apartment, floor])
 
     // ==========================================================
     // Generate PDF
@@ -1016,7 +1030,7 @@ export default function QRCodeGenerator({ houses, apartment, floor, onClose }) {
                 pdf.setFontSize(14)
                 pdf.setFont(undefined, "bold")
                 pdf.setTextColor(0, 0, 0)
-                pdf.text(`House ${house.house_id}`, x + cardWidth / 2, yOffset + 15, { align: 'center' })
+                pdf.text(`${house.house_id}`, x + cardWidth / 2, yOffset + 15, { align: 'center' })
                 
                 // QR Code
                 if (qrCodeImages[house.id]) {
@@ -1033,7 +1047,7 @@ export default function QRCodeGenerator({ houses, apartment, floor, onClose }) {
                 // QR Label
                 pdf.setFontSize(5)
                 pdf.setTextColor(100, 100, 100)
-                pdf.text("Scan to open", x + cardWidth / 2, yOffset + cardHeight - 4, { align: 'center' })
+                
                 
                 // Move to next position
                 cardsInCurrentRow++
