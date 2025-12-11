@@ -77,6 +77,13 @@ const RoleAssignmentModal = ({ role, onClose, onAssign }) => {
       description: 'Manage measurable bills',
       category: 'Financial',
       icon: 'CreditCard',
+    },
+    {
+      id: 'my_bills',
+      name: 'My Bills',
+      description: 'View and manage your bills',
+      category: 'Financial',
+      icon: 'CreditCard',
     }
   ];
 

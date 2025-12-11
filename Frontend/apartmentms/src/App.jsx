@@ -35,6 +35,8 @@ import SharedValueBillPrice from './Bills/SharedValueBillPrice'
 import BillPayments from './Bills/BillPayments'
 import MeasurableBills from './Apartment_Technician/BillManagement/MeasurableBills'
 import CalculateMeasurableBill from './Apartment_Technician/BillManagement/CalculateMeasurableBill'
+import MyBills from './Users/MyBills'
+import HouseBillMeter from './Apartment_Technician/BillManagement/HouseBillMeter'
 
 export default function App() {
   return (
@@ -74,6 +76,8 @@ export default function App() {
         <Route path='/bill-payments' element={<BillPayments/>}/>
         <Route path='/measurable-bills' element={<MeasurableBills/>}/>
         <Route path='/calculate-measurable-bill/:bill_id' element={<CalculateMeasurableBill/>}/>
+        <Route path='/my-bills' element={<MyBills/>}/>
+        <Route path='/house-bill-meter/:bill_id' element={<HouseBillMeter/>}/>
       </Routes>
       </AuthProvider>
     </BrowserRouter>
