@@ -775,7 +775,7 @@ export default function CalculateMeasurableBill() {
                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
                             <div className="flex-1">
                                 <button 
-                                    onClick={() => navigate(dataSource === 'manual' ? '/my-bills' : '/measurable-bills')}
+                                    onClick={() => navigate(`/house-bill-meter/${bill_id}`)}
                                     className="mb-2 md:mb-3 flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm md:text-base"
                                 >
                                     <svg className="w-4 h-4 md:w-5 md:h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -812,7 +812,7 @@ export default function CalculateMeasurableBill() {
                         </div>
 
                         {/* House Information Card */}
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 md:p-6 mb-6">
+                        {/* <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 md:p-6 mb-6">
                             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 md:mb-4">
                                 House Information
                             </h3>
@@ -836,7 +836,7 @@ export default function CalculateMeasurableBill() {
                                     </p>
                                 </div>
                             </div>
-                        </div>
+                        </div> */}
 
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
                             {/* Calculation Form */}
@@ -962,7 +962,7 @@ export default function CalculateMeasurableBill() {
                                         </div>
 
                                         {/* Bill Ranges Display */}
-                                        {Array.isArray(billRanges) && billRanges.length > 0 ? (
+                                        {/* {Array.isArray(billRanges) && billRanges.length > 0 ? (
                                             <div className="space-y-2 md:space-y-3">
                                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                                     Bill Ranges for {currentMonthName} {formData.year}
@@ -1024,10 +1024,10 @@ export default function CalculateMeasurableBill() {
                                                     {loading ? 'Loading bill ranges...' : 'No bill ranges found for this bill. Please add ranges first.'}
                                                 </p>
                                             </div>
-                                        )}
+                                        )} */}
 
                                         {/* Selected Range Price Information */}
-                                        {selectedRange && (
+                                        {/* {selectedRange && (
                                             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                                                 <h4 className="font-medium text-blue-800 dark:text-blue-300 mb-2">
                                                     Price for Selected Range
@@ -1079,7 +1079,7 @@ export default function CalculateMeasurableBill() {
                                                     </div>
                                                 )}
                                             </div>
-                                        )}
+                                        )} */}
 
                                         {/* Calculate Button */}
                                         {/* <button
@@ -1147,7 +1147,7 @@ export default function CalculateMeasurableBill() {
                             </div>
 
                             {/* Calculation Preview */}
-                            <div className="lg:col-span-1">
+                            {/* <div className="lg:col-span-1">
                                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 md:p-6 lg:sticky lg:top-6">
                                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 md:mb-4">
                                         Calculation Preview
@@ -1176,7 +1176,7 @@ export default function CalculateMeasurableBill() {
                                                 </div>
                                             </div>
                                             
-                                            {/* Calculation Breakdown */}
+                                            
                                             {calculationDetails.length > 0 && (
                                                 <div className="space-y-2 md:space-y-3">
                                                     <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -1224,7 +1224,7 @@ export default function CalculateMeasurableBill() {
                                         </div>
                                     )}
                                 </div>
-                            </div>
+                            </div> */}
                         </div>
                     </div>
                 </main>

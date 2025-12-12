@@ -37,6 +37,7 @@ import MeasurableBills from './Apartment_Technician/BillManagement/MeasurableBil
 import CalculateMeasurableBill from './Apartment_Technician/BillManagement/CalculateMeasurableBill'
 import MyBills from './Users/MyBills'
 import HouseBillMeter from './Apartment_Technician/BillManagement/HouseBillMeter'
+import BillPaymentSettle from './Bills/BillPaymentSettle'
 
 export default function App() {
   return (
@@ -78,6 +79,7 @@ export default function App() {
         <Route path='/calculate-measurable-bill/:bill_id' element={<CalculateMeasurableBill/>}/>
         <Route path='/my-bills' element={<MyBills/>}/>
         <Route path='/house-bill-meter/:bill_id' element={<HouseBillMeter/>}/>
+        <Route path='/bill-payment-settle' element={<BillPaymentSettle/>}/>
       </Routes>
       </AuthProvider>
     </BrowserRouter>

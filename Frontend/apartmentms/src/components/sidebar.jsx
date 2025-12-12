@@ -121,7 +121,8 @@ export default function Sidebar() {
       isConstant: false, 
       children: [
         { name: 'Bills', path: '/bills-and-calculations' },
-        { name: 'Bill Payments', path: '/bill-payments' }
+        { name: 'Bill Review', path: '/bill-payments' },
+        { name: 'Bill Payments',  path: '/bill-payment-settle' }
       ] 
     },
     tenant_management: { 
@@ -142,13 +143,6 @@ export default function Sidebar() {
       id: 'my_bills',
       name: 'My Bills',
       path: '/my-bills',
-      icon: CreditCard,
-      isConstant: false
-    },
-    bill_management: {
-      id: 'bill_management',
-      name: 'Measurable Bills',
-      path: '/measurable-bills',
       icon: CreditCard,
       isConstant: false
     }

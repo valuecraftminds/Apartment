@@ -100,8 +100,8 @@ export default function MeasurableBills() {
             
             // Extract IDs from QR data
             const houseDbId = qrData.hse || qrData.house_db_id;
-            const apartmentId = qrData.apt;
-            const floorId = qrData.flr;
+            const apartmentId = qrData.apt || qrData.apartment_db_id;
+            const floorId = qrData.flr || qrData.floor_db_id;
             
 
             if (!houseDbId || !apartmentId || !floorId) {
@@ -316,46 +316,13 @@ export default function MeasurableBills() {
     }, [auth?.user?.id, bill_id]);
 
     // Helper function to get display values from decoded data
-    const getDisplayValue = (qrData) => {
-        return {
-            houseId: qrData.h_id || qrData.hse || 'N/A',
-            apartment: qrData.apt || 'N/A',
-            floor: qrData.floor_number || qrData.flr || 'N/A',
-        }
-    }
-
-    // Load floors for the apartment
-    const loadFloors = async (apartment_id) => {
-        try {
-            const result = await api.get(`/floors?apartment_id=${apartment_id}`); 
-            console.log('Floors API Response:', result.data);
-
-            if (result.data.success && Array.isArray(result.data.data)) {
-                setFloors(result.data.data);
-            } else {
-                setFloors([]);
-            }
-        } catch (err) {
-            console.error('Error loading floors:', err);
-            toast.error('Failed to load floors');
-        }
-    };
-
-    // Fetch houses for a specific floor
-    const fetchHouses = async (floor_id) => {
-        try {
-            const result = await api.get(`/houses?apartment_id=${apartment.id}&floor_id=${floor_id}`);
-            if (result.data.success && Array.isArray(result.data.data)) {
-                return result.data.data;
-            }
-            return [];
-        } catch (error) {
-            console.error('Error fetching houses:', error);
-            toast.error('Error loading houses');
-            return [];
-        }
-    };
-
+    // const getDisplayValue = (qrData) => {
+    //     return {
+    //         houseId: qrData.hse || 'N/A',
+    //         apartment: qrData.apt || 'N/A',
+    //         floor: qrData.flr || 'N/A',
+    //     }
+    // }
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">            
@@ -368,7 +335,7 @@ export default function MeasurableBills() {
                         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
                             <div className="flex items-start justify-between">
                                 <div>
-                                    <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white flex items-center gap-3">
+                                    <h1 className="text-xl md:text-xl font-bold text-gray-800 dark:text-white flex items-center gap-3">
                                         <QrCode className="text-purple-600" />
                                         Scan House QR: {selectedBill?.bill_name || 'this bill'}
                                     </h1>
@@ -378,7 +345,7 @@ export default function MeasurableBills() {
                                     className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                                 >
                                     <ArrowLeft size={16} />
-                                    <span>Back to Bills</span>
+                                    <span>Back</span>
                                 </button>
                             </div>
                         </div>
@@ -486,78 +453,13 @@ export default function MeasurableBills() {
                                                         className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
                                                     >
                                                         <FileText size={16} />
-                                                        Calculate {selectedBill?.bill_name}
+                                                        Calculate
                                                     </button>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 )}
-
-                                {/* House Information */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                                    <div className="space-y-4">
-                                        <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                                            <h3 className="font-semibold text-gray-800 dark:text-white mb-2">
-                                                House Information
-                                            </h3>
-                                            <div className="space-y-2 text-sm">
-                                                <div className="flex justify-between">
-                                                    <span className="text-gray-600 dark:text-gray-400">House ID:</span>
-                                                    <span className="font-medium text-gray-800 dark:text-white">
-                                                        {getDisplayValue(scannedData).houseId}
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="text-gray-600 dark:text-gray-400">Apartment:</span>
-                                                    <span className="font-medium text-gray-800 dark:text-white">
-                                                        {getDisplayValue(scannedData).apartment}
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="text-gray-600 dark:text-gray-400">Floor:</span>
-                                                    <span className="font-medium text-gray-800 dark:text-white">
-                                                        {getDisplayValue(scannedData).floor}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                                            <h3 className="font-semibold text-gray-800 dark:text-white mb-2">
-                                                Bill Information
-                                            </h3>
-                                            <div className="space-y-2 text-sm">
-                                                <div className="flex justify-between">
-                                                    <span className="text-gray-600 dark:text-gray-400">Selected Bill:</span>
-                                                    <span className="font-medium text-purple-600 dark:text-purple-400">
-                                                        {selectedBill?.bill_name}
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="text-gray-600 dark:text-gray-400">Bill Type:</span>
-                                                    <span className="font-medium text-blue-600 dark:text-blue-400">
-                                                        {selectedBill?.billtype}
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="text-gray-600 dark:text-gray-400">Your Apartments:</span>
-                                                    <span className="font-medium text-green-600 dark:text-green-400">
-                                                        {userAssignedApartments.length}
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="text-gray-600 dark:text-gray-400">Access:</span>
-                                                    <span className={`font-medium ${accessGranted ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                                        {accessGranted ? 'Granted' : 'Denied'}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         )}
 

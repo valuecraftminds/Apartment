@@ -344,7 +344,7 @@ export default function BillPayments() {
             <div className='flex items-center justify-between bg-white dark:bg-gray-800 rounded-2xl p-6 mb-6'>
               <div className='flex items-center'>
                 <Receipt size={40} className='text-purple-600 dark:text-purple-400 mr-3'/>
-                <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Bill Payments</h1>
+                <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Bill Payments Review</h1>
               </div>
             </div> 
 
@@ -546,7 +546,7 @@ export default function BillPayments() {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           Date
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           Actions
                         </th>
                       </tr>
@@ -633,7 +633,7 @@ export default function BillPayments() {
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div className="flex space-x-1">
                               {/* Mark as Paid for Pending status */}
-                              {payment.payment_status === 'Pending' && (
+                              {/* {payment.payment_status === 'Pending' && (
                                 <div className="relative group">
                                   <button
                                     onClick={() => handleUpdatePayment(payment)}
@@ -647,10 +647,10 @@ export default function BillPayments() {
                                     <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 dark:border-t-gray-700"></div>
                                   </div>
                                 </div>
-                              )}
+                              )} */}
                               
                               {/* Mark as Pending for Paid status */}
-                              {payment.payment_status === 'Paid' && (
+                              {/* {payment.payment_status === 'Paid' && (
                                 <div className="relative group">
                                   <button
                                     onClick={() => handleStatusUpdate(payment.id, 'Pending')}
@@ -664,10 +664,10 @@ export default function BillPayments() {
                                     <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 dark:border-t-gray-700"></div>
                                   </div>
                                 </div>
-                              )}
+                              )} */}
                               
                               {/* Edit Partial payment */}
-                              {payment.payment_status === 'Partial' && (
+                              {/* {payment.payment_status === 'Partial' && (
                                 <div className="relative group">
                                   <button
                                     onClick={() => handleUpdatePayment(payment)}
@@ -681,10 +681,10 @@ export default function BillPayments() {
                                     <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 dark:border-t-gray-700"></div>
                                   </div>
                                 </div>
-                              )}
+                              )} */}
                               
                               {/* Retry Failed payment */}
-                              {payment.payment_status === 'Failed' && (
+                              {/* {payment.payment_status === 'Failed' && (
                                 <div className="relative group">
                                   <button
                                     onClick={() => handleStatusUpdate(payment.id, 'Pending')}
@@ -698,10 +698,10 @@ export default function BillPayments() {
                                     <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 dark:border-t-gray-700"></div>
                                   </div>
                                 </div>
-                              )}
+                              )} */}
                               
                               {/* Edit Refunded payment */}
-                              {payment.payment_status === 'Refunded' && (
+                              {/* {payment.payment_status === 'Refunded' && (
                                 <div className="relative group">
                                   <button
                                     onClick={() => handleUpdatePayment(payment)}
@@ -715,10 +715,10 @@ export default function BillPayments() {
                                     <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 dark:border-t-gray-700"></div>
                                   </div>
                                 </div>
-                              )}
+                              )} */}
                               
                               {/* Generic Edit button for other statuses */}
-                              {!['Partial', 'Refunded'].includes(payment.payment_status) && (
+                              {/* {!['Partial', 'Refunded'].includes(payment.payment_status) && (
                                 <div className="relative group">
                                   <button
                                     onClick={() => handleUpdatePayment(payment)}
@@ -732,7 +732,7 @@ export default function BillPayments() {
                                     <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 dark:border-t-gray-700"></div>
                                   </div>
                                 </div>
-                              )}
+                              )} */}
                               
                               {/* Delete button */}
                               <div className="relative group">
