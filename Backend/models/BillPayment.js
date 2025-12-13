@@ -170,6 +170,55 @@ class BillPayment{
         return rows;
     }
 
+    // static async updatePaymentStatus(id, payment_status, paidAmount = null, paid_at = null) {
+    //     // First get the current bill payment to check its type
+    //     const currentPayment = await this.findById(id);
+    //     if (!currentPayment) {
+    //         throw new Error('Payment not found');
+    //     }
+        
+    //     let query = 'UPDATE bill_payments SET payment_status = ?';
+    //     const params = [payment_status];
+        
+    //     if (paidAmount !== null) {
+    //         // Get the total amount from the appropriate generated bill table
+    //         if (currentPayment.generateMeasurable_bills_id) {
+    //             // For measurable bills: Use totalAmount
+    //             query += ', paidAmount = ?, pendingAmount = (SELECT totalAmount FROM generateMeasurable_bills WHERE id = ?) - ?';
+    //             params.push(paidAmount, currentPayment.generateMeasurable_bills_id, paidAmount);
+    //         } else if (currentPayment.generate_bills_id) {
+    //             // For shared bills: Use unitPrice
+    //             query += ', paidAmount = ?, pendingAmount = (SELECT unitPrice FROM generate_bills WHERE id = ?) - ?';
+    //             params.push(paidAmount, currentPayment.generate_bills_id, paidAmount);
+    //         } else {
+    //             // Fallback: Try to get amount from payment record itself
+    //             query += ', paidAmount = ?, pendingAmount = unitPrice - ?';
+    //             params.push(paidAmount, paidAmount);
+    //         }
+    //     }
+        
+    //     // Handle paid_at date
+    //     if (paid_at) {
+    //         query += ', paid_at = ?';
+    //         params.push(paid_at);
+    //     } else if (payment_status === 'Paid') {
+    //         query += ', paid_at = CURRENT_TIMESTAMP';
+    //     } else if (payment_status === 'Pending' && paidAmount === 0) {
+    //         query += ', paid_at = NULL';
+    //     }
+    //     // For Partial payments
+    //     else if (payment_status === 'Partial' && paidAmount > 0) {
+    //         query += ', paid_at = COALESCE(paid_at, CURRENT_TIMESTAMP)';
+    //     }
+        
+    //     query += ' WHERE id = ?';
+    //     params.push(id);
+        
+    //     await pool.execute(query, params);
+        
+    //     return this.findById(id);
+    // }
+
     static async updatePaymentStatus(id, payment_status, paidAmount = null, paid_at = null) {
         // First get the current bill payment to check its type
         const currentPayment = await this.findById(id);
@@ -197,10 +246,12 @@ class BillPayment{
             }
         }
         
-        // Handle paid_at date
+        // Handle paid_at date - Convert to MySQL DATETIME format
         if (paid_at) {
+            // Convert ISO string to MySQL DATETIME format (YYYY-MM-DD HH:MM:SS)
+            const mysqlDatetime = new Date(paid_at).toISOString().slice(0, 19).replace('T', ' ');
             query += ', paid_at = ?';
-            params.push(paid_at);
+            params.push(mysqlDatetime);
         } else if (payment_status === 'Paid') {
             query += ', paid_at = CURRENT_TIMESTAMP';
         } else if (payment_status === 'Pending' && paidAmount === 0) {
@@ -213,6 +264,9 @@ class BillPayment{
         
         query += ' WHERE id = ?';
         params.push(id);
+        
+        console.log('Query:', query); // Debug
+        console.log('Params:', params); // Debug
         
         await pool.execute(query, params);
         
