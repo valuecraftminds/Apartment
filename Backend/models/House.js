@@ -4,7 +4,13 @@ const { v4: uuidv4 } = require('uuid');
 class House{
     static async create(houseData) {
     const { company_id, apartment_id, floor_id,  house_id, housetype_id } = houseData;
-    const id = uuidv4().replace(/-/g, '').substring(0, 10);
+
+    const [countResult] = await pool.execute(
+        'SELECT COUNT(*) as count FROM houses WHERE company_id = ? AND apartment_id = ? and floor_id = ?',
+        [company_id, apartment_id,floor_id]
+    );
+    const nextNumber = (countResult[0].count + 1).toString().padStart(3, '0');
+    const id = `${floor_id}-${nextNumber}`;
 
     const [result] = await pool.execute(
         `INSERT INTO houses 

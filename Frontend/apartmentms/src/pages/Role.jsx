@@ -137,6 +137,14 @@ export default function Role() {
         console.log(`Components assigned to role ${roleId}:`, components);
     };
 
+    const formatDate = (dateString) => {
+        try {
+            return new Date(dateString).toLocaleDateString();
+        } catch {
+            return 'N/A';
+        }
+    };
+
 
 
   return (
@@ -211,7 +219,7 @@ export default function Role() {
                                                     {role.role_name}
                                                 </td>
                                                 <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                                                    {role.created_at}
+                                                    {formatDate(role.created_at)}
                                                 </td>
                                                 <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                                                     <div className="flex space-x-2">

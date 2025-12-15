@@ -2,16 +2,35 @@ const pool = require('../db');
 const { v4: uuidv4 } = require('uuid');
 
 class Apartment {
+    // static async create(apartmentData) {
+    //     const { apartment_id,name, address, city, picture,company_id } = apartmentData;
+    //     const id = uuidv4().replace(/-/g, '').substring(0, 6);
+
+    //     const [result] = await pool.execute(
+    //         'INSERT INTO apartments (id,apartment_id, name, address, city,  picture, is_active, company_id) VALUES (?, ?, ?, ?, ?, ?, 1, ?)',
+    //         [id,apartment_id, name, address, city, picture, company_id]
+
+    //     );
+    //     return {id, ...apartmentData };
+    // }
+
     static async create(apartmentData) {
-        const { apartment_id,name, address, city, picture,company_id } = apartmentData;
-        const id = uuidv4().replace(/-/g, '').substring(0, 10);
+        const { apartment_id, name, address, city, picture, company_id } = apartmentData;
+        
+        // Get count of existing apartments for this company
+        const [countResult] = await pool.execute(
+            'SELECT COUNT(*) as count FROM apartments WHERE company_id = ?',
+            [company_id]
+        );
+        
+        const nextNumber = (countResult[0].count + 1).toString().padStart(3, '0');
+        const id = `${company_id}-${nextNumber}`;
 
         const [result] = await pool.execute(
-            'INSERT INTO apartments (id,apartment_id, name, address, city,  picture, is_active, company_id) VALUES (?, ?, ?, ?, ?, ?, 1, ?)',
-            [id,apartment_id, name, address, city, picture, company_id]
-
+            'INSERT INTO apartments (id, apartment_id, name, address, city, picture, is_active, company_id) VALUES (?, ?, ?, ?, ?, ?, 1, ?)',
+            [id, apartment_id, name, address, city, picture, company_id]
         );
-        return {id, ...apartmentData };
+        return { id, apartment_id, ...apartmentData };
     }
 
     static async findById(id) {

@@ -265,6 +265,14 @@ export default function Houses() {
         setShowQRModal(true);
     };
 
+    const formatDate = (dateString) => {
+        try {
+            return new Date(dateString).toLocaleDateString();
+        } catch {
+            return 'N/A';
+        }
+    };
+
 
     return (
         <div className='flex h-screen bg-gray-100 dark:bg-gray-900 w-screen transition-colors duration-200'>
@@ -418,7 +426,7 @@ export default function Houses() {
                                                                 {house.status}
                                                             </td>
                                                             <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                                                {house.created_at}
+                                                                {formatDate(house.created_at)}
                                                             </td>
                                                             <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                                                                 <div className="flex space-x-2">

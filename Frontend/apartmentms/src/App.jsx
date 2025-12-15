@@ -68,7 +68,7 @@ export default function App() {
         <Route path="/billprice/:bill_id/:billrange_id" element={<BillPrice />} />        
         {/* <Route path="/owner-dashboard" element={<OwnerDashboard />} />
         <Route path="/manager-dashboard" element={<ManagerDashboard />} />
-        <Route path="/technician-dashboard" element={<TechDashboard/>} /> */}
+        <Route path="/tech-dashboard" element={<TechDashboard/>} /> */}
         <Route path='/employee-dashboard' element={<EmployeeDashboard/>}/>
         <Route path='/role' element={<Role/>}/>
         <Route path='/profile-page' element={<ProfilePage/>}/>

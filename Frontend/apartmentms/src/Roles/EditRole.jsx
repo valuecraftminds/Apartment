@@ -181,7 +181,6 @@ export default function EditRole({ role, onClose, onUpdated }) {
           </div>
         </form>
       </div>
-       <ToastContainer position="top-center" autoClose={3000} />
     </div>
   );
 }
