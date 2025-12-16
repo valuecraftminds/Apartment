@@ -1,3 +1,4 @@
+//controllers/houseController.js
 const e = require('express');
 const House = require('../models/House');
 const pool = require('../db')
