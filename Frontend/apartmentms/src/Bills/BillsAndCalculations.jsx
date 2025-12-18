@@ -9,6 +9,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api from '../api/axios';
 import { ToastContainer } from 'react-toastify';
 import GenerateBills from './GenerateBills';
+import ViewMeasurableBills from './ViewMeasurableBills';
 
 export default function BillsAndCalculations() {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -53,7 +54,16 @@ export default function BillsAndCalculations() {
                                     ? "text-purple-600 border-b-2 border-purple-600"
                                     : "text-gray-600 dark:text-gray-300 hover:text-purple-600"}`}
                         >
-                            Generate Bills
+                            Generate Shared Bills
+                        </button>
+                        <button
+                            onClick={() => setActiveTab("measurableBill")}
+                            className={`px-4 py-2 font-semibold 
+                                ${activeTab === "measurableBill"
+                                    ? "text-purple-600 border-b-2 border-purple-600"
+                                    : "text-gray-600 dark:text-gray-300 hover:text-purple-600"}`}
+                        >
+                            Generated Measurable Bills
                         </button>
                     </div>
 
@@ -62,6 +72,9 @@ export default function BillsAndCalculations() {
                     )}
                     {activeTab === "generateBill" && (
                         <GenerateBills/>
+                    )}
+                    {activeTab === "measurableBill" && (
+                        <ViewMeasurableBills/>
                     )}
                 </div>
             </div>

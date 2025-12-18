@@ -661,16 +661,7 @@ return (
                                                         title="View Bill Details"
                                                     >
                                                         <Eye size={16} />
-                                                    </button>
-                                                    
-                                                    <button
-                                                        onClick={() => {/* Implement edit functionality */}}
-                                                        className="p-2 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 transition-colors hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg"
-                                                        title="Edit Bill"
-                                                    >
-                                                        <Edit size={16} />
-                                                    </button>
-                                                    
+                                                    </button>                                                    
                                                     <button
                                                         onClick={() => handleDeleteClick(bill)}
                                                         className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg"

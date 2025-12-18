@@ -84,15 +84,15 @@ export default function HouseBillMeter() {
 
                         {/* Tabs - Mobile optimized */}
                         <div className="flex space-x-4 border-b border-gray-300 dark:border-gray-700 mb-4 lg:mb-6 px-1 lg:px-0">
-                            <button
+                            {/* <button
                                 onClick={() => setActiveTab("manual")}
                                 className={`px-3 lg:px-4 py-2 lg:py-2 text-sm lg:text-base font-semibold transition-colors duration-200 
                                     ${activeTab === "manual"
                                         ? "text-purple-600 border-b-2 border-purple-600 dark:text-purple-400"
                                         : "text-gray-600 dark:text-gray-300 hover:text-purple-600"}`}>
                                 Manual
-                            </button>
-                            <button
+                            </button> */}
+                            {/* <button
                                 onClick={() => setActiveTab("scanQR")}
                                 className={`px-3 lg:px-4 py-2 lg:py-2 text-sm lg:text-base font-semibold 
                                     ${activeTab === "scanQR"
@@ -100,17 +100,12 @@ export default function HouseBillMeter() {
                                         : "text-gray-600 dark:text-gray-300 hover:text-purple-600"}`}
                             >
                                 Scan QR
-                            </button>
+                            </button> */}
                         </div>
 
                         {/* Content Area */}
-                        <div className="bg-white dark:bg-gray-800 rounded-xl lg:rounded-2xl p-4 lg:p-6">
-                            {activeTab === "manual" &&  (
-                                <ManualBillMeter/>
-                            )}
-                            {activeTab === "scanQR" && (
-                                <MeasurableBills/>
-                            )}
+                        <div className="bg-white dark:bg-gray-800 rounded-xl lg:rounded-2xl p-4 lg:p-6">                            
+                            <MeasurableBills/>
                         </div>
                     </div>
                 </div>

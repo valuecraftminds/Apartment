@@ -454,7 +454,7 @@ const generateMeasurableBillController = {
                 });
             }
 
-            await GenerateMeasurableBills.delete(id);
+            await GenerateMeasurableBill.delete(id);
             
             res.json({
                 success: true,
@@ -465,7 +465,7 @@ const generateMeasurableBillController = {
             console.error('Delete measurable bill error:', err);
             res.status(500).json({
                 success: false,
-                message: 'Server error while deleting measurable bill'
+                message: 'Cannot Delete generated bills'
             });
         }
     },

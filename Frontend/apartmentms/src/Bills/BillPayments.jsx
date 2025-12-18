@@ -307,7 +307,6 @@ export default function BillPayments() {
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 
                  'July', 'August', 'September', 'October', 'November', 'December'];
   
-  const years = [2023, 2024, 2025, 2026];
 
   // Get unique bill types from bills
   const billTypes = [...new Set(bills.map(bill => bill.billtype))].filter(type => type);
@@ -474,7 +473,7 @@ export default function BillPayments() {
                 </div>
 
                 {/* Year Filter */}
-                <div>
+                {/* <div>
                   <select
                     value={filters.year}
                     onChange={(e) => handleFilterChange('year', e.target.value)}
@@ -484,6 +483,19 @@ export default function BillPayments() {
                       <option key={year} value={year}>{year}</option>
                     ))}
                   </select>
+                </div> */}
+                {/* Year Input */}
+                <div>
+                  <input
+                    type="number"
+                    value={filters.year}
+                    onChange={(e) => handleFilterChange('year', e.target.value)}
+                    min="2000"
+                    max="2100"
+                    className="w-full px-3 py-2 text-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter year"
+                    required
+                  />
                 </div>
 
                 {/* Clear Filters Button */}
