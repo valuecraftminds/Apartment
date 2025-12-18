@@ -145,6 +145,35 @@ const houseOwnerController ={
         }
     },
 
+    // Get house owner by house ID
+    async getHouseOwnerByHouseId(req, res) {
+        try {
+            const { house_id, apartment_id } = req.query;
+
+            if (!house_id) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'House ID is required'
+                });
+            }
+
+            // Use the fixed method that joins with houses table
+            const houseOwner = await HouseOwner.findByHouseAndApartment(house_id, apartment_id);
+            
+            res.json({
+                success: true,
+                data: houseOwner
+            });
+
+        } catch (err) {
+            console.error('Get house owner by house error:', err);
+            res.status(500).json({
+                success: false,
+                message: 'Server error while fetching house owner'
+            });
+        }
+    },
+
     //update house owner
     async updateHouseOwner(req,res){
         try{

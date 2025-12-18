@@ -8,33 +8,15 @@ import CalculateBill from './CalculateBill';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../api/axios';
 import { ToastContainer } from 'react-toastify';
+import GenerateBills from './GenerateBills';
+import ViewMeasurableBills from './ViewMeasurableBills';
 
 export default function BillsAndCalculations() {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-    const [activeTab, setActiveTab] = useState("bills"); // NEW: tab state
+    const [activeTab, setActiveTab] = useState("bills");
     const navigate = useNavigate();
     const { apartment_id } = useParams();
     const [apartment, setApartment] = useState(null);
-
-    // useEffect(() => {
-    //     const fetchApartment = async () => {
-    //         try {
-    //             const res = await api.get(`/apartments/${apartment_id}`);
-    //             if (res.data.success) {
-    //                 setApartment(res.data.data); // set the apartment object
-    //             }
-    //         } catch (err) {
-    //             console.error('Error fetching apartment:', err);
-    //         }
-    //     };
-    //     if (apartment_id) fetchApartment();
-    // }, [apartment_id]);
-
-    // const handleBack = () => {
-    //     navigate('/manage-bills');
-    // };
-
-
 
   return (
     <div className='flex h-screen bg-gray-100 dark:bg-gray-900 w-screen transition-colors duration-200'>
@@ -52,15 +34,6 @@ export default function BillsAndCalculations() {
                                 <Receipt size={40} className='text-purple-600 dark:text-purple-400 mr-3'/>
                                 <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Bill Management for Apartments</h1>
                             </div>
-                            {/* <button onClick={handleAddNew} className='flex items-center gap-2 px-4 py-2 rounded-lg font-semibold shadow-md transition-all duration-300 text-white bg-purple-600 hover:bg-purple-700 hover:scale-105'>
-                                <Plus size={20}/>
-                                <span>Add New</span>
-                            </button> */}
-                            {/* {apartment && (
-                                <div className='mt-1 text-gray-700 dark:text-gray-300 font-semibold ml-12'>
-                                    Apartment: {apartment.name}
-                                </div>
-                            )} */}
                         </div>
                     </div>
 
@@ -74,34 +47,34 @@ export default function BillsAndCalculations() {
                                     : "text-gray-600 dark:text-gray-300 hover:text-purple-600"}`}>
                             Bill Type
                         </button>
-                        {/* <button
-                            onClick={() => setActiveTab("calculateBill")}
+                        <button
+                            onClick={() => setActiveTab("generateBill")}
                             className={`px-4 py-2 font-semibold 
-                                ${activeTab === "calculateBill"
+                                ${activeTab === "generateBill"
                                     ? "text-purple-600 border-b-2 border-purple-600"
                                     : "text-gray-600 dark:text-gray-300 hover:text-purple-600"}`}
                         >
-                            Manage Bills For Each House
-                        </button> */}
-                        {/* <button
-                            onClick={() => setActiveTab("calculateBillApartment")}
+                            Generate Shared Bills
+                        </button>
+                        <button
+                            onClick={() => setActiveTab("measurableBill")}
                             className={`px-4 py-2 font-semibold 
-                                ${activeTab === "calculateBillApartment"
+                                ${activeTab === "measurableBill"
                                     ? "text-purple-600 border-b-2 border-purple-600"
                                     : "text-gray-600 dark:text-gray-300 hover:text-purple-600"}`}
                         >
-                            Manage Bills for Whole Apartment 
-                        </button> */}
+                            Generated Measurable Bills
+                        </button>
                     </div>
 
                     {activeTab === "bills" &&  (
                         <Bills/>
                     )}
-                    {activeTab === "calculateBill" && (
-                        <CalculateBill/>
+                    {activeTab === "generateBill" && (
+                        <GenerateBills/>
                     )}
-                    {activeTab === 'calculateBillApartment' && (
-                        <ManageBills/>
+                    {activeTab === "measurableBill" && (
+                        <ViewMeasurableBills/>
                     )}
                 </div>
             </div>

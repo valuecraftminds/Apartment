@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import Sidebar from '../components/Sidebar'
 import Navbar from '../components/Navbar'
-import { ChevronLeft, Edit, House, Image, Loader, Plus, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react'
+import { ChevronLeft, Edit, FileText, House, Image, Loader, Plus, QrCode, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../api/axios';
 import HouseTypes from './HouseTypes';
@@ -10,6 +10,8 @@ import CreateHouse from './CreateHouse';
 import { toast, ToastContainer } from 'react-toastify';
 import EditHouse from './EditHouse';
 import Bills from '../Bills/Bills';
+import HouseDocumentModal from './HouseDocumentModal';
+import QRCodeGenerator from './QRCodeGenerator';
 
 export default function Houses() {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -30,10 +32,13 @@ export default function Houses() {
     const [deactivatingHouse, setDeactivatingHouse] = useState(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deletingHouse, setDeletingHouse] = useState(null);   
-
     const [activeTab, setActiveTab] = useState("houses");
-
-   const [selectedHouse, setSelectedHouse] = useState(null);
+    const [selectedHouse, setSelectedHouse] = useState(null);
+    const [showHouseDocumentModal, setShowHouseDocumentModal] = useState(false);
+    const [selectedHouseForDocuments, setSelectedHouseForDocuments] = useState(null);
+    const [selectedHouses, setSelectedHouses] = useState([]);
+    const [selectAll, setSelectAll] = useState(false);
+    const [showQRModal, setShowQRModal] = useState(false);
 
     useEffect(() => {
         const fetchApartment = async () => {
@@ -96,6 +101,8 @@ export default function Houses() {
             const result = await api.get(`/houses?apartment_id=${apartment_id}&floor_id=${floor_id}`);
             if (result.data.success && Array.isArray(result.data.data)) {
                 setHouses(result.data.data);
+                setSelectedHouses([]);
+                setSelectAll(false);
             } else {
                 setHouses([]);
             }
@@ -196,6 +203,76 @@ export default function Houses() {
     setDeletingHouse(null);
   };
 
+  //handle house document
+    const handleDocumentClick = (house) => {
+      setSelectedHouseForDocuments(house);
+      setShowHouseDocumentModal(true);
+      };
+  
+    const handleDocumentModalClose = () => {
+        setShowHouseDocumentModal(false);
+        setSelectedHouseForDocuments(null);
+    };
+  
+    const handleDocumentUploadSuccess = () => {
+        toast.success('House documents uploaded successfully!');
+    };
+
+     // Checkbox selection handlers
+    const handleHouseSelect = (houseId) => {
+        setSelectedHouses(prev => {
+            if (prev.includes(houseId)) {
+                return prev.filter(id => id !== houseId);
+            } else {
+                return [...prev, houseId];
+            }
+        });
+    };
+
+    const handleSelectAll = () => {
+        if (selectAll) {
+            setSelectedHouses([]);
+        } else {
+            const allHouseIds = houses.map(house => house.id);
+            setSelectedHouses(allHouseIds);
+        }
+        setSelectAll(!selectAll);
+    };
+
+    // Update selectAll state when selection changes
+    useEffect(() => {
+        if (houses.length > 0 && selectedHouses.length === houses.length) {
+            setSelectAll(true);
+        } else {
+            setSelectAll(false);
+        }
+    }, [selectedHouses, houses]);
+
+    // Get selected houses count
+    const selectedCount = selectedHouses.length;
+
+    //Generate QR Codes for selected houses
+    const handleGenerateQRCodes = () => {
+        if (selectedHouses.length === 0) {
+            toast.error('Please select at least one house to generate QR codes');
+            return;
+        }
+        
+        const selectedHouseObjects = houses.filter(house => 
+            selectedHouses.includes(house.id)
+        );
+        
+        setShowQRModal(true);
+    };
+
+    const formatDate = (dateString) => {
+        try {
+            return new Date(dateString).toLocaleDateString();
+        } catch {
+            return 'N/A';
+        }
+    };
+
 
     return (
         <div className='flex h-screen bg-gray-100 dark:bg-gray-900 w-screen transition-colors duration-200'>
@@ -250,10 +327,28 @@ export default function Houses() {
                         {/* Content Switch */}
                         {activeTab === "houses" ? (
                             <div className='bg-white dark:bg-gray-800 rounded-2xl p-6'>
+                                <div className='flex gap-2'>
                                 <button onClick={handleAddNew} className='flex items-center gap-2 mb-4 px-4 py-2 rounded-lg font-semibold shadow-md transition-all duration-300 text-white bg-purple-600 hover:bg-purple-700 hover:scale-105'>
                                     <Plus size={20} />
                                     <span>New House</span>
                                 </button>
+                                <button 
+                                    onClick={handleGenerateQRCodes}
+                                    disabled={selectedHouses.length === 0}
+                                    className='flex items-center ml-190 gap-2 px-4 py-2 mb-4 rounded-lg font-semibold shadow-md transition-all duration-300 text-white bg-green-600 hover:bg-green-700 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100'
+                                >
+                                    <QrCode size={20} />
+                                    <span>Generate QR Code ({selectedHouses.length})</span>
+                                </button>
+                                </div>
+                                 {/* Selection Info */}
+                                {selectedHouses.length > 0 && (
+                                    <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                                        <p className="text-sm text-blue-700 dark:text-blue-300">
+                                            {selectedHouses.length} house{selectedHouses.length !== 1 ? 's' : ''} selected for QR code generation
+                                        </p>
+                                    </div>
+                                )}
                                 
                                 {loadingHouses ? (
                                     <div className="flex justify-center items-center py-12">
@@ -283,6 +378,14 @@ export default function Houses() {
                                             <table className="w-full table-auto">
                                                 <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
                                                     <tr>
+                                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={selectAll}
+                                                                onChange={handleSelectAll}
+                                                                className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                                                            />
+                                                        </th>
                                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">House No</th>
                                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Type</th>
                                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
@@ -302,6 +405,18 @@ export default function Houses() {
                                                             }`}
                                                         >
                                                             <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={selectedHouses.includes(house.id)}
+                                                                    onChange={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleHouseSelect(house.id);
+                                                                    }}
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                    className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                                                                />
+                                                            </td>
+                                                            <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                                                                 {house.house_id}
                                                             </td>
                                                             <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
@@ -311,10 +426,20 @@ export default function Houses() {
                                                                 {house.status}
                                                             </td>
                                                             <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                                                {house.created_at}
+                                                                {formatDate(house.created_at)}
                                                             </td>
                                                             <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                                                                 <div className="flex space-x-2">
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleDocumentClick(house)
+                                                                        }}
+                                                                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                                                                        title="Manage Documents"
+                                                                    >
+                                                                        <FileText size={20} />
+                                                                    </button>
                                                                     <button
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
@@ -458,31 +583,54 @@ export default function Houses() {
                 </div>
             )}
             {showDeleteModal && deletingHouse && (
-            <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm relative">
-                    <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-                    Confirm Deletion
-                    </h2>
-                    <p className="text-gray-600 dark:text-gray-300 mb-6">
-                    Are you sure you want to delete "{deletingHouse.house_id}"?
-                    </p>
-                    <div className="flex justify-end space-x-3">
-                    <button
-                        onClick={handleCancelDelete}
-                        className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={handleConfirmDelete}
-                        className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors duration-200"
-                    >
-                        Delete
-                    </button>
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm relative">
+                        <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                        Confirm Deletion
+                        </h2>
+                        <p className="text-gray-600 dark:text-gray-300 mb-6">
+                        Are you sure you want to delete "{deletingHouse.house_id}"?
+                        </p>
+                        <div className="flex justify-end space-x-3">
+                        <button
+                            onClick={handleCancelDelete}
+                            className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleConfirmDelete}
+                            className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors duration-200"
+                        >
+                            Delete
+                        </button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        )}            
+            )}            
+        {/* House Document Modal */}
+        {showHouseDocumentModal && selectedHouseForDocuments && (
+            <div className="fixed inset-0 bg-white/0 backdrop-blur-lg flex items-center justify-center z-50">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto relative">
+                    <HouseDocumentModal
+                        house={selectedHouseForDocuments}
+                        apartment={apartment}
+                        floor={floor}
+                        onClose={handleDocumentModalClose}
+                        onUploadSuccess={handleDocumentUploadSuccess}
+                        />
+                    </div>
+                </div>
+        )}
+         {/* QR Code Generator Modal */}
+            {showQRModal && apartment && floor && (
+                <QRCodeGenerator
+                    houses={houses.filter(house => selectedHouses.includes(house.id))}
+                    apartment={apartment}
+                    floor={floor}
+                    onClose={() => setShowQRModal(false)}
+                />
+            )}
             <ToastContainer position="top-center" autoClose={3000} />
         </div>
     )

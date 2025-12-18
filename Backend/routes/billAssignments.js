@@ -30,4 +30,9 @@ router.delete('/:id', billAssignmentController.deleteAssignment);
 // Remove assignment from specific houses
 router.delete('/:bill_id/remove', billAssignmentController.removeAssignment);
 
+router.get('/bill/:bill_id/count', billAssignmentController.getAssignedHousesCountByBillId);
+
+router.get('/active', billAssignmentController.getActiveBillAssignmentsByHouse);
+router.get('/house-details', billAssignmentController.getHouseBillDetails);
+
 module.exports = router;

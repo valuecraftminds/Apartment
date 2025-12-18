@@ -76,7 +76,6 @@ export default function BulkImportModal({ isOpen, onClose, onImportSuccess }) {
       });
 
       setResults(response.data.data);
-      toast.success('Bulk import completed successfully!');
       
       if (onImportSuccess) {
         onImportSuccess();

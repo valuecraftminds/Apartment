@@ -4,8 +4,8 @@ const Tenant = require('../models/Tenant');
 const tenantController = {
     async createTenant(req,res){
         try{
-            const {regNo,name, address, employees}=req.body;
-            if(!regNo || !name || !address || employees === undefined){
+            const {regNo,name, address}=req.body;
+            if(!regNo || !name || !address === undefined){
                 return res.status(400).json({
                     success: false,
                     message: 'All fields are required'
@@ -22,19 +22,18 @@ const tenantController = {
             }
 
             //Validate employees is a positive number
-            if(isNaN(employees) || employees < 1){
-                return res.status(400).json({
-                    success:false,
-                    message: 'Employees must be a positive number'
-                });
-            }
+            // if(isNaN(employees) || employees < 1){
+            //     return res.status(400).json({
+            //         success:false,
+            //         message: 'Employees must be a positive number'
+            //     });
+            // }
 
             //create tenant
             const newTenant=await Tenant.create({
                 regNo,
                 name,
-                address,
-                employees:parseInt(employees)
+                address
             });
 
             res.status(201).json({
@@ -99,7 +98,7 @@ const tenantController = {
     async updateTenant(req,res){
         try{
             const {id}=req.params;
-            const {regNo,name,address,employees}=req.body;
+            const {regNo,name,address}=req.body;
 
             //check tenant exist
             const existingTenant= await Tenant.findById(id);
@@ -123,8 +122,7 @@ const tenantController = {
             const updateTenant= await Tenant.update(id,{
                 regNo: regNo || existingTenant.regNo, // Keep existing regNo if not provided
                 name: name || existingTenant.name,
-                address: address || existingTenant.address,
-                employees: employees ? parseInt(employees): existingTenant.employees
+                address: address || existingTenant.address
             });
 
             res.json({

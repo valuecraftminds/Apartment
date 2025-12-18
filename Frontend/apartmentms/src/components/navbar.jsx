@@ -10,6 +10,7 @@ export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
   const { auth, setAuth } = useContext(AuthContext)
+  const { logout, resetActivityTimer } = useContext(AuthContext);
   const navigate = useNavigate()
   const [showlogoutModel,setShowLogoutModel] = useState(false);
 
@@ -27,17 +28,42 @@ export default function Navbar() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!auth.accessToken) return;
+
+    const activityEvents = [
+      'mousemove', 'mousedown', 'keydown', 'scroll', 'click',
+      'touchstart', 'touchmove', 'wheel', 'resize', 'focus'
+    ];
+
+    const handleActivity = () => resetActivityTimer();
+
+    activityEvents.forEach(evt => window.addEventListener(evt, handleActivity, { passive: true }));
+
+    // Handle tab visibility
+    const handleVisibilityChange = () => {
+      if (!document.hidden) resetActivityTimer();
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      activityEvents.forEach(evt => window.removeEventListener(evt, handleActivity));
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [auth.accessToken, resetActivityTimer]);
+
   const handleLogout = async () => {
     try {
       await api.post('/auth/logout')
-      setAuth(null)
+      // setAuth(null)
+      logout();
       toast.success('Logged out successfully')
-      navigate('/login')
+      navigate('/')
     } catch (error) {
       console.error('Logout error:', error)
-      setAuth(null)
+      logout();
       toast.success('Logged out successfully')
-      navigate('/login')
+      navigate('/')
     }
   }
 
@@ -115,8 +141,9 @@ export default function Navbar() {
             <div className="flex items-center space-x-2">
               <div className="h-8 w-8 bg-purple-600 rounded-full flex items-center justify-center">
                 <span className="text-white text-sm font-medium">
-                  {auth?.user?.firstname?.toUpperCase()}
-                  {/* {auth?.user?.name?.[0] || auth?.user?.email?.[0]?.toUpperCase()} */}
+                  {auth?.user?.firstname?.charAt(0)?.toUpperCase()
+                  //  auth?.user?.email?.charAt(0)?.toUpperCase()
+                  }
                 </span>
               </div>
               <div className="hidden md:block text-left">

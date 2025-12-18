@@ -21,8 +21,7 @@ export default function CombinedRegistration() {
   const [companyData, setCompanyData] = useState({
     regNo: '',
     name: '',
-    address: '',
-    employees: ''
+    address: ''
   });
 
   const [errors, setErrors] = useState({
@@ -35,8 +34,7 @@ export default function CombinedRegistration() {
     confirmPassword: '',
     regNo:'',
     name: '',
-    address: '',
-    employees: ''
+    address: ''
   });
 
   const [touched, setTouched] = useState({
@@ -49,8 +47,7 @@ export default function CombinedRegistration() {
     confirmPassword: false,
     regNo:false,
     name: false,
-    address: false,
-    employees: false
+    address: false
   });
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -152,11 +149,11 @@ export default function CombinedRegistration() {
         else if (value.length < 3) error = 'Company address must be at least 3 characters';
         break;
 
-      case 'employees':
-        if (!value.trim()) error = 'Number of employees is required';
-        else if (!/^\d+$/.test(value)) error = 'Number of employees must be a valid number';
-        else if (parseInt(value) < 1) error = 'Number of employees must be at least 1';
-        break;
+      // case 'employees':
+      //   if (!value.trim()) error = 'Number of employees is required';
+      //   else if (!/^\d+$/.test(value)) error = 'Number of employees must be a valid number';
+      //   else if (parseInt(value) < 1) error = 'Number of employees must be at least 1';
+      //   break;
                                 
       default:
         break;
@@ -213,7 +210,7 @@ export default function CombinedRegistration() {
 
     // Mark all fields in current step as touched and validate them
     const stepFields = {
-      1: ['regNo','name', 'address', 'employees'], // Company details
+      1: ['regNo','name', 'address'], // Company details
       2: ['firstname','lastname','country','mobile','email'], // User details
       3: ['password', 'confirmPassword'], // Security
     }[step];
@@ -244,7 +241,70 @@ export default function CombinedRegistration() {
     setCurrentStep(currentStep - 1);
   };
 
-  async function submit(e) {
+//   async function submit(e) {
+//     e.preventDefault();
+  
+//     // Validate all steps before submitting
+//     let allValid = true;
+//     for (let step = 1; step <= totalSteps; step++) {
+//       if (!validateStep(step)) {
+//         allValid = false;
+//         if (step !== currentStep) {
+//           setCurrentStep(step);
+//         }
+//         break;
+//       }
+//     }
+
+//     if (!allValid) {
+//       toast.error("Please fix all validation errors before submitting");
+//       return;
+//     }
+
+//     try {
+//       // Prepare company data
+//       const companyPayload = {
+//         regNo: companyData.regNo,
+//         name: companyData.name,
+//         address: companyData.address,
+//         employees: parseInt(companyData.employees, 10)
+//       };
+
+//     console.log('Sending company data to /tenants:', companyPayload);
+    
+//     // First register the company
+//     const companyResponse = await api.post('/tenants', companyPayload);
+//     console.log('Company registration successful:', companyResponse.data);
+
+//     // Create default admin role for the company
+//     const defaultRoleResponse = await api.post('/roles', {
+//       role_name: 'Admin'
+//     }, {
+//       headers: {
+//         Authorization: `Bearer ${companyResponse.data.accessToken}` // You might need to adjust this
+//       }
+//     });
+
+//     // Then register the user with the company ID
+//     const userResponse = await api.post('/auth/register', {
+//       firstname: userData.firstname,
+//       lastname: userData.lastname,
+//       country: userData.country,
+//       mobile:userData.mobile,
+//       email: userData.email,
+//       password: userData.password,
+//       company_id: companyResponse.data.data.id // Send as company_id (not companyId)
+//     });
+
+//       toast.success("Registration successful! Company and user account created.");
+//       setTimeout(() => navigate('/login'), 2000);
+//     } catch (err) {
+//       console.error('Registration error:', err);
+//       toast.error(err.response?.data?.message || "❌ Registration failed");
+//     }
+// }
+
+async function submit(e) {
   e.preventDefault();
   
   // Validate all steps before submitting
@@ -269,8 +329,7 @@ export default function CombinedRegistration() {
     const companyPayload = {
       regNo: companyData.regNo,
       name: companyData.name,
-      address: companyData.address,
-      employees: parseInt(companyData.employees, 10)
+      address: companyData.address
     };
 
     console.log('Sending company data to /tenants:', companyPayload);
@@ -279,22 +338,36 @@ export default function CombinedRegistration() {
     const companyResponse = await api.post('/tenants', companyPayload);
     console.log('Company registration successful:', companyResponse.data);
 
+    // Get the company ID from the response
+    const companyId = companyResponse.data.data.id;
+
     // Then register the user with the company ID
     const userResponse = await api.post('/auth/register', {
       firstname: userData.firstname,
       lastname: userData.lastname,
       country: userData.country,
-      mobile:userData.mobile,
+      mobile: userData.mobile,
       email: userData.email,
       password: userData.password,
-      company_id: companyResponse.data.data.id // Send as company_id (not companyId)
+      company_id: companyId
     });
 
-    toast.success("Registration successful! Company and user account created.");
-    setTimeout(() => navigate('/login'), 2000);
+    console.log('User registration successful:', userResponse.data);
+
+    toast.success("Registration successful! Company and user account created. Please check your email to verify your account.");
+    setTimeout(() => navigate('/login'), 3000);
+    
   } catch (err) {
     console.error('Registration error:', err);
-    toast.error(err.response?.data?.message || "❌ Registration failed");
+    
+    // More specific error handling
+    if (err.response?.status === 403) {
+      toast.error("Access denied. Please try registering again.");
+    } else if (err.response?.data?.message) {
+      toast.error(err.response.data.message);
+    } else {
+      toast.error("Registration failed. Please try again.");
+    }
   }
 }
 
@@ -432,7 +505,7 @@ export default function CombinedRegistration() {
                   )} */}
                 </div>
 
-                <div>
+                {/* <div>
                   <input 
                     name="employees" 
                     value={companyData.employees} 
@@ -446,12 +519,7 @@ export default function CombinedRegistration() {
                       <X size={14} className="mr-1" /> {errors.employees}
                     </div>
                   )}
-                  {/* {touched.employees && !errors.employees && (
-                    <div className="text-green-500 text-sm mt-1 flex items-center">
-                      <Check size={14} className="mr-1" />
-                    </div>
-                  )} */}
-                </div>
+                </div> */}
               </div>
             )}
             {/* Step 2: User email */}

@@ -1,0 +1,41 @@
+//routes/generateMeasurableBills.js
+const express = require('express');
+const router = express.Router();
+const generateMeasurableBillController = require('../controllers/generateMeasubleBillController')
+const { authenticateToken } = require('../middleware/auth');
+
+router.use(authenticateToken);
+// Test route
+router.get('/test', (req, res) => {
+    console.log("✅ Test route hit!");
+    res.json({ 
+        success: true, 
+        message: "API is working",
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Utility endpoints
+router.get('/previous-reading', generateMeasurableBillController.getPreviousReading);
+router.get('/statistics', generateMeasurableBillController.getMeasurableBillsStatistics);
+router.get('/monthly-summary', generateMeasurableBillController.getMonthlySummary);
+
+// Create measurable bills
+router.post('/', generateMeasurableBillController.createMeasurableBill);
+router.post('/multiple', generateMeasurableBillController.createMultipleMeasurableBills);
+router.post('/from-calculation', generateMeasurableBillController.generateFromCalculation);
+
+// Get measurable bills
+router.get('/', generateMeasurableBillController.getAllMeasurableBills);
+router.get('/bill/:bill_id', generateMeasurableBillController.getMeasurableBillsByBillId);
+router.get('/period', generateMeasurableBillController.getMeasurableBillsByPeriod);
+router.get('/house/:house_id', generateMeasurableBillController.getMeasurableBillsByHouseId);
+router.get('/:id', generateMeasurableBillController.getMeasurableBillById);
+
+// Update and delete
+router.put('/:id', generateMeasurableBillController.updateMeasurableBill);
+router.delete('/:id', generateMeasurableBillController.deleteMeasurableBill);
+
+router.get('/verify-payment/:measurable_bill_id', generateMeasurableBillController.verifyBillPayment);
+
+module.exports = router;

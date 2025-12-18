@@ -2,14 +2,33 @@ const pool = require('../db');
 const { v4: uuidv4 } = require('uuid');
 
 class Floor {
+    // static async create(floorData) {
+    //     const { company_id, apartment_id, floor_id, house_count  } = floorData;
+    //     const id = uuidv4().replace(/-/g, '').substring(0, 10);
+
+    //     const [result] = await pool.execute(
+    //         'INSERT INTO floors (id, company_id, apartment_id, floor_id,  house_count) VALUES (?, ?, ?, ?, ?)',
+    //         [id,company_id, apartment_id, floor_id, null]
+    //     );
+    //     return { id, ...floorData };
+    // }
+
     static async create(floorData) {
-        const { company_id, apartment_id, floor_id, house_count  } = floorData;
-        const id = uuidv4().replace(/-/g, '').substring(0, 10);
+        const { company_id, apartment_id, floor_id, house_count } = floorData;
+        
+        const [countResult] = await pool.execute(
+            'SELECT COUNT(*) as count FROM floors WHERE company_id = ? AND apartment_id = ?',
+            [company_id, apartment_id]
+        );
+        
+        const nextNumber = (countResult[0].count + 1).toString().padStart(3, '0');
+        const id = `${apartment_id}-${nextNumber}`;
 
         const [result] = await pool.execute(
-            'INSERT INTO floors (id, company_id, apartment_id, floor_id,  house_count) VALUES (?, ?, ?, ?, ?)',
-            [id,company_id, apartment_id, floor_id, null]
+            'INSERT INTO floors (id, company_id, apartment_id, floor_id, house_count) VALUES (?, ?, ?, ?, ?)',
+            [id, company_id, apartment_id, floor_id, null]
         );
+        
         return { id, ...floorData };
     }
 

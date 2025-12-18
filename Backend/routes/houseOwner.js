@@ -45,6 +45,7 @@ router.get('/:id', houseOwnerController.getHouseOwnerById);
 router.put('/:id', upload.single('proof'), houseOwnerController.updateHouseOwner);
 // router.delete('/:id', apartmentController.deleteApartment);
 // router.patch('/:id/toggle', apartmentController.toggleApartmentStatus);
+router.get('/by-house', houseOwnerController.getHouseOwnerByHouseId);
 
 // Error handling middleware for multer
 router.use((error, req, res, next) => {

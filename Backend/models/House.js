@@ -1,10 +1,17 @@
+//models/House.js
 const pool = require('../db');
 const { v4: uuidv4 } = require('uuid');
 
 class House{
     static async create(houseData) {
     const { company_id, apartment_id, floor_id,  house_id, housetype_id } = houseData;
-    const id = uuidv4().replace(/-/g, '').substring(0, 10);
+
+    const [countResult] = await pool.execute(
+        'SELECT COUNT(*) as count FROM houses WHERE company_id = ? AND apartment_id = ? and floor_id = ?',
+        [company_id, apartment_id,floor_id]
+    );
+    const nextNumber = (countResult[0].count + 1).toString().padStart(3, '0');
+    const id = `${floor_id}-${nextNumber}`;
 
     const [result] = await pool.execute(
         `INSERT INTO houses 
@@ -44,6 +51,19 @@ class House{
             'SELECT * FROM houses ORDER BY updated_at DESC'
         );
         return rows; 
+    }
+
+    // In your House model, add this method
+    static async findByIdWithDetails(id) {
+        const query = `
+            SELECT h.*, ht.name as house_type_name, ht.sqrfeet, ht.rooms, ht.bathrooms
+            FROM houses h
+            LEFT JOIN housetype ht ON h.housetype_id = ht.id
+            WHERE h.id = ?
+        `;
+        
+        const [rows] = await pool.execute(query, [id]);
+        return rows[0] || null;
     }
 
     static async update(id, houseData) {

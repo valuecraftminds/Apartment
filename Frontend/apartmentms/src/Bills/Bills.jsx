@@ -6,7 +6,8 @@ import api from '../api/axios';
 import { toast, ToastContainer } from 'react-toastify';
 import CreateBillType from '../Bills/CreateBillType';
 import EditBillType from '../Bills/EditBillType';
-import AssignBills from './AssignBills'; // Import the new modal component
+import AssignBills from './AssignBills'; 
+import SharedValueBills from './SharedValueBills';
 
 export default function Bills() {
     const [loadingBills, setLoadingBills] = useState(false);
@@ -19,6 +20,7 @@ export default function Bills() {
     const [selectedBillForAssign, setSelectedBillForAssign] = useState(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deletingBill, setDeletingBill] = useState(null);
+    const [activeTab, setActiveTab] = useState("bills");
     const navigate = useNavigate();
 
     const loadBills = async () => {
@@ -43,6 +45,9 @@ export default function Bills() {
         loadBills();
     }, []);
 
+    // Filter bills - Only show Measurable bills in this component
+    const measurableBills = bills.filter(bill => bill.billtype === 'Measurable');
+
     // Open assign modal
     const handleAssignClick = (bill) => {
         setSelectedBillForAssign(bill);
@@ -57,7 +62,6 @@ export default function Bills() {
 
     // Handle successful assignment
     const handleAssignSuccess = () => {
-        // You can refresh data or perform other actions after successful assignment
         toast.success('Bill assigned successfully!');
     };
 
@@ -119,102 +123,134 @@ export default function Bills() {
 
     return (
         <div className='flex-1 overflow-y-auto p-6'>
+            <button 
+                onClick={handleAddNew}
+                className='flex items-center gap-2 mb-3 px-4 py-2 rounded-lg font-semibold shadow-md transition-all duration-300 text-white bg-purple-600 hover:bg-purple-700 hover:scale-105'>
+                <Plus size={20} />
+                <span>New Bill Type</span>
+            </button>
+
             <div className='bg-white dark:bg-gray-800 rounded-2xl p-6 text-gray-700 dark:text-gray-300'>
-                <button 
-                    onClick={handleAddNew}
-                    className='flex items-center gap-2 mb-3 px-4 py-2 rounded-lg font-semibold shadow-md transition-all duration-300 text-white bg-purple-600 hover:bg-purple-700 hover:scale-105'>
-                    <Plus size={20} />
-                    <span>New Bill Type</span>
-                </button>
                 
-                {loadingBills ? (
-                    <div className="flex justify-center items-center py-12">
-                        <Loader size={32} className="animate-spin text-purple-600" />
-                        <span className="ml-2 text-gray-600 dark:text-gray-300">Loading Bill types...</span>
-                    </div>
-                ) : error ? (
-                    <div className="text-center py-12 text-red-600 dark:text-red-400">
-                        {error}
-                        <button
-                            onClick={loadBills}
-                            className="ml-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                        >
-                            Retry
-                        </button>
-                    </div>
-                ) : bills.length === 0 ? (
-                    <div className="text-center py-12 text-gray-600 dark:text-gray-300">
-                        <Image size={48} className="mx-auto mb-4 text-gray-400" />
-                        <p className="text-lg">No bill types found</p>
-                        <p className="text-sm">Get started by adding bill types</p>
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full table-auto">
-                            <thead className="bg-gray-50 dark:bg-gray-700">
-                                <tr>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">No</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Bill Type</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Bill Name</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                {bills.map((bill, index) => (
-                                    <tr key={bill.id}
-                                        className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
-                                        onClick={() => navigate(`/billranges/${bill.id}`)}
-                                    >
-                                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                            {index + 1}
-                                        </td>
-                                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                            {bill.billtype}
-                                        </td>
-                                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                            <div className="flex items-center">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleAssignClick(bill);
-                                                    }}
-                                                    title="Assign Bill"
-                                                    className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 transition-all mr-2"
-                                                >
-                                                    <Plus size={20} />
-                                                </button>
-                                                <span>{bill.bill_name}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
-                                            <div className="flex space-x-2">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleEdit(bill);
-                                                    }}
-                                                    className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
-                                                    title="Edit"
-                                                >
-                                                    <Edit size={20} />
-                                                </button>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleDeleteClick(bill);
-                                                    }}
-                                                    className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                                                    title="Delete"
-                                                >
-                                                    <Trash2 size={20} />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                {/* Tabs */}
+                <div className="flex space-x-4 border-b border-gray-300 dark:border-gray-700 mb-6">
+                    <button
+                        onClick={() => setActiveTab("bills")}
+                        className={`px-4 py-2 font-semibold transition-colors duration-200 
+                            ${activeTab === "bills"
+                                ? "text-purple-600 border-b-2 border-purple-600 dark:text-purple-400"
+                                : "text-gray-600 dark:text-gray-300 hover:text-purple-600"}`}>
+                        Measurable Bills ({measurableBills.length})
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("sharedValueBills")}
+                        className={`px-4 py-2 font-semibold transition-colors duration-200
+                            ${activeTab === "sharedValueBills"
+                                ? "text-purple-600 border-b-2 border-purple-600 dark:text-purple-400"
+                                : "text-gray-600 dark:text-gray-300 hover:text-purple-600"}`}
+                    >
+                        Shared Value Bills
+                    </button>
+                </div>
+                
+                {/* Show Measurable Bills when activeTab is "bills" */}
+                {activeTab === "bills" && (
+                    <>
+                        {loadingBills ? (
+                            <div className="flex justify-center items-center py-12">
+                                <Loader size={32} className="animate-spin text-purple-600" />
+                                <span className="ml-2 text-gray-600 dark:text-gray-300">Loading Bill types...</span>
+                            </div>
+                        ) : error ? (
+                            <div className="text-center py-12 text-red-600 dark:text-red-400">
+                                {error}
+                                <button
+                                    onClick={loadBills}
+                                    className="ml-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                                >
+                                    Retry
+                                </button>
+                            </div>
+                        ) : measurableBills.length === 0 ? (
+                            <div className="text-center py-12 text-gray-600 dark:text-gray-300">
+                                <Image size={48} className="mx-auto mb-4 text-gray-400" />
+                                <p className="text-lg">No measurable bill types found</p>
+                                <p className="text-sm">Get started by adding measurable bill types</p>
+                            </div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full table-auto">
+                                    <thead className="bg-gray-50 dark:bg-gray-700">
+                                        <tr>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">No</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Bill Type</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Bill Name</th>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                        {measurableBills.map((bill, index) => (
+                                            <tr key={bill.id}
+                                                className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                onClick={() => navigate(`/billranges/${bill.id}`)}
+                                            >
+                                                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                                    {index + 1}
+                                                </td>
+                                                <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                                    {bill.billtype}
+                                                </td>
+                                                <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                                    <div className="flex items-center">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleAssignClick(bill);
+                                                            }}
+                                                            title="Assign Bill"
+                                                            className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 transition-all mr-2"
+                                                        >
+                                                            <Plus size={20} />
+                                                        </button>
+                                                        <span>{bill.bill_name}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                                                    <div className="flex space-x-2">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleEdit(bill);
+                                                            }}
+                                                            className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+                                                            title="Edit"
+                                                        >
+                                                            <Edit size={20} />
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDeleteClick(bill);
+                                                            }}
+                                                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                                            title="Delete"
+                                                        >
+                                                            <Trash2 size={20} />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </>
+                )}
+
+                {/* Show SharedValueBills component when activeTab is "sharedValueBills" */}
+                {activeTab === "sharedValueBills" && (
+                    <SharedValueBills/>
                 )}
 
                 {/* Create Bill Type Modal */}
@@ -260,7 +296,7 @@ export default function Bills() {
                     </div>
                 )}
 
-                {/* Assign Bills Modal - Now using separate component */}
+                {/* Assign Bills Modal */}
                 <AssignBills
                     isOpen={showAssignModal}
                     onClose={handleCloseAssignModal}
