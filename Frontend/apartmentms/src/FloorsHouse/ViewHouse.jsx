@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/axios';
-import { Calendar, ChevronLeft, DollarSign, FileText, House } from 'lucide-react';
+import { Bath, Bed, Briefcase, Calendar, ChevronLeft, CreditCard, DollarSign, Download, FileText, Globe, Home, House, Mail, Phone, Square, User } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -21,8 +21,7 @@ export default function ViewHouse() {
     // const [calculateBill,setCalculateBill] = useState(null);
     const [assignedBills, setAssignedBills] = useState([]);
     const [loadingAssignedBills, setLoadingAssignedBills] = useState(false);
-
-
+    const [downloadingProof, setDownloadingProof] = useState(false);
     const navigate = useNavigate();
 
     // Fetch apartment
@@ -102,6 +101,56 @@ export default function ViewHouse() {
         });
     };
 
+    // Handle proof document download
+    const handleDownloadProof = async () => {
+        if (!houseowner?.proof) return;
+        
+        try {
+            setDownloadingProof(true);
+            
+            // Get the file from the server
+            const response = await api.get(houseowner.proof, {
+                responseType: 'blob',
+                headers: {
+                    'Content-Type': 'application/octet-stream',
+                }
+            });
+            
+            // Extract filename from URL or use a default
+            const urlParts = houseowner.proof.split('/');
+            const filename = urlParts[urlParts.length - 1] || 'owner_proof.jpg';
+            
+            // Create a blob URL and trigger download
+            const blob = new Blob([response.data]);
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            
+            // Cleanup
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            
+        } catch (error) {
+            console.error('Error downloading proof:', error);
+            alert('Failed to download proof document. Please try again.');
+            
+            // Fallback: Direct download link
+            const link = document.createElement('a');
+            link.href = houseowner.proof;
+            link.download = houseowner.proof.split('/').pop() || 'owner_proof';
+            link.target = '_blank';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+        } finally {
+            setDownloadingProof(false);
+        }
+    };    
+
     return (
         <div className="flex h-screen bg-gray-100 dark:bg-gray-900 w-screen transition-colors duration-200">
             <Sidebar />
@@ -159,13 +208,13 @@ export default function ViewHouse() {
                                 House Owner
                             </button>
                             <button
-                                onClick={() => setActiveTab("family")}
+                                onClick={() => setActiveTab("residents")}
                                 className={`px-4 py-2 font-semibold 
-                                    ${activeTab === "family"
+                                    ${activeTab === "residents"
                                         ? "text-purple-600 border-b-2 border-purple-600"
                                         : "text-gray-600 dark:text-gray-300 hover:text-purple-600"}`}
                             >
-                                Family
+                                Residents
                             </button>
                             <button
                                 onClick={() => setActiveTab("assignedBills")}
@@ -179,15 +228,65 @@ export default function ViewHouse() {
                         </div>
 
                         {/* Content */}
-                        {activeTab === "type" && housetype && (
+                        {/* {activeTab === "type" && housetype && (
                             <div className="mt-1 text-gray-700 dark:text-gray-300 font-semibold space-y-2">
                                 <p><strong>Type:</strong> {housetype.name}</p>
                                 <p><strong>Square Feet:</strong> {housetype.sqrfeet}</p>
                                 <p><strong>Rooms:</strong> {housetype.rooms}</p>
                                 <p><strong>Bathrooms:</strong> {housetype.bathrooms}</p>
                             </div>
+                        )} */}
+                        {activeTab === "type" && housetype && (
+                            <div className="animate-fadeIn">
+                                <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
+                                    <Home className="mr-3 text-purple-600 dark:text-purple-400" size={24} />
+                                    House Type Details
+                                </h3>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 p-6 rounded-xl border border-blue-200 dark:border-blue-800">
+                                        <div className="flex items-center mb-4">
+                                            <Square className="text-blue-600 dark:text-blue-400 mr-3" size={24} />
+                                            <div>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">Type Name</p>
+                                                <p className="text-lg font-bold text-gray-800 dark:text-white">{housetype.name}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 p-6 rounded-xl border border-purple-200 dark:border-purple-800">
+                                        <div className="flex items-center mb-4">
+                                            <Square className="text-purple-600 dark:text-purple-400 mr-3" size={24} />
+                                            <div>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">Square Feet</p>
+                                                <p className="text-lg font-bold text-gray-800 dark:text-white">{housetype.sqrfeet} sq ft</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 p-6 rounded-xl border border-green-200 dark:border-green-800">
+                                        <div className="flex items-center mb-4">
+                                            <Bed className="text-green-600 dark:text-green-400 mr-3" size={24} />
+                                            <div>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">Rooms</p>
+                                                <p className="text-lg font-bold text-gray-800 dark:text-white">{housetype.rooms}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/30 p-6 rounded-xl border border-orange-200 dark:border-orange-800">
+                                        <div className="flex items-center mb-4">
+                                            <Bath className="text-orange-600 dark:text-orange-400 mr-3" size={24} />
+                                            <div>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">Bathrooms</p>
+                                                <p className="text-lg font-bold text-gray-800 dark:text-white">{housetype.bathrooms}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         )}
-                        {activeTab === "owner" && houseowner && (
+                        {/* {activeTab === "owner" && houseowner && (
                             <div className="mt-1 text-gray-700 dark:text-gray-300 font-semibold space-y-2">
                                 <p><strong>Name:</strong> {houseowner.name}</p>
                                 <p><strong>NIC:</strong> {houseowner.NIC}</p>
@@ -196,16 +295,121 @@ export default function ViewHouse() {
                                 <p><strong>Mobile:</strong> {houseowner.mobile}</p>
                                 <p><strong>Email:</strong>{houseowner.email}</p>
                                 <p><strong>occupied way:</strong> {houseowner.occupied_way}</p>
-                                {/* <p><strong>Proof:</strong> {houseowner.proof}</p> */}
+                            </div>
+                        )} */}
+                        {activeTab === "owner" && houseowner && (
+                            <div className="animate-fadeIn">
+                                <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
+                                    <User className="mr-3 text-purple-600 dark:text-purple-400" size={24} />
+                                    House Owner Information
+                                </h3>
+                                
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    {/* Owner Details Card */}
+                                    <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/30 dark:to-indigo-800/30 p-6 rounded-xl border border-indigo-200 dark:border-indigo-800">
+                                        <div className="flex items-start mb-6">
+                                            <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center text-white text-2xl font-bold mr-4">
+                                                {houseowner.name?.charAt(0) || 'O'}
+                                            </div>
+                                            <div>
+                                                <h4 className="text-2xl font-bold text-gray-800 dark:text-white">{houseowner.name}</h4>
+                                                <p className="text-gray-600 dark:text-gray-400">Owner</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="space-y-4">
+                                            <div className="flex items-center">
+                                                <CreditCard className="text-gray-500 dark:text-gray-400 mr-3" size={20} />
+                                                <div>
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400">NIC Number</p>
+                                                    <p className="font-medium text-gray-800 dark:text-white">{houseowner.NIC}</p>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="flex items-center">
+                                                <Briefcase className="text-gray-500 dark:text-gray-400 mr-3" size={20} />
+                                                <div>
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400">Occupation</p>
+                                                    <p className="font-medium text-gray-800 dark:text-white">{houseowner.occupation}</p>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="flex items-center">
+                                                <div className="bg-purple-100 dark:bg-purple-900/50 px-3 py-1 rounded-lg mr-2">
+                                                    <span className="text-purple-700 dark:text-purple-300 text-sm font-medium">
+                                                        {houseowner.occupied_way}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Contact Information Card */}
+                                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 p-6 rounded-xl border border-blue-200 dark:border-blue-800">
+                                        <h4 className="text-lg font-bold text-gray-800 dark:text-white mb-4">Contact Information</h4>
+                                        
+                                        <div className="space-y-4">
+                                            <div className="flex items-center">
+                                                <Globe className="text-blue-600 dark:text-blue-400 mr-3" size={20} />
+                                                <div>
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400">Country</p>
+                                                    <p className="font-medium text-gray-800 dark:text-white">{houseowner.country}</p>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="flex items-center">
+                                                <Phone className="text-blue-600 dark:text-blue-400 mr-3" size={20} />
+                                                <div>
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400">Mobile</p>
+                                                    <p className="font-medium text-gray-800 dark:text-white">{houseowner.mobile}</p>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="flex items-center">
+                                                <Mail className="text-blue-600 dark:text-blue-400 mr-3" size={20} />
+                                                <div>
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400">Email</p>
+                                                    <p className="font-medium text-gray-800 dark:text-white break-all">{houseowner.email || 'N/A'}</p>
+                                                </div>
+                                            </div>
+                                            
+                                            {houseowner.proof && (
+                                                <div className="flex items-center">
+                                                    <FileText className="text-blue-600 dark:text-blue-400 mr-3" size={20} />
+                                                    <div>
+                                                        <p className="text-sm text-gray-600 dark:text-gray-400">Proof Document</p>
+                                                        <button
+                                                            onClick={handleDownloadProof}
+                                                            disabled={downloadingProof}
+                                                            className="flex items-center font-medium text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        >
+                                                            {downloadingProof ? (
+                                                                <>
+                                                                    <Loader size={16} className="mr-2 animate-spin" />
+                                                                    Downloading...
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Download size={16} className="mr-2" />
+                                                                    Download Proof
+                                                                </>
+                                                            )}
+                                                        </button>
+                                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                            {houseowner.proof.split('/').pop()}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         )}
-                        {/* {activeTab === "family" && housetype && (
+                            
+                        {/* {activeTab === "residents" && (
                             <div className="mt-1 text-gray-700 dark:text-gray-300 font-semibold space-y-2">
-                                <p><strong>Type:</strong> {housetype.name}</p>
-                                <p><strong>Members:</strong> {housetype.members}</p>
-                                <p><strong>Square Feet:</strong> {housetype.sqrfeet}</p>
-                                <p><strong>Rooms:</strong> {housetype.rooms}</p>
-                                <p><strong>Bathrooms:</strong> {housetype.bathrooms}</p>
+                               
                             </div>
                         )} */}
                         {activeTab === "assignedBills" && (

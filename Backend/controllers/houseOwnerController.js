@@ -34,7 +34,7 @@ const upload = multer({
 const houseOwnerController ={
     async createHouseOwner(req, res) {
         try {
-            const { name, nic, occupation, country, mobile, occupied_way,apartment_id } = req.body;
+            const { name, nic, occupation, country, mobile, email, occupied_way,apartment_id } = req.body;
             const company_id = req.user.company_id;
             // const apartment_id = req.apartment.id;
 
@@ -44,7 +44,7 @@ const houseOwnerController ={
                 picturePath = '/evidance/houseOwner/' + req.file.filename;
             }
 
-            if (!name || !nic || !occupation || !country || !mobile || !occupied_way ) {
+            if (!name || !nic || !occupation || !country || !mobile || !email || !occupied_way ) {
                 return res.status(400).json({
                     success: false,
                     message: 'All fields are required'
@@ -59,6 +59,7 @@ const houseOwnerController ={
                     occupation,
                     country,
                     mobile,
+                    email,
                     occupied_way,
                     proof: picturePath // Store the path, not the binary
                     
@@ -178,7 +179,7 @@ const houseOwnerController ={
     async updateHouseOwner(req,res){
         try{
             const {id}=req.params;
-            const {name, nic, occupation, country, mobile, occupied_way}=req.body;
+            const {name, nic, occupation, country, mobile, email, occupied_way}=req.body;
 
             let picturePath = null;
                 if (req.file) {
@@ -200,6 +201,7 @@ const houseOwnerController ={
                 occupation: occupation || existingHouseOwner.occupation,
                 country: country || existingHouseOwner.country,
                 mobile: mobile || existingHouseOwner.mobile,
+                email: email || existingHouseOwner.email,
                 occupied_way:occupied_way || existingHouseOwner.occupied_way,
                 proof: picturePath || existingHouseOwner.proof,
             });
