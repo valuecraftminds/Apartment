@@ -195,7 +195,7 @@ const houseOwnerController ={
                 });
             }
 
-            const updateHouseOwner= await HouseOwner.update(id,{
+            const updateHouseOwner= await HouseOwner.updateHouseOwner(id,{
                 name: name || existingHouseOwner.name,
                 nic: nic || existingHouseOwner.nic,
                 occupation: occupation || existingHouseOwner.occupation,

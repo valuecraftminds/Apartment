@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/axios';
-import { Bath, Bed, Briefcase, Calendar, ChevronLeft, CreditCard, DollarSign, Download, FileText, Globe, Home, House, Mail, Phone, Square, User } from 'lucide-react';
+import { Bath, Bed, Briefcase, BriefcaseIcon, Calendar, ChevronLeft, CreditCard, DollarSign, Download, Edit, FileText, Globe, Home, House, IdCard, Loader, Mail, MailIcon, Phone, PhoneCall, Square, Trash2, User, UserPlus, Users } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import { useNavigate, useParams } from 'react-router-dom';
 import CalculateBill from '../Bills/CalculateBill';
+import Residents from '../Residents/Residents';
+import EditHouseOwner from './EditHouseOwner';
 
 export default function ViewHouse() {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -18,10 +20,12 @@ export default function ViewHouse() {
     const [house, setHouse] = useState(null);
     const [housetype, setHouseType] = useState(null);
     const [houseowner,setHouseOwner] = useState(null);
-    // const [calculateBill,setCalculateBill] = useState(null);
+    const [familyMembers, setFamilyMembers] = useState([]);
+    const [loadingFamily, setLoadingFamily] = useState(false);
     const [assignedBills, setAssignedBills] = useState([]);
     const [loadingAssignedBills, setLoadingAssignedBills] = useState(false);
     const [downloadingProof, setDownloadingProof] = useState(false);
+    const [editOwnerModalOpen, setEditOwnerModalOpen] = useState(false);
     const navigate = useNavigate();
 
     // Fetch apartment
@@ -65,6 +69,36 @@ export default function ViewHouse() {
                 .catch(err => console.error("Error fetching house owner: ", err));
         }
     },[house]);
+
+    // useEffect(()=>{
+    //     if(house?.family_id){
+    //         api.get(`/family/${house.family_id}`)
+    //         .then(res => res.data.success && setFamily(res.data.data))
+    //         .catch(err => console.error("Error fetching family or residents: ",err));
+    //     }
+    // },[house]);
+
+    // Fetch family members by houseowner_id
+    useEffect(() => {
+        if(house?.houseowner_id){
+            fetchFamilyMembers(house.houseowner_id);
+        }
+    },[house]);
+
+    const fetchFamilyMembers = async (houseownerId) => {
+        try {
+            setLoadingFamily(true);
+            const response = await api.get(`/family/houseowner/${houseownerId}`);
+            if (response.data.success) {
+                setFamilyMembers(response.data.data || []);
+            }
+        } catch (error) {
+            console.error("Error fetching family members: ", error);
+            setFamilyMembers([]);
+        } finally {
+            setLoadingFamily(false);
+        }
+    };
 
      // Fetch assigned bills for this house
     useEffect(() => {
@@ -151,6 +185,34 @@ export default function ViewHouse() {
         }
     };    
 
+    // Add new family member
+    const handleAddFamilyMember = () => {
+        // Navigate to add family member page or show modal
+        console.log('Add family member');
+    };
+
+    // Edit family member
+    const handleEditFamilyMember = (familyId) => {
+        console.log('Edit family member:', familyId);
+    };
+
+    // Delete family member
+    const handleDeleteFamilyMember = async (familyId) => {
+        if (window.confirm('Are you sure you want to delete this family member?')) {
+            try {
+                await api.delete(`/family/${familyId}`);
+                // Refresh family members list
+                if (house?.houseowner_id) {
+                    fetchFamilyMembers(house.houseowner_id);
+                }
+            } catch (error) {
+                console.error('Error deleting family member:', error);
+                alert('Failed to delete family member');
+            }
+        }
+    };
+
+
     return (
         <div className="flex h-screen bg-gray-100 dark:bg-gray-900 w-screen transition-colors duration-200">
             <Sidebar />
@@ -214,7 +276,7 @@ export default function ViewHouse() {
                                         ? "text-purple-600 border-b-2 border-purple-600"
                                         : "text-gray-600 dark:text-gray-300 hover:text-purple-600"}`}
                             >
-                                Residents
+                                Residents ({familyMembers.length})
                             </button>
                             <button
                                 onClick={() => setActiveTab("assignedBills")}
@@ -228,14 +290,6 @@ export default function ViewHouse() {
                         </div>
 
                         {/* Content */}
-                        {/* {activeTab === "type" && housetype && (
-                            <div className="mt-1 text-gray-700 dark:text-gray-300 font-semibold space-y-2">
-                                <p><strong>Type:</strong> {housetype.name}</p>
-                                <p><strong>Square Feet:</strong> {housetype.sqrfeet}</p>
-                                <p><strong>Rooms:</strong> {housetype.rooms}</p>
-                                <p><strong>Bathrooms:</strong> {housetype.bathrooms}</p>
-                            </div>
-                        )} */}
                         {activeTab === "type" && housetype && (
                             <div className="animate-fadeIn">
                                 <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
@@ -286,17 +340,7 @@ export default function ViewHouse() {
                                 </div>
                             </div>
                         )}
-                        {/* {activeTab === "owner" && houseowner && (
-                            <div className="mt-1 text-gray-700 dark:text-gray-300 font-semibold space-y-2">
-                                <p><strong>Name:</strong> {houseowner.name}</p>
-                                <p><strong>NIC:</strong> {houseowner.NIC}</p>
-                                <p><strong>Occupation:</strong> {houseowner.occupation}</p>
-                                <p><strong>Country:</strong> {houseowner.country}</p>
-                                <p><strong>Mobile:</strong> {houseowner.mobile}</p>
-                                <p><strong>Email:</strong>{houseowner.email}</p>
-                                <p><strong>occupied way:</strong> {houseowner.occupied_way}</p>
-                            </div>
-                        )} */}
+
                         {activeTab === "owner" && houseowner && (
                             <div className="animate-fadeIn">
                                 <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
@@ -315,6 +359,15 @@ export default function ViewHouse() {
                                                 <h4 className="text-2xl font-bold text-gray-800 dark:text-white">{houseowner.name}</h4>
                                                 <p className="text-gray-600 dark:text-gray-400">Owner</p>
                                             </div>
+                                            <div className="flex space-x-2 ml-90">
+                                            <button
+                                                onClick={() => setEditOwnerModalOpen(true)}
+                                                className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                                                title="Edit"
+                                            >
+                                                <Edit size={18} />
+                                            </button>
+                                        </div>
                                         </div>
                                         
                                         <div className="space-y-4">
@@ -338,6 +391,11 @@ export default function ViewHouse() {
                                                 <div className="bg-purple-100 dark:bg-purple-900/50 px-3 py-1 rounded-lg mr-2">
                                                     <span className="text-purple-700 dark:text-purple-300 text-sm font-medium">
                                                         {houseowner.occupied_way}
+                                                    </span>
+                                                </div>
+                                                <div className="bg-green-100 dark:bg-green-900/50 px-3 py-1 rounded-lg mr-2">
+                                                    <span className="text-green-700 dark:text-green-300 text-sm font-medium">
+                                                        {formatDate(house.occupied_at) }
                                                     </span>
                                                 </div>
                                             </div>
@@ -407,11 +465,134 @@ export default function ViewHouse() {
                             </div>
                         )}
                             
-                        {/* {activeTab === "residents" && (
-                            <div className="mt-1 text-gray-700 dark:text-gray-300 font-semibold space-y-2">
-                               
+                        {activeTab === "residents" && (
+                            <div className="animate-fadeIn">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center">
+                                        <Users className="mr-3 text-purple-600 dark:text-purple-400" size={24} />
+                                        Family Members / Residents
+                                    </h3>
+                                    <button
+                                        onClick={handleAddFamilyMember}
+                                        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center"
+                                    >
+                                        <UserPlus size={18} className="mr-2" />
+                                        Add Family Member
+                                    </button>
+                                </div>
+
+                                {loadingFamily ? (
+                                    <div className="flex justify-center items-center py-12">
+                                        <Loader size={28} className="animate-spin text-purple-600 mr-3" />
+                                        <span className="text-gray-600 dark:text-gray-300">Loading family members...</span>
+                                    </div>
+                                ) : familyMembers.length === 0 ? (
+                                    <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+                                        <Users size={64} className="mx-auto mb-4 text-gray-400 dark:text-gray-500" />
+                                        <h4 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                            No Family Members Found
+                                        </h4>
+                                        <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
+                                            There are no family members or residents registered for this house owner.
+                                        </p>
+                                        <button
+                                            onClick={handleAddFamilyMember}
+                                            className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center mx-auto"
+                                        >
+                                            <UserPlus size={18} className="mr-2" />
+                                            Add First Family Member
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {familyMembers.map((member) => (
+                                            <div 
+                                                key={member.id}
+                                                className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow"
+                                            >
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div className="flex items-center">
+                                                        <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-lg font-bold mr-3">
+                                                            {member.name?.charAt(0) || 'F'}
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="font-bold text-gray-800 dark:text-white text-lg">
+                                                                {member.name}
+                                                            </h4>
+                                                            <div className="flex items-center mt-1">
+                                                                <IdCard size={14} className="text-gray-500 mr-1" />
+                                                                <span className="text-sm text-gray-600 dark:text-gray-400">
+                                                                    {member.nic}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex space-x-2">
+                                                        <button
+                                                            onClick={() => handleEditFamilyMember(member.id)}
+                                                            className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                                                            title="Edit"
+                                                        >
+                                                            <Edit size={18} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteFamilyMember(member.id)}
+                                                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                                                            title="Delete"
+                                                        >
+                                                            <Trash2 size={18} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-3">
+                                                    {member.occupation && (
+                                                        <div className="flex items-center text-gray-700 dark:text-gray-300">
+                                                            <BriefcaseIcon size={16} className="mr-3 text-gray-500" />
+                                                            <div>
+                                                                <p className="text-sm text-gray-500 dark:text-gray-400">Occupation</p>
+                                                                <p className="font-medium">{member.occupation}</p>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {member.email && (
+                                                        <div className="flex items-center text-gray-700 dark:text-gray-300">
+                                                            <MailIcon size={16} className="mr-3 text-gray-500" />
+                                                            <div>
+                                                                <p className="text-sm text-gray-500 dark:text-gray-400">Email</p>
+                                                                <p className="font-medium truncate">{member.email}</p>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {member.phone && (
+                                                        <div className="flex items-center text-gray-700 dark:text-gray-300">
+                                                            <PhoneCall size={16} className="mr-3 text-gray-500" />
+                                                            <div>
+                                                                <p className="text-sm text-gray-500 dark:text-gray-400">Phone</p>
+                                                                <p className="font-medium">{member.phone}</p>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {member.moved_at && (
+                                                        <div className="flex items-center text-gray-700 dark:text-gray-300">
+                                                            <Calendar size={16} className="mr-3 text-gray-500" />
+                                                            <div>
+                                                                <p className="text-sm text-gray-500 dark:text-gray-400">Added On</p>
+                                                                <p className="font-medium">{formatDate(member.moved_at)}</p>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>            
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                        )} */}
+                        )}
+
                         {activeTab === "assignedBills" && (
                             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                                 <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
@@ -489,6 +670,18 @@ export default function ViewHouse() {
                     </div>
                 </div>
             </div>
+            {/* Edit Owner Modal */}
+            {editOwnerModalOpen && houseowner && (
+                <EditHouseOwner
+                    houseowner={houseowner}
+                    onClose={() => setEditOwnerModalOpen(false)}
+                    onUpdated={(updatedOwner) => {
+                        setHouseOwner(updatedOwner);
+                        // Optionally refresh any other data
+                        setEditOwnerModalOpen(false);
+                    }}
+                />
+            )}
         </div>
     );
 }
