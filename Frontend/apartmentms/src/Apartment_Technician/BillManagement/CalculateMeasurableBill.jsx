@@ -3161,7 +3161,7 @@ export default function CalculateMeasurableBill() {
                         </div>
 
                         {/* House Information Card */}
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 md:p-6 mb-6">
+                        {/* <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 md:p-6 mb-6">
                             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 md:mb-4">
                                 House Information
                             </h3>
@@ -3196,7 +3196,7 @@ export default function CalculateMeasurableBill() {
                                     {source === 'qr' ? 'QR Code' : 'Manual Input'} contained: <code className="bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">{scannedData?.houseId}</code>
                                 </p>
                             </div>
-                        </div>
+                        </div> */}
 
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
                             {/* Calculation Form */}
@@ -3371,7 +3371,7 @@ export default function CalculateMeasurableBill() {
                             </div>
 
                             {/* Info Panel */}
-                            <div className="lg:col-span-1">
+                            {/* <div className="lg:col-span-1">
                                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 md:p-6 lg:sticky lg:top-6">
                                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 md:mb-4">
                                         Bill Information
@@ -3437,7 +3437,7 @@ export default function CalculateMeasurableBill() {
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            </div> */}
                         </div>
                     </div>
                 </main>

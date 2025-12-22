@@ -2315,7 +2315,7 @@ export default function MeasurableBills() {
                                 </div>
 
                                 {/* House Details Card */}
-                                {houseDetails && (
+                                {/* {houseDetails && (
                                     <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
                                         <h3 className="font-semibold text-gray-800 dark:text-white mb-3">House Information</h3>
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -2337,7 +2337,7 @@ export default function MeasurableBills() {
                                             <p className="mt-1">Entered ID: <code className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded">{scannedData.houseId}</code></p>
                                         </div>
                                     </div>
-                                )}
+                                )} */}
 
                                 {/* Access Control Status */}
                                 {!accessGranted ? (
