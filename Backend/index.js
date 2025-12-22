@@ -12,6 +12,9 @@ const path = require('path');
 const { authenticateToken } = require('./middleware/auth');
 
 const app = express();
+//fix proxy issue
+app.set('trust proxy',true);
+
 // Add this before your routes
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/evidance', express.static(path.join(__dirname, 'evidance')));

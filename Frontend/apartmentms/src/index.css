@@ -11,7 +11,7 @@
 .welcomePage {
   @apply min-h-screen w-screen flex items-center justify-center px-4;
   background-image: 
-    linear-gradient(135deg, rgba(29,78,216,0.65), rgba(139,92,246,0.65)),
+    /* linear-gradient(135deg, rgba(29,78,216,0.65), rgba(139,92,246,0.65)), */
     url('../images/1.jpg'); /* Replace with your image */
   background-size: cover;
   background-position: center;
@@ -45,7 +45,7 @@
 }
 
 .signInSignUp{
-  @apply bg-gradient-to-t from-blue-500 font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-gradient-to-t bg-purple-500 border border-white
+  @apply bg-gradient-to-t from-blue-200 font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-gradient-to-t bg-blue-500 border border-white
          hover:scale-105 transition-transform duration-300 hover:text-blue-700
 }
 
