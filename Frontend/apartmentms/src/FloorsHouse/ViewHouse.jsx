@@ -140,53 +140,110 @@ export default function ViewHouse() {
 
     // Handle proof document download
     const handleDownloadProof = async () => {
-        if (!houseowner?.proof) return;
+    if (!houseowner?.id) {
+        alert('House owner information not available');
+        return;
+    }
+    
+    try {
+        setDownloadingProof(true);
         
+        console.log('Downloading proof for houseowner ID:', houseowner.id);
+        console.log('Proof path in database:', houseowner.proof);
+        
+        // Make a HEAD request first to check if file exists
         try {
-            setDownloadingProof(true);
-            
-            // Get the file from the server
-            const response = await api.get(houseowner.proof, {
-                responseType: 'blob',
-                headers: {
-                    'Content-Type': 'application/octet-stream',
-                }
-            });
-            
-            // Extract filename from URL or use a default
-            const urlParts = houseowner.proof.split('/');
-            const filename = urlParts[urlParts.length - 1] || 'owner_proof.jpg';
-            
-            // Create a blob URL and trigger download
-            const blob = new Blob([response.data]);
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            
-            // Cleanup
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
-            
-        } catch (error) {
-            console.error('Error downloading proof:', error);
-            alert('Failed to download proof document. Please try again.');
-            
-            // Fallback: Direct download link
-            const link = document.createElement('a');
-            link.href = houseowner.proof;
-            link.download = houseowner.proof.split('/').pop() || 'owner_proof';
-            link.target = '_blank';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-        } finally {
-            setDownloadingProof(false);
+            const headResponse = await api.head(`/houseowner/download-proof/${houseowner.id}`);
+            console.log('HEAD request successful:', headResponse.status);
+        } catch (headError) {
+            console.error('HEAD request failed:', headError.response?.status || headError.message);
         }
-    };    
+        
+        // Use the download endpoint
+        const response = await api.get(`/houseowner/download-proof/${houseowner.id}`, {
+            responseType: 'blob'
+        });
+        
+        console.log('Download response status:', response.status);
+        console.log('Response headers:', response.headers);
+        
+        if (response.status !== 200) {
+            // Try to read error message from response
+            const errorText = await response.data.text();
+            console.error('Error response:', errorText);
+            
+            let errorMessage = `Download failed with status ${response.status}`;
+            try {
+                const errorData = JSON.parse(errorText);
+                if (errorData.message) {
+                    errorMessage = errorData.message;
+                }
+            } catch (e) {
+                // Not JSON, use raw text
+                if (errorText) errorMessage = errorText;
+            }
+            
+            throw new Error(errorMessage);
+        }
+        
+        // Create blob URL
+        const blob = new Blob([response.data]);
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        
+        // Extract filename from content-disposition header or use default
+        const contentDisposition = response.headers['content-disposition'];
+        let filename = 'owner_proof.jpg';
+        
+        if (contentDisposition) {
+            const match = contentDisposition.match(/filename="?([^"]+)"?/);
+            if (match) {
+                filename = match[1];
+                console.log('Filename from header:', filename);
+            }
+        } else {
+            // Try to extract from URL or use database path
+            if (houseowner.proof) {
+                const parts = houseowner.proof.split('/');
+                filename = parts[parts.length - 1] || filename;
+            }
+        }
+        
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Cleanup
+        setTimeout(() => {
+            window.URL.revokeObjectURL(url);
+        }, 100);
+        
+        console.log('Download successful');
+        
+    } catch (error) {
+        console.error('Error downloading proof:', error);
+        console.error('Error details:', {
+            name: error.name,
+            message: error.message,
+            stack: error.stack,
+            response: error.response?.data
+        });
+        
+        if (error.response?.status === 404) {
+            alert('Proof document not found. Please check if the file exists on the server.');
+        } else if (error.response?.status === 500) {
+            alert('Server error occurred. Please check server logs.');
+        } else if (error.message) {
+            alert(`Download failed: ${error.message}`);
+        } else {
+            alert('Failed to download proof document. Please try again.');
+        }
+    } finally {
+        setDownloadingProof(false);
+    }
+};
 
     // Add new family member
     const handleAddFamilyMember = () => {
@@ -367,7 +424,7 @@ export default function ViewHouse() {
                                                 <h4 className="text-2xl font-bold text-gray-800 dark:text-white">{houseowner.name}</h4>
                                                 <p className="text-gray-600 dark:text-gray-400">Owner</p>
                                             </div>
-                                            <div className="flex space-x-2 ml-90">
+                                            <div className="flex space-x-2">
                                             <button
                                                 onClick={() => setEditOwnerModalOpen(true)}
                                                 className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"

@@ -14,6 +14,7 @@ const { authenticateToken } = require('./middleware/auth');
 const app = express();
 // Add this before your routes
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/evidance', express.static(path.join(__dirname, 'evidance')));
 
 app.use(helmet());
 app.use(express.json());

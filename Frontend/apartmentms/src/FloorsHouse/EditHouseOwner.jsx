@@ -331,7 +331,7 @@ export default function EditHouseOwner({ houseowner, onClose, onUpdated }) {
                                                 </p>
                                             </div>
                                             <a
-                                                href={formData.proof}
+                                                href={`${api.defaults.baseURL}/houseowner/view-proof/${houseowner.id}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
