@@ -14,6 +14,20 @@ const { authenticateToken } = require('./middleware/auth');
 const app = express();
 //fix proxy issue
 app.set('trust proxy',true);
+const limiter = rateLimit({
+  windowMs: 60_000,
+  max: 100, 
+  validate: { 
+    trustProxy: true, 
+    xForwardedForHeader: true 
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    status: 429,
+    error: 'Too many requests, please try again later.'
+  }
+});
 
 // Add this before your routes
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -51,7 +65,7 @@ app.use(cors({
 
  
 
-const limiter = rateLimit({ windowMs: 60_000, max: 100 });
+// const limiter = rateLimit({ windowMs: 60_000, max: 100 });
 app.use(limiter);
 
 app.use('/api/auth', authRoutes);
