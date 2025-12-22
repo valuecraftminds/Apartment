@@ -58,7 +58,7 @@ class Family {
     return rows[0] || null;
   }
 
-  // Update owner
+  // Update resident
   static async updateFamily(id, residentData) {
     const { name, email, phone } = residentData;
 

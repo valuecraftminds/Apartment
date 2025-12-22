@@ -4,9 +4,9 @@ import { Bath, Bed, Briefcase, BriefcaseIcon, Calendar, ChevronLeft, CreditCard,
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import { useNavigate, useParams } from 'react-router-dom';
-import CalculateBill from '../Bills/CalculateBill';
-import Residents from '../Residents/Residents';
 import EditHouseOwner from './EditHouseOwner';
+import NewMember from '../Residents/NewMember';
+import EditMember from '../Residents/EditMember';
 
 export default function ViewHouse() {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -26,6 +26,9 @@ export default function ViewHouse() {
     const [loadingAssignedBills, setLoadingAssignedBills] = useState(false);
     const [downloadingProof, setDownloadingProof] = useState(false);
     const [editOwnerModalOpen, setEditOwnerModalOpen] = useState(false);
+    const [newMemberModalOpen, setNewMemberModalOpen] = useState(false);
+    const [editMemberModalOpen, setEditMemberModalOpen] = useState(false);
+    const [selectedMember, setSelectedMember] = useState(null);
     const navigate = useNavigate();
 
     // Fetch apartment
@@ -187,13 +190,17 @@ export default function ViewHouse() {
 
     // Add new family member
     const handleAddFamilyMember = () => {
-        // Navigate to add family member page or show modal
-        console.log('Add family member');
+        if (house?.houseowner_id) {
+            setNewMemberModalOpen(true);
+        } else {
+            alert('House owner information is required before adding family members.');
+        }
     };
 
     // Edit family member
-    const handleEditFamilyMember = (familyId) => {
-        console.log('Edit family member:', familyId);
+    const handleEditFamilyMember = (member) => {
+        setSelectedMember(member);
+        setEditMemberModalOpen(true);
     };
 
     // Delete family member
@@ -340,7 +347,8 @@ export default function ViewHouse() {
                                 </div>
                             </div>
                         )}
-
+                        
+                        {/* House Owner */}
                         {activeTab === "owner" && houseowner && (
                             <div className="animate-fadeIn">
                                 <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
@@ -465,6 +473,7 @@ export default function ViewHouse() {
                             </div>
                         )}
                             
+                        {/* Residents */}
                         {activeTab === "residents" && (
                             <div className="animate-fadeIn">
                                 <div className="flex justify-between items-center mb-6">
@@ -529,7 +538,7 @@ export default function ViewHouse() {
                                                     </div>
                                                     <div className="flex space-x-2">
                                                         <button
-                                                            onClick={() => handleEditFamilyMember(member.id)}
+                                                            onClick={() => handleEditFamilyMember(member)}
                                                             className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
                                                             title="Edit"
                                                         >
@@ -679,6 +688,37 @@ export default function ViewHouse() {
                         setHouseOwner(updatedOwner);
                         // Optionally refresh any other data
                         setEditOwnerModalOpen(false);
+                    }}
+                />
+            )}
+            {/* Add New family Member Modal */}
+            {newMemberModalOpen && house?.houseowner_id && (
+                <NewMember
+                    houseownerId={house.houseowner_id}
+                    onClose={() => setNewMemberModalOpen(false)}
+                    onSuccess={(newMember) => {
+                        // Add the new member to the list
+                        setFamilyMembers(prev => [newMember, ...prev]);
+                        setNewMemberModalOpen(false);
+                    }}
+                />
+            )}
+            {/* Edit Family Member Modal */}
+            {editMemberModalOpen && selectedMember && (
+                <EditMember
+                    member={selectedMember}
+                    onClose={() => {
+                        setEditMemberModalOpen(false);
+                        setSelectedMember(null);
+                    }}
+                    onUpdated={(updatedMember) => {
+                        fetchFamilyMembers();
+                        // Update the member in the list
+                        setFamilyMembers(prev => 
+                            prev.map(m => m.id === updatedMember.id ? updatedMember : m)
+                        );
+                        setEditMemberModalOpen(false);
+                        setSelectedMember(null);
                     }}
                 />
             )}
