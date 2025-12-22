@@ -6,22 +6,23 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const {authenticateToken} = require('../middleware/auth')
-const { sendVerificationEmail } = require('../helpers/email');
+const { sendVerificationEmail, sendPasswordResetEmail, sendInvitationEmail } = require('../helpers/email');
 require('dotenv').config();
 
-// helpers for JWT
+
 function signAccessToken(user) {
   return jwt.sign({ 
     id: user.id, 
+    firstname:user.firstname,
     email: user.email, 
-    role: user.role,
-    company_id:user.company_id
-   }, 
-    process.env.ACCESS_TOKEN_SECRET, 
-    { 
-      expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN
-    });
+    role: user.role_name || user.role, // Support both structures
+    role_id: user.role_id,
+    company_id: user.company_id
+  }, process.env.ACCESS_TOKEN_SECRET, { 
+    expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN
+  });
 }
+
 function signRefreshToken(user) {
   return jwt.sign({ 
     id: user.id
@@ -34,7 +35,7 @@ function signRefreshToken(user) {
 /* Register: create user, store hashed verification token, send email */
 router.post('/register', async (req, res) => {
   try {
-    const { firstname, lastname, username, country, mobile, email, password, company_id } = req.body;
+    const { firstname, lastname, country, mobile, email, password, company_id } = req.body;
     if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
 
     const [exists] = await pool.execute('SELECT id FROM users WHERE email = ?', [email]);
@@ -44,11 +45,10 @@ router.post('/register', async (req, res) => {
     
     // FIXED: Handle company_id properly - convert undefined to null
     const [ins] = await pool.execute(
-      'INSERT INTO users (firstname, lastname, username, country, mobile, email, password_hash, is_verified, company_id) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)',
+      'INSERT INTO users (firstname, lastname, country, mobile, email, password_hash, is_verified, is_active, company_id) VALUES (?, ?, ?, ?, ?, ?, 0, 1, ?)',
       [
         firstname || null, 
         lastname || null, 
-        username || null, // Handle username if it's undefined
         country || null, 
         mobile || null, 
         email, 
@@ -58,6 +58,64 @@ router.post('/register', async (req, res) => {
     );
     
     const userId = ins.insertId;
+
+    // NEW: Create default Admin role if this is the first user for the company
+    let roleId = null;
+    if (company_id) {
+      // Check if this is the first user for this company
+      const [companyUsers] = await pool.execute(
+        'SELECT COUNT(*) as userCount FROM users WHERE company_id = ?',
+        [company_id]
+      );
+      
+      // If this is the first user for the company, create default Admin role
+      if (companyUsers[0].userCount === 1) {
+        const { v4: uuidv4 } = require('uuid');
+        roleId = uuidv4().replace(/-/g, '').substring(0, 10);
+        
+        // Create default Admin role
+        await pool.execute(
+          'INSERT INTO roles (id, company_id, role_name, is_active) VALUES (?, ?, "Admin", 1)',
+          [roleId, company_id]
+        );
+        
+        console.log(`Default Admin role created for company ${company_id}`);
+        
+        // Also create some other default roles
+        const defaultRoles = [
+          { id: uuidv4().replace(/-/g, '').substring(0, 10), name: 'Apartment_manager' },
+          { id: uuidv4().replace(/-/g, '').substring(0, 10), name: 'Apartment_technician' },
+        ];
+        
+        for (const role of defaultRoles) {
+          await pool.execute(
+            'INSERT INTO roles (id, company_id, role_name, is_active) VALUES (?, ?, ?, 1)',
+            [role.id, company_id, role.name]
+          );
+        }
+        
+        console.log(`Default roles created for company ${company_id}`);
+      } else {
+        // If not the first user, find the existing Admin role
+        const [adminRole] = await pool.execute(
+          'SELECT id FROM roles WHERE company_id = ? AND role_name = "Admin" AND is_active = 1 LIMIT 1',
+          [company_id]
+        );
+        
+        if (adminRole.length > 0) {
+          roleId = adminRole[0].id;
+        }
+      }
+      
+      // Assign the role to the user
+      if (roleId) {
+        await pool.execute(
+          'UPDATE users SET role_id = ? WHERE id = ?',
+          [roleId, userId]
+        );
+        console.log(`Assigned role ${roleId} to user ${userId}`);
+      }
+    }
 
     // create verification token (plain->email, hash->DB)
     const plainToken = crypto.randomBytes(32).toString('hex');
@@ -69,7 +127,11 @@ router.post('/register', async (req, res) => {
     // send verification email
     await sendVerificationEmail(email, plainToken, userId);
 
-    res.status(201).json({ message: 'User registered, check email to verify' });
+    res.status(201).json({ 
+      message: 'User registered, check email to verify',
+      user_id: userId,
+      role_assigned: !!roleId
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
@@ -80,52 +142,168 @@ router.post('/register', async (req, res) => {
 router.post('/verify', async (req, res) => {
   try {
     const { token, id } = req.body;
-    if (!token || !id) return res.status(400).json({ message: 'Invalid request' });
+    console.log('Verification request:', { token: token ? 'present' : 'missing', id: id ? 'present' : 'missing' });
+    
+    if (!token || !id) {
+      console.log('Missing token or id');
+      return res.status(400).json({ message: 'Token and ID are required' });
+    }
 
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-    const [rows] = await pool.execute('SELECT verification_token_hash, verification_token_expires, is_verified FROM users WHERE id = ?', [id]);
-    if (!rows.length) return res.status(400).json({ message: 'Invalid verification link' });
+    console.log('Looking for user with id:', id);
+    
+    const [rows] = await pool.execute(
+      'SELECT verification_token_hash, verification_token_expires, is_verified FROM users WHERE id = ?', 
+      [id]
+    );
+    
+    if (!rows.length) {
+      console.log('No user found with id:', id);
+      return res.status(400).json({ message: 'Invalid verification link' });
+    }
 
     const user = rows[0];
-    if (user.is_verified) return res.status(200).json({ message: 'Already verified' });
+    console.log('User found:', { 
+      hasToken: !!user.verification_token_hash,
+      isVerified: user.is_verified,
+      expires: user.verification_token_expires 
+    });
 
-    if (!user.verification_token_hash || user.verification_token_hash !== tokenHash) {
+    if (user.is_verified) {
+      return res.status(200).json({ message: 'Already verified' });
+    }
+
+    if (!user.verification_token_hash) {
+      console.log('No verification token hash in database');
       return res.status(400).json({ message: 'Invalid token' });
     }
+
+    if (user.verification_token_hash !== tokenHash) {
+      console.log('Token mismatch:', {
+        expected: user.verification_token_hash,
+        received: tokenHash
+      });
+      return res.status(400).json({ message: 'Invalid token' });
+    }
+
     if (new Date(user.verification_token_expires) < new Date()) {
+      console.log('Token expired');
       return res.status(400).json({ message: 'Token expired' });
     }
 
-    await pool.execute('UPDATE users SET is_verified = 1, verification_token_hash = NULL, verification_token_expires = NULL WHERE id = ?', [id]);
-    return res.json({ message: 'Email verified' });
+    await pool.execute(
+      'UPDATE users SET is_verified = 1, verification_token_hash = NULL, verification_token_expires = NULL WHERE id = ?', 
+      [id]
+    );
+    
+    console.log('User verified successfully:', id);
+    return res.json({ message: 'Email verified successfully' });
+    
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: 'Server error' });
+    console.error('Verification error:', err);
+    return res.status(500).json({ message: 'Server error during verification' });
   }
 });
 
 /* Resend verification (rate-limit this from main server) */
+// router.post('/resend', async (req, res) => {
+//   try {
+//     const { email } = req.body;
+//     console.log('Resend verification request for:', email);
+    
+//     if (!email) return res.status(400).json({ message: 'Email required' });
+
+//     const [rows] = await pool.execute('SELECT id, is_verified FROM users WHERE email = ?', [email]);
+//     if (!rows.length) {
+//       console.log('User not found for email:', email);
+//       return res.status(404).json({ message: 'User not found' });
+//     }
+
+//     const user = rows[0];
+//     console.log('User found:', { id: user.id, is_verified: user.is_verified });
+    
+//     if (user.is_verified) {
+//       console.log('User already verified');
+//       return res.status(400).json({ message: 'Already verified' });
+//     }
+
+//     const plainToken = crypto.randomBytes(32).toString('hex');
+//     const tokenHash = crypto.createHash('sha256').update(plainToken).digest('hex');
+//     const expiresAt = new Date(Date.now() + (Number(process.env.VERIFICATION_TOKEN_EXPIRES_HOURS || 24) * 3600 * 1000));
+    
+//     await pool.execute(
+//       'UPDATE users SET verification_token_hash = ?, verification_token_expires = ? WHERE id = ?', 
+//       [tokenHash, expiresAt, user.id]
+//     );
+
+//     console.log('Sending verification email to:', email);
+    
+//     // Use the email helper
+//     await sendVerificationEmail(email, plainToken, user.id);
+//     console.log(`Verification email sent successfully to: ${email}`);
+
+//     res.json({ message: 'Verification email resent' });
+//   } catch (err) {
+//     console.error('Resend verification error:', err);
+//     res.status(500).json({ message: 'Server error while sending verification email' });
+//   }
+// });
+/* Resend verification */
 router.post('/resend', async (req, res) => {
   try {
     const { email } = req.body;
+    console.log('Resend verification request for:', email);
+    
     if (!email) return res.status(400).json({ message: 'Email required' });
 
-    const [rows] = await pool.execute('SELECT id, is_verified FROM users WHERE email = ?', [email]);
-    if (!rows.length) return res.status(404).json({ message: 'User not found' });
+    const [rows] = await pool.execute('SELECT id, is_verified, email FROM users WHERE email = ?', [email]);
+    if (!rows.length) {
+      console.log('User not found for email:', email);
+      return res.status(404).json({ message: 'User not found' });
+    }
 
     const user = rows[0];
-    if (user.is_verified) return res.status(400).json({ message: 'Already verified' });
+    console.log('User found:', { id: user.id, is_verified: user.is_verified });
+    
+    if (user.is_verified) {
+      console.log('User already verified');
+      return res.status(400).json({ message: 'Already verified' });
+    }
 
     const plainToken = crypto.randomBytes(32).toString('hex');
     const tokenHash = crypto.createHash('sha256').update(plainToken).digest('hex');
     const expiresAt = new Date(Date.now() + (Number(process.env.VERIFICATION_TOKEN_EXPIRES_HOURS || 24) * 3600 * 1000));
-    await pool.execute('UPDATE users SET verification_token_hash = ?, verification_token_expires = ? WHERE id = ?', [tokenHash, expiresAt, user.id]);
+    
+    await pool.execute(
+      'UPDATE users SET verification_token_hash = ?, verification_token_expires = ? WHERE id = ?', 
+      [tokenHash, expiresAt, user.id]
+    );
 
-    await sendVerificationEmail(email, plainToken, user.id);
-    res.json({ message: 'Verification email resent' });
+    console.log('Sending verification email to:', email);
+    
+    try {
+      // Use the email helper
+      await sendVerificationEmail(email, plainToken, user.id);
+      console.log(`✅ Verification email sent successfully to: ${email}`);
+      
+      res.json({ 
+        success: true,
+        message: 'Verification email resent successfully' 
+      });
+    } catch (emailError) {
+      console.error('❌ Email sending failed:', emailError.message);
+      return res.status(500).json({ 
+        success: false,
+        message: 'Failed to send verification email. Please try again later.' 
+      });
+    }
+    
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Resend verification error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error while sending verification email' 
+    });
   }
 });
 
@@ -135,7 +313,14 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
 
-    const [rows] = await pool.execute('SELECT id, email, password_hash, is_verified, role, company_id FROM users WHERE email = ?', [email]);
+    const [rows] = await pool.execute(
+      `SELECT u.id, u.email, u.password_hash, u.is_verified, u.company_id, u.role_id, r.role_name 
+       FROM users u 
+       LEFT JOIN roles r ON u.role_id = r.id 
+       WHERE u.email = ?`,
+      [email]
+    );
+    
     const user = rows[0];
     if (!user) return res.status(401).json({ message: 'Invalid credentials' });
     if (!user.is_verified) return res.status(403).json({ message: 'Please verify your email first' });
@@ -148,13 +333,12 @@ router.post('/login', async (req, res) => {
 
     await pool.execute('UPDATE users SET refresh_token = ? WHERE id = ?', [refreshToken, user.id]);
 
-    // NEW: send it in a cookie
-  res.cookie('accessToken', accessToken, {
-    httpOnly: true,
-    sameSite: 'lax',   // adjust if you have cross-site frontend/backend
-    secure: false      // set to true if using HTTPS
-  });
-
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: false,
+      maxAge: 1000 * 60 * 15
+    });
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
@@ -163,10 +347,20 @@ router.post('/login', async (req, res) => {
       maxAge: 1000 * 60 * 60 * 24 * 7
     });
 
-    res.json({ accessToken, user: { id: user.id, email: user.email, role: user.role, company_id:user.company_id} });
+    res.json({ 
+      accessToken, 
+      user: { 
+        id: user.id, 
+        firstname: user.firstname,
+        email: user.email, 
+        role: user.role_name, 
+        role_id: user.role_id,
+        company_id: user.company_id 
+      } 
+    });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error, Refresh the page' });
   }
 });
 
@@ -183,7 +377,14 @@ router.post('/refresh', async (req, res) => {
       return res.status(403).json({ message: 'Invalid refresh token' });
     }
 
-    const [rows] = await pool.execute('SELECT id, refresh_token, email, role FROM users WHERE id = ?', [payload.id]);
+    const [rows] = await pool.execute(
+      `SELECT u.id, u.refresh_token, u.email, u.company_id, r.role_name, u.role_id 
+       FROM users u 
+       LEFT JOIN roles r ON u.role_id = r.id 
+       WHERE u.id = ?`,
+      [payload.id]
+    );
+    
     const user = rows[0];
     if (!user || user.refresh_token !== token) return res.status(403).json({ message: 'Refresh token not valid' });
 
@@ -198,7 +399,30 @@ router.post('/refresh', async (req, res) => {
       maxAge: 1000 * 60 * 60 * 24 * 7
     });
 
-    res.json({ accessToken, user: { id: user.id, email: user.email, role: user.role, company_id:user.company_id} });
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: false,
+      maxAge: 1000 * 60 * 15  // 15 mins
+    });
+
+    res.clearCookie('accessToken', {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: false
+    });
+
+    res.json({ 
+      accessToken, 
+      user: { 
+        id: user.id, 
+        firstname: user.firstname,
+        email: user.email, 
+        role: user.role_name, 
+        role_id: user.role_id,
+        company_id: user.company_id 
+      } 
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error' });
@@ -235,21 +459,23 @@ router.get('/users', authenticateToken, async (req, res) => {
       });
     }
 
-    // Get users (excluding password and other sensitive info)
     const [users] = await pool.execute(
       `SELECT 
-        id, 
-        firstname, 
-        lastname, 
-        email, 
-        country,
-        mobile,
-        role, 
-        is_verified, 
-        created_at 
-       FROM users 
-       WHERE company_id = ? 
-       ORDER BY created_at DESC`,
+        u.id, 
+        u.firstname, 
+        u.lastname, 
+        u.email, 
+        u.country,
+        u.mobile,
+        r.role_name as role,
+        u.role_id,
+        u.is_verified, 
+        u.is_active,
+        u.created_at 
+       FROM users u
+       LEFT JOIN roles r ON u.role_id = r.id
+       WHERE u.company_id = ? 
+       ORDER BY u.created_at DESC`,
       [company_id]
     );
 
@@ -257,7 +483,6 @@ router.get('/users', authenticateToken, async (req, res) => {
       success: true,
       data: users
     });
-    
   } catch (err) {
     console.error('Get users error:', err);
     res.status(500).json({
@@ -267,4 +492,497 @@ router.get('/users', authenticateToken, async (req, res) => {
   }
 });
 
-module.exports = router;
+const nodemailer = require('nodemailer');
+const rateLimit = require('express-rate-limit');
+
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 3, // Limit each IP to 3 forgot password requests per windowMs
+  message: 'Too many password reset attempts, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const resetPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 reset attempts per windowMs
+  message: 'Too many reset attempts, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Send password reset link
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email is required' });
+
+    // find user
+    const [rows] = await pool.execute('SELECT id, email FROM users WHERE email = ?', [email]);
+    if (!rows.length) return res.status(404).json({ message: 'No account found with that email' });
+
+    const user = rows[0];
+
+    // generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    await pool.execute(
+      'UPDATE users SET reset_token_hash = ?, reset_token_expires = ? WHERE id = ?',
+      [resetTokenHash, expiresAt, user.id]
+    );
+
+    // Use email helper
+    await sendPasswordResetEmail(email, resetToken, user.id);
+    console.log(`Password reset email sent to: ${user.email}`);
+
+    res.json({ message: 'Password reset link sent to your email' });
+  } catch (err) {
+    console.error('Forgot password error:', err);
+    res.status(500).json({ message: 'Server error while sending reset link' });
+  }
+});
+
+// Reset password route
+router.post('/reset-password',resetPasswordLimiter, async (req, res) => {
+  try {
+    const { token, id, password } = req.body;
+    if (!token || !id || !password)
+      return res.status(400).json({ message: 'Token, ID, and new password are required' });
+
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    const [rows] = await pool.execute(
+      'SELECT reset_token_hash, reset_token_expires FROM users WHERE id = ?',
+      [id]
+    );
+
+    if (!rows.length) return res.status(404).json({ message: 'User not found' });
+    const user = rows[0];
+
+    if (user.reset_token_hash !== tokenHash)
+      return res.status(400).json({ message: 'Invalid or already used token' });
+
+    if (new Date(user.reset_token_expires) < new Date())
+      return res.status(400).json({ message: 'Reset token expired' });
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    await pool.execute(
+      'UPDATE users SET password_hash = ?, reset_token_hash = NULL, reset_token_expires = NULL WHERE id = ?',
+      [hashedPassword, id]
+    );
+
+    res.json({ message: 'Password reset successful' });
+  } catch (err) {
+    console.error('Reset password error:', err);
+    res.status(500).json({ message: 'Server error while resetting password' });
+  }
+});
+
+//user invite
+router.post('/invite', authenticateToken, async (req, res) => {
+  try {
+    const { email, role_id } = req.body; // Now using role_id instead of role name
+    const company_id = req.user.company_id; 
+
+    if (!email || !role_id) {
+      return res.status(400).json({ message: 'Email and role are required' });
+    }
+
+    if (!company_id) {
+      return res.status(400).json({ message: 'Company ID is required' });
+    }
+
+    // Check if user already exists
+    const [exists] = await pool.execute('SELECT id FROM users WHERE email = ?', [email]);
+    if (exists.length) {
+      return res.status(409).json({ message: 'User already exists' });
+    }
+
+    // Verify the role exists and belongs to company
+    const [roleCheck] = await pool.execute(
+      'SELECT role_name FROM roles WHERE id = ? AND company_id = ? AND is_active = 1',
+      [role_id, company_id]
+    );
+
+    if (!roleCheck.length) {
+      return res.status(400).json({ message: 'Invalid role' });
+    }
+
+    const role_name = roleCheck[0].role_name;
+
+    // Insert invited user with role_id
+    const [ins] = await pool.execute(
+      'INSERT INTO users (email, role_id, is_verified, is_active, company_id, password_hash) VALUES (?, ?, 0, 1, ?, NULL)',
+      [email, role_id, company_id]
+    );
+
+    const userId = ins.insertId;
+
+    // Generate verification token
+    const plainToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(plainToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    await pool.execute(
+      'UPDATE users SET verification_token_hash=?, verification_token_expires=? WHERE id=?',
+      [tokenHash, expiresAt, userId]
+    );
+
+    // Use email helper with role_name
+    await sendInvitationEmail(email, plainToken, userId, role_name);
+    console.log(`Invite email sent to: ${email}`);
+
+    res.status(201).json({ message: 'Invitation sent successfully' });
+  } catch (err) {
+    console.error('Invite error:', err);
+    res.status(500).json({ message: 'Server error while inviting user' });
+  }
+});
+
+// Add this route to your auth.js before the complete-registration route
+router.post('/verify-invite-link', async (req, res) => {
+  try {
+    const { token, id } = req.body;
+    if (!token || !id) return res.status(400).json({ message: 'Invalid request' });
+
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    
+    const [rows] = await pool.execute(
+      'SELECT id, email, verification_token_hash, verification_token_expires, is_verified FROM users WHERE id = ?',
+      [id]
+    );
+    
+    if (!rows.length) return res.status(400).json({ message: 'Invalid invitation link' });
+
+    const user = rows[0];
+    
+    // Check if already verified
+    if (user.is_verified) {
+      return res.status(400).json({ message: 'This invitation has already been used' });
+    }
+
+    // Check token validity
+    if (!user.verification_token_hash || user.verification_token_hash !== tokenHash) {
+      return res.status(400).json({ message: 'Invalid invitation token' });
+    }
+
+    // Check expiration
+    if (new Date(user.verification_token_expires) < new Date()) {
+      return res.status(400).json({ message: 'Invitation link has expired' });
+    }
+
+    res.json({ 
+      success: true, 
+      email: user.email,
+      message: 'Invitation link is valid' 
+    });
+    
+  } catch (err) {
+    console.error('Verify invite error:', err);
+    res.status(500).json({ message: 'Server error while verifying invitation' });
+  }
+});
+
+//complete-registration of users by themselves 
+router.post('/complete-registration', async (req, res) => {
+  try {
+    const { email, firstname, lastname, country, mobile, password } = req.body;
+    if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
+
+    const [users] = await pool.execute(
+      `SELECT u.id, u.is_verified, u.role_id, r.role_name 
+       FROM users u 
+       LEFT JOIN roles r ON u.role_id = r.id 
+       WHERE u.email = ?`,
+      [email]
+    );
+    
+    if (!users.length) return res.status(404).json({ message: 'User not found' });
+
+    const user = users[0];
+    
+    // Check if user is already verified and has completed registration
+    if (user.is_verified) {
+      // Check if they already have a password (completed registration)
+      const [userDetails] = await pool.execute('SELECT password_hash FROM users WHERE id = ?', [user.id]);
+      if (userDetails[0].password_hash) {
+        return res.status(400).json({ message: 'Registration already completed' });
+      }
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    await pool.execute(
+      `UPDATE users 
+       SET firstname=?, lastname=?, country=?, mobile=?, password_hash=?, is_verified=1, is_active=1 
+       WHERE id=?`,
+      [firstname, lastname, country, mobile, hashedPassword, user.id]
+    );
+
+    res.json({ 
+      message: 'Registration completed successfully',
+      user: {
+        id: user.id,
+        email: email,
+        role: user.role_name,
+        role_id: user.role_id
+      }
+    });
+  } catch (err) {
+    console.error('Complete registration error:', err);
+    res.status(500).json({ message: 'Server error while completing registration' });
+  }
+});
+
+// Update user
+router.put('/users/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { firstname, lastname, email, country, mobile, role_id, password } = req.body;
+    
+    // Check if user exists
+    const [users] = await pool.execute(
+      `SELECT u.id, u.company_id, u.email as current_email, r.role_name 
+       FROM users u 
+       LEFT JOIN roles r ON u.role_id = r.id 
+       WHERE u.id = ?`,
+      [id]
+    );
+    
+    if (!users.length) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const user = users[0];
+    
+    // Check if user belongs to the same company
+    if (user.company_id !== req.user.company_id) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    // Check if email is already taken by another user
+    if (email && email !== user.current_email) {
+      const [existing] = await pool.execute(
+        'SELECT id FROM users WHERE email = ? AND id != ? AND company_id = ?',
+        [email, id, req.user.company_id]
+      );
+      if (existing.length) {
+        return res.status(409).json({ success: false, message: 'Email already taken' });
+      }
+    }
+
+    // If role_id is provided, verify it belongs to company
+    if (role_id) {
+      const [roleCheck] = await pool.execute(
+        'SELECT id, role_name FROM roles WHERE id = ? AND company_id = ? AND is_active = 1',
+        [role_id, req.user.company_id]
+      );
+      if (!roleCheck.length) {
+        return res.status(400).json({ success: false, message: 'Invalid role' });
+      }
+    }
+
+    let updateQuery = `
+      UPDATE users SET 
+      firstname = ?, lastname = ?, country = ?, mobile = ?
+    `;
+    let queryParams = [firstname, lastname, country, mobile];
+
+    // Add role_id to update
+    if (role_id) {
+      updateQuery += ', role_id = ?';
+      queryParams.push(role_id);
+    }
+
+    // Add email to update
+    if (email) {
+      updateQuery += ', email = ?';
+      queryParams.push(email);
+    }
+
+    // Password and verification logic
+    if (password) {
+      const password_hash = await bcrypt.hash(password, 12);
+      updateQuery += ', password_hash = ?';
+      queryParams.push(password_hash);
+      
+      if (email && email !== user.current_email) {
+        updateQuery += ', is_verified = 0';
+      }
+    } else {
+      if (email && email !== user.current_email) {
+        updateQuery += ', is_verified = 0';
+      }
+    }
+
+    updateQuery += ' WHERE id = ?';
+    queryParams.push(id);
+
+    await pool.execute(updateQuery, queryParams);
+
+    // Get updated user data with role name
+    const [updatedUser] = await pool.execute(
+      `SELECT u.*, r.role_name 
+       FROM users u 
+       LEFT JOIN roles r ON u.role_id = r.id 
+       WHERE u.id = ?`,
+      [id]
+    );
+
+    const userData = updatedUser[0];
+
+    const responseData = { 
+      id, 
+      firstname, 
+      lastname, 
+      country, 
+      mobile,
+      role_id: userData.role_id,
+      role: userData.role_name
+    };
+
+    if (email && email !== user.current_email) {
+      responseData.email = email;
+      responseData.requires_verification = true;
+    } else {
+      responseData.email = user.current_email;
+    }
+
+    res.json({
+      success: true,
+      message: 'User updated successfully',
+      data: responseData
+    });
+  } catch (err) {
+    console.error('Error updating user:', err);
+    res.status(500).json({ success: false, message: 'Server error while updating user' });
+  }
+});
+
+// Toggle user active status
+router.patch('/users/:id/toggle', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check if user exists and belongs to same company
+    const [users] = await pool.execute(
+      'SELECT id, company_id, is_active FROM users WHERE id = ? AND company_id = ?',
+      [id, req.user.company_id]
+    );
+    
+    if (!users.length) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const user = users[0];
+    const newStatus = !user.is_active;
+
+    await pool.execute(
+      'UPDATE users SET is_active = ? WHERE id = ?',
+      [newStatus, id]
+    );
+
+    res.json({
+      success: true,
+      message: `User ${newStatus ? 'activated' : 'deactivated'} successfully`,
+      data: { is_active: newStatus }
+    });
+
+  } catch (err) {
+    console.error('Error toggling user:', err);
+    res.status(500).json({ success: false, message: 'Server error while updating user status' });
+  }
+});
+
+// Delete user
+router.delete('/users/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check if user exists and belongs to same company
+    const [users] = await pool.execute(
+      'SELECT id, company_id, email FROM users WHERE id = ? AND company_id = ?',
+      [id, req.user.company_id]
+    );
+    
+    if (!users.length) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const user = users[0];
+    
+    // Prevent user from deleting themselves
+    if (user.id === req.user.id) {
+      return res.status(400).json({ success: false, message: 'You cannot delete your own account' });
+    }
+
+    // Delete the user
+    await pool.execute('DELETE FROM users WHERE id = ?', [id]);
+
+    res.json({
+      success: true,
+      message: 'User deleted successfully'
+    });
+
+  } catch (err) {
+    console.error('Error deleting user:', err);
+    res.status(500).json({ success: false, message: 'Server error while deleting user' });
+  }
+});
+
+router.get('/me', authenticateToken, async (req, res) => {
+  try {
+    const user_id = req.user.id;
+    
+    // if (!company_id) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: 'Company ID is required'
+    //   });
+    // }
+
+    const [users] = await pool.execute(
+       `SELECT 
+        u.id, 
+        u.firstname, 
+        u.lastname, 
+        u.email,
+        u.country,
+        u.mobile,
+        r.role_name as role,
+        u.role_id,
+        u.is_verified, 
+        u.is_active,
+        u.created_at
+       FROM users u
+       LEFT JOIN roles r ON u.role_id = r.id
+       WHERE u.id = ?`,
+      [user_id]
+    );
+
+      if (!users.length) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const user = users[0];
+
+    res.json({
+      success: true,
+      data: users
+    });
+  } catch (err) {
+    console.error('Get user error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch user'
+    });
+  }
+});
+
+module.exports=router;

@@ -44,6 +44,7 @@ router.get('/', apartmentController.getAllApartments);
 router.get('/:id', apartmentController.getApartmentById);
 router.put('/:id', upload.single('picture'), apartmentController.updateApartment);
 router.delete('/:id', apartmentController.deleteApartment);
+router.patch('/:id/toggle', apartmentController.toggleApartmentStatus);
 
 // Error handling middleware for multer
 router.use((error, req, res, next) => {

@@ -35,7 +35,7 @@ const upload = multer({
 const apartmentController = {
     async createApartment(req, res) {
         try {
-            const { name, address, city, floors, houses, status } = req.body;
+            const { apartment_id,name, address, city } = req.body;
             const company_id = req.user.company_id;
 
             let picturePath = null;
@@ -43,7 +43,7 @@ const apartmentController = {
                 picturePath = '/uploads/images/' + req.file.filename;
             }
 
-            if (!name || !address || !city || floors === undefined || houses === undefined || status === undefined) {
+            if (!apartment_id || !name || !address || !city ) {
                 return res.status(400).json({
                     success: false,
                     message: 'All fields are required'
@@ -51,13 +51,11 @@ const apartmentController = {
             }
 
             const newApartment = await Apartment.create({
+                    apartment_id,
                     name,
                     address,
                     city,
-                    floors: parseInt(floors),
-                    houses: parseInt(houses),
                     picture: picturePath, // Store the path, not the binary
-                    status,
                     company_id
             });
             res.status(201).json({
@@ -138,7 +136,12 @@ const apartmentController = {
     async updateApartment(req,res){
         try{
             const {id}=req.params;
-            const {name,address,city,floors,houses,picture,status}=req.body;
+            const {name,address,city,floors,houses}=req.body;
+
+            let picturePath = null;
+                if (req.file) {
+                picturePath = '/uploads/images/' + req.file.filename;
+            }
 
             //check tenant exist
             const existingApartment= await Apartment.findById(id);
@@ -148,7 +151,7 @@ const apartmentController = {
                     message:'Apartment not found'
                 });
             }
-            // Check if new regNo conflicts with other tenants
+            //Check if new regNo conflicts with other tenants
             // if(regNo && regNo !== existingTenant.regNo){
             //      const tenantWithRegNo = await Tenant.findByRegNo(regNo);
             //      if(tenantWithRegNo && tenantWithRegNo.id !== id){
@@ -165,8 +168,7 @@ const apartmentController = {
                 city: city || existingApartment.city,
                 floors: floors ? parseInt(floors): existingApartment.floors,
                 houses: houses ? parseInt(houses): existingApartment.houses,
-                picture: picture || existingApartment.picture,
-                status: status || existingApartment.status
+                picture: picturePath || existingApartment.picture,
             });
 
             res.json({
@@ -209,7 +211,44 @@ const apartmentController = {
                 message:'Server error while deleting apartment'
             });
         }
+    },
+
+    // Deactivate / Activate Apartment
+    async toggleApartmentStatus(req, res) {
+        try {
+            const { id } = req.params;
+
+            const apartment = await Apartment.findById(id);
+            if (!apartment) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Apartment not found'
+                });
+            }
+
+            let updatedApartment;
+            if (apartment.is_active) {
+                await Apartment.deactivate(id);
+                updatedApartment = { ...apartment, is_active: 0 };
+            } else {
+                await Apartment.activate(id);
+                updatedApartment = { ...apartment, is_active: 1 };
+            }
+
+            res.json({
+                success: true,
+                message: apartment.is_active ? 'Apartment deactivated' : 'Apartment activated',
+                data: updatedApartment
+            });
+        } catch (err) {
+            console.error('Toggle apartment status error:', err);
+            res.status(500).json({
+                success: false,
+                message: 'Server error while toggling apartment status'
+            });
+        }
     }
+
 }
 
 module.exports = apartmentController;

@@ -1,25 +1,27 @@
-import React, { useEffect } from "react";
-import { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function Welcome() {
-  const navigate=useNavigate();
+  const navigate = useNavigate();
 
-  const handleNavigation= ()=>{
+  const handleNavigation = () => {
     navigate('/register');
-  }
-    return (
+  };
+
+  return (
     <div className="welcomePage">
-      <div className="absolute top-4 left-6 flex -6 mt-5">
+      {/* Header Section with responsive adjustments */}
+      {/* <div className="absolute top-4 left-4 sm:left-6 flex items-center gap-2 mt-5">
         <img
           src="/apartment.png"
           alt="Apartment Logo"
-          className="w-12 sm:w-10 md:w-11 mx-auto mb-6"
+          className="w-8 h-8 sm:w-10 sm:h-10 md:w-12"
         />
-        <h2 className="text-3xl sm:text-3xl md:text-3xl font-bold text-white mb-4">AptSync</h2>
-      </div>
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">AptSync</h2>
+      </div> */}
 
-      <div className="absolute top-4 right-6 flex gap-6 mt-6">
+      {/* Buttons with responsive sizing and positioning */}
+      <div className="absolute top-4 right-2 sm:right-6 flex gap-2 sm:gap-4 md:gap-6 mt-5">
         <button 
           onClick={() => navigate("/login")} 
           className="signInSignUp"
@@ -33,6 +35,8 @@ export default function Welcome() {
           Sign Up
         </button>
       </div>
+      
+      {/* Main Card - Keep EXACTLY as it was */}
       <div className="welcomeCard">
         {/* Logo / Icon */}
         <img

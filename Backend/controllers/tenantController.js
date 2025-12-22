@@ -4,36 +4,36 @@ const Tenant = require('../models/Tenant');
 const tenantController = {
     async createTenant(req,res){
         try{
-            const {name, businessInfo, employees}=req.body;
-            if(!name || !businessInfo || employees === undefined){
+            const {regNo,name, address}=req.body;
+            if(!regNo || !name || !address === undefined){
                 return res.status(400).json({
                     success: false,
-                    message: 'All fields are required: name, businessInfo, employees'
+                    message: 'All fields are required'
                 });
             }
             
-            //check existing tenants
-            // const existingTenant = await Tenant.findByRegNo(regNo);
-            // if(existingTenant){
-            //     return res.status(409).json({
-            //         success:false,
-            //         message:'Tenant is already exists'
-            //     });
-            // }
-
-            //Validate employees is a positive number
-            if(isNaN(employees) || employees < 1){
-                return res.status(400).json({
+            // check existing tenants
+            const existingTenant = await Tenant.findByRegNo(regNo);
+            if(existingTenant){
+                return res.status(409).json({
                     success:false,
-                    message: 'Employees must be a positive number'
+                    message:'Tenant is already exists'
                 });
             }
 
+            //Validate employees is a positive number
+            // if(isNaN(employees) || employees < 1){
+            //     return res.status(400).json({
+            //         success:false,
+            //         message: 'Employees must be a positive number'
+            //     });
+            // }
+
             //create tenant
             const newTenant=await Tenant.create({
+                regNo,
                 name,
-                businessInfo,
-                employees:parseInt(employees)
+                address
             });
 
             res.status(201).json({
@@ -98,7 +98,7 @@ const tenantController = {
     async updateTenant(req,res){
         try{
             const {id}=req.params;
-            const {regNo,name,businessInfo,employees}=req.body;
+            const {regNo,name,address}=req.body;
 
             //check tenant exist
             const existingTenant= await Tenant.findById(id);
@@ -122,8 +122,7 @@ const tenantController = {
             const updateTenant= await Tenant.update(id,{
                 regNo: regNo || existingTenant.regNo, // Keep existing regNo if not provided
                 name: name || existingTenant.name,
-                businessInfo: businessInfo || existingTenant.businessInfo,
-                employees: employees ? parseInt(employees): existingTenant.employees
+                address: address || existingTenant.address
             });
 
             res.json({

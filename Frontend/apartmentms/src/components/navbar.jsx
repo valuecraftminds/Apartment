@@ -10,7 +10,9 @@ export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
   const { auth, setAuth } = useContext(AuthContext)
+  const { logout, resetActivityTimer } = useContext(AuthContext);
   const navigate = useNavigate()
+  const [showlogoutModel,setShowLogoutModel] = useState(false);
 
   // Initialize dark mode from localStorage or system preference
   useEffect(() => {
@@ -26,25 +28,55 @@ export default function Navbar() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!auth.accessToken) return;
+
+    const activityEvents = [
+      'mousemove', 'mousedown', 'keydown', 'scroll', 'click',
+      'touchstart', 'touchmove', 'wheel', 'resize', 'focus'
+    ];
+
+    const handleActivity = () => resetActivityTimer();
+
+    activityEvents.forEach(evt => window.addEventListener(evt, handleActivity, { passive: true }));
+
+    // Handle tab visibility
+    const handleVisibilityChange = () => {
+      if (!document.hidden) resetActivityTimer();
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      activityEvents.forEach(evt => window.removeEventListener(evt, handleActivity));
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [auth.accessToken, resetActivityTimer]);
+
   const handleLogout = async () => {
     try {
       await api.post('/auth/logout')
-      setAuth(null)
+      // setAuth(null)
+      logout();
       toast.success('Logged out successfully')
-      navigate('/login')
+      navigate('/')
     } catch (error) {
       console.error('Logout error:', error)
-      setAuth(null)
+      logout();
       toast.success('Logged out successfully')
-      navigate('/login')
+      navigate('/')
     }
   }
 
   const confirmLogout = () => {
-    if (window.confirm('Are you sure you want to logout?')) {
-      handleLogout()
-    }
+    // if (window.confirm('Are you sure you want to logout?')) {
+    //   handleLogout()
+    // }
+    setShowLogoutModel(true);
   }
+
+  const cancelLogout = () => {
+  setShowLogoutModel(false);
+};
 
   const toggleDarkMode = () => {
     const newDarkMode = !isDarkMode
@@ -75,14 +107,14 @@ export default function Navbar() {
 
             {/* Search bar */}
             <div className="hidden md:block relative ml-4">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              {/* <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search size={18} className="text-gray-800 dark:text-gray-500" />
               </div>
               <input
                 type="text"
                 placeholder="Search..."
                 className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white text-gray-800 text-sm w-64 transition-colors duration-200"
-              />
+              /> */}
             </div>
           </div>
 
@@ -109,12 +141,15 @@ export default function Navbar() {
             <div className="flex items-center space-x-2">
               <div className="h-8 w-8 bg-purple-600 rounded-full flex items-center justify-center">
                 <span className="text-white text-sm font-medium">
-                  {auth?.user?.name?.[0] || auth?.user?.email?.[0]?.toUpperCase()}
+                  {auth?.user?.firstname?.charAt(0)?.toUpperCase()
+                  //  auth?.user?.email?.charAt(0)?.toUpperCase()
+                  }
                 </span>
               </div>
               <div className="hidden md:block text-left">
                 <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                  {auth?.user?.name || auth?.user?.email?.split('@')[0]}
+                  {auth?.user?.firstname}
+                  {/* {auth?.user?.name || auth?.user?.email?.split('@')[0]} */}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
                   {auth?.user?.role}
@@ -178,6 +213,33 @@ export default function Navbar() {
             </div>
           </div>
         </div>
+      )}
+
+      {showlogoutModel && (
+        <div className="fixed inset-0 bg-white/0 backdrop-blur-lg flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm relative">
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+              Confirm Logout
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              Are you sure you want to log out?
+            </p>
+          <div className="flex justify-end space-x-3">
+            <button
+              onClick={cancelLogout}
+              className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors duration-200"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      </div>
       )}
     </header>
   )
