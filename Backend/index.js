@@ -14,6 +14,7 @@ const { authenticateToken } = require('./middleware/auth');
 const app = express();
 // Add this before your routes
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/evidance', express.static(path.join(__dirname, 'evidance')));
 
 app.use(helmet());
 app.use(express.json());
@@ -161,3 +162,7 @@ app.use('/api/generate-measurable-bills', generateMeasurableBillsRoutes);
 //Routes for user bill assignments
 const userBillRoutes = require('./routes/userBills');
 app.use('/api/user-bills', userBillRoutes);
+
+//Routes for family or Residents
+const familyRoutes = require('./routes/family');
+app.use('/api/family',familyRoutes); 

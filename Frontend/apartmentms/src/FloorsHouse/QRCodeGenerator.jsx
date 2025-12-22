@@ -1401,6 +1401,12 @@ export default function QRCodeGenerator({ houses, apartment, floor, onClose }) {
                 pdf.setTextColor(0, 0, 0)
                 pdf.text(`${house.house_id}`, x + cardWidth / 2, yOffset + 15, { align: 'center' })
                 
+                //House DB Id
+                pdf.setFontSize(7)
+                pdf.setFont(undefined, "bold")
+                pdf.setTextColor(0, 0, 0)
+                pdf.text(`${house.id}`, x + cardWidth / 2, yOffset + 18, { align: 'center' })
+
                 // QR Code
                 if (qrCodeImages[house.id]) {
                     pdf.addImage(
@@ -1492,7 +1498,7 @@ export default function QRCodeGenerator({ houses, apartment, floor, onClose }) {
             newWindow.document.write(`
                 <html>
                     <head>
-                        <title>QR Code Test - House ${house.house_id}</title>
+                        <title>QR Code Test</title>
                         <style>
                             body { 
                                 font-family: Arial, sans-serif; 
@@ -1602,7 +1608,7 @@ export default function QRCodeGenerator({ houses, apartment, floor, onClose }) {
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-6">
                     {/* Explanation Notice */}
-                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+                    {/* <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
                         <div className="flex items-start">
                             <div className="bg-blue-100 dark:bg-blue-800 p-2 rounded-lg mr-3">
                                 <QrCode className="h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -1620,7 +1626,7 @@ export default function QRCodeGenerator({ houses, apartment, floor, onClose }) {
                                 </p>
                             </div>
                         </div>
-                    </div>
+                    </div> */}
 
                     <div className="mb-6">
                         <p className="text-gray-600 dark:text-gray-300 mb-4">
