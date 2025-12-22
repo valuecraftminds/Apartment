@@ -1,11 +1,13 @@
+//controllers/houseOwnerController.js
 const HouseOwner=require('../models/HouseOwner');
+
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        const uploadDir = 'evidance/houseOwner/';
+        const uploadDir = 'evidance/proof/';
         if (!fs.existsSync(uploadDir)) {
             fs.mkdirSync(uploadDir, { recursive: true });
         }
@@ -34,17 +36,17 @@ const upload = multer({
 const houseOwnerController ={
     async createHouseOwner(req, res) {
         try {
-            const { name, nic, occupation, country, mobile, occupied_way,apartment_id } = req.body;
+            const { name, nic, occupation, country, mobile, email, occupied_way,apartment_id } = req.body;
             const company_id = req.user.company_id;
             // const apartment_id = req.apartment.id;
 
 
             let picturePath = null;
             if (req.file) {
-                picturePath = '/evidance/houseOwner/' + req.file.filename;
+                picturePath = '/evidance/proof/' + req.file.filename;
             }
 
-            if (!name || !nic || !occupation || !country || !mobile || !occupied_way ) {
+            if (!name || !nic || !occupation || !country || !mobile || !email || !occupied_way ) {
                 return res.status(400).json({
                     success: false,
                     message: 'All fields are required'
@@ -59,6 +61,7 @@ const houseOwnerController ={
                     occupation,
                     country,
                     mobile,
+                    email,
                     occupied_way,
                     proof: picturePath // Store the path, not the binary
                     
@@ -178,11 +181,11 @@ const houseOwnerController ={
     async updateHouseOwner(req,res){
         try{
             const {id}=req.params;
-            const {name, nic, occupation, country, mobile, occupied_way}=req.body;
+            const {name, nic, occupation, country, mobile, email, occupied_way}=req.body;
 
             let picturePath = null;
                 if (req.file) {
-                picturePath = '/evidance/houseOwner/' + req.file.filename;
+                picturePath = '/evidance/proof/' + req.file.filename;
             }
 
             //check tenant exist
@@ -194,12 +197,13 @@ const houseOwnerController ={
                 });
             }
 
-            const updateHouseOwner= await HouseOwner.update(id,{
+            const updateHouseOwner= await HouseOwner.updateHouseOwner(id,{
                 name: name || existingHouseOwner.name,
                 nic: nic || existingHouseOwner.nic,
                 occupation: occupation || existingHouseOwner.occupation,
                 country: country || existingHouseOwner.country,
                 mobile: mobile || existingHouseOwner.mobile,
+                email: email || existingHouseOwner.email,
                 occupied_way:occupied_way || existingHouseOwner.occupied_way,
                 proof: picturePath || existingHouseOwner.proof,
             });
@@ -218,5 +222,169 @@ const houseOwnerController ={
         }
     },
 
+    async downloadProof(req, res) {
+        try {
+            const { id } = req.params;
+            
+            // Find the house owner
+            const houseOwner = await HouseOwner.findById(id);
+            
+            if (!houseOwner) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'House owner not found'
+                });
+            }
+            
+            if (!houseOwner.proof) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'No proof document found for this house owner'
+                });
+            }
+            
+            // Clean up the file path
+            let filePath = houseOwner.proof;
+            
+            // Remove leading slash if present
+            if (filePath.startsWith('/')) {
+                filePath = filePath.substring(1);
+            }
+            
+            // Construct absolute path
+            const fullPath = path.resolve(__dirname, '..', filePath);
+            
+            console.log('Looking for file at:', fullPath);
+            console.log('Original proof path:', houseOwner.proof);
+            
+            // Check if file exists
+            if (!fs.existsSync(fullPath)) {
+                console.error('File not found at:', fullPath);
+                // Try alternative path (without leading slash removal)
+                const altPath = path.resolve(__dirname, '..', houseOwner.proof);
+                console.log('Trying alternative path:', altPath);
+                
+                if (!fs.existsSync(altPath)) {
+                    return res.status(404).json({
+                        success: false,
+                        message: 'Proof document file not found on server'
+                    });
+                }
+            }
+            
+            // Get the file extension for proper content type
+            const ext = path.extname(fullPath).toLowerCase();
+            
+            // Helper function to determine content type
+            const getContentType = (extension) => {
+                const contentTypes = {
+                    '.jpg': 'image/jpeg',
+                    '.jpeg': 'image/jpeg',
+                    '.png': 'image/png',
+                    '.gif': 'image/gif',
+                    '.pdf': 'application/pdf',
+                    '.doc': 'application/msword',
+                    '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                };
+                
+                return contentTypes[extension] || 'application/octet-stream';
+            };
+            
+            const contentType = getContentType(ext);
+            
+            // Set headers
+            const filename = path.basename(fullPath);
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+            res.setHeader('Content-Type', contentType);
+            
+            // Stream the file
+            const fileStream = fs.createReadStream(fullPath);
+            fileStream.pipe(res);
+            
+            fileStream.on('error', (error) => {
+                console.error('Error streaming file:', error);
+                res.status(500).json({
+                    success: false,
+                    message: 'Error streaming file'
+                });
+            });
+            
+        } catch (error) {
+            console.error('Download proof error:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error downloading proof document'
+            });
+        }
+    },
+
+    // In controllers/houseOwnerController.js, add:
+    async viewProof(req, res) {
+        try {
+            const { id } = req.params;
+            
+            // Find the house owner
+            const houseOwner = await HouseOwner.findById(id);
+            
+            if (!houseOwner) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'House owner not found'
+                });
+            }
+            
+            if (!houseOwner.proof) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'No proof document found'
+                });
+            }
+            
+            // Clean up the file path
+            let filePath = houseOwner.proof;
+            
+            // Remove leading slash if present
+            if (filePath.startsWith('/')) {
+                filePath = filePath.substring(1);
+            }
+            
+            // Construct absolute path
+            const fullPath = path.resolve(__dirname, '..', filePath);
+            
+            // Check if file exists
+            if (!fs.existsSync(fullPath)) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'File not found on server'
+                });
+            }
+            
+            // Get the file extension
+            const ext = path.extname(fullPath).toLowerCase();
+            
+            // Determine content type
+            const contentTypes = {
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.png': 'image/png',
+                '.gif': 'image/gif',
+                '.pdf': 'application/pdf',
+            };
+            
+            const contentType = contentTypes[ext] || 'application/octet-stream';
+            
+            // Send the file for viewing (not download)
+            res.setHeader('Content-Type', contentType);
+            res.setHeader('Content-Disposition', 'inline');
+            res.sendFile(fullPath);
+            
+        } catch (error) {
+            console.error('View proof error:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error viewing proof document'
+            });
+        }
+    }
 }
 module.exports=houseOwnerController;

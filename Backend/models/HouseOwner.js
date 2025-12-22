@@ -4,14 +4,14 @@ const { v4: uuidv4 } = require('uuid');
 class HouseOwner {
   // Create new owner
   static async create(houseOwnerData) {
-    const { company_id,apartment_id,name, nic, occupation, country, mobile, occupied_way, proof } = houseOwnerData;
+    const { company_id,apartment_id,name, nic, occupation, country, mobile, email, occupied_way, proof } = houseOwnerData;
     const id = uuidv4().replace(/-/g, '').substring(0, 10);
 
     await pool.execute(
   `INSERT INTO houseowner 
-  (id, company_id, apartment_id, name, nic, occupation, country, mobile, occupied_way, proof) 
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  [id, company_id, apartment_id, name, nic, occupation, country, mobile, occupied_way, proof]
+  (id, company_id, apartment_id, name, nic, occupation, country, mobile, email,occupied_way, proof) 
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  [id, company_id, apartment_id, name, nic, occupation, country, mobile, email, occupied_way, proof]
 );
 
 
@@ -82,13 +82,13 @@ class HouseOwner {
 
   // Update owner
   static async updateHouseOwner(id, houseOwnerData) {
-    const { name, occupation, country, mobile, occupied_way, proof } = houseOwnerData;
+    const { name, occupation, country, mobile, email, occupied_way, proof } = houseOwnerData;
 
     await pool.execute(
       `UPDATE houseowner 
-        SET name=?, occupation=?, country=?, mobile=?, occupied_way=?, proof=? 
+        SET name=?, occupation=?, country=?, mobile=?, email=?, occupied_way=?, proof=? 
           WHERE id = ?`,
-      [name, occupation, country, mobile, occupied_way, proof, id]
+      [name, occupation, country, mobile, email,occupied_way, proof, id]
     );
 
     return { id, ...houseOwnerData };

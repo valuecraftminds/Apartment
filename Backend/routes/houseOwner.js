@@ -1,3 +1,4 @@
+//routes/houseOwner.js
 const express = require('express');
 const router = express.Router();
 const houseOwnerController = require('../controllers/houseOwnerController')
@@ -46,6 +47,10 @@ router.put('/:id', upload.single('proof'), houseOwnerController.updateHouseOwner
 // router.delete('/:id', apartmentController.deleteApartment);
 // router.patch('/:id/toggle', apartmentController.toggleApartmentStatus);
 router.get('/by-house', houseOwnerController.getHouseOwnerByHouseId);
+// Add near other routes, before the error middleware
+router.get('/download-proof/:id', houseOwnerController.downloadProof);
+// In routes/houseOwner.js, add this route:
+router.get('/view-proof/:id', houseOwnerController.viewProof);
 
 // Error handling middleware for multer
 router.use((error, req, res, next) => {
