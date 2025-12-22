@@ -10,7 +10,8 @@ class House{
         'SELECT COUNT(*) as count FROM houses WHERE company_id = ? AND apartment_id = ? and floor_id = ?',
         [company_id, apartment_id,floor_id]
     );
-    const nextNumber = (countResult[0].count + 1).toString().padStart(3, '0');
+    // const nextNumber = (countResult[0].count + 1).toString().padStart(3, '0');
+    const nextNumber = uuidv4().replace(/-/g, '').substring(0, 3);
     const id = `${floor_id}-${nextNumber}`;
 
     const [result] = await pool.execute(
