@@ -9,6 +9,19 @@ const {authenticateToken} = require('../middleware/auth')
 const { sendVerificationEmail, sendPasswordResetEmail, sendInvitationEmail } = require('../helpers/email');
 require('dotenv').config();
 
+const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || undefined;
+const isProd = process.env.NODE_ENV === 'production';
+
+function makeCookieOptions(maxAge, sameSite = isProd ? 'none' : 'lax', secure = isProd) {
+  const opts = {
+    httpOnly: true,
+    secure,
+    sameSite,
+    maxAge
+  };
+  if (COOKIE_DOMAIN) opts.domain = COOKIE_DOMAIN;
+  return opts;
+}
 
 function signAccessToken(user) {
   return jwt.sign({ 
@@ -333,19 +346,9 @@ router.post('/login', async (req, res) => {
 
     await pool.execute('UPDATE users SET refresh_token = ? WHERE id = ?', [refreshToken, user.id]);
 
-    res.cookie('accessToken', accessToken, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: false,
-      maxAge: 1000 * 60 * 15
-    });
-
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 1000 * 60 * 60 * 24 * 7
-    });
+    // Use environment-aware cookie options
+    res.cookie('accessToken', accessToken, makeCookieOptions(1000 * 60 * 15)); // 15 min
+    res.cookie('refreshToken', refreshToken, makeCookieOptions(1000 * 60 * 60 * 24 * 7, isProd ? 'none' : 'strict')); // 7 days
 
     res.json({ 
       accessToken, 
@@ -392,25 +395,9 @@ router.post('/refresh', async (req, res) => {
     const newRefresh = signRefreshToken(user);
     await pool.execute('UPDATE users SET refresh_token = ? WHERE id = ?', [newRefresh, user.id]);
 
-    res.cookie('refreshToken', newRefresh, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 1000 * 60 * 60 * 24 * 7
-    });
-
-    res.cookie('accessToken', accessToken, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: false,
-      maxAge: 1000 * 60 * 15  // 15 mins
-    });
-
-    res.clearCookie('accessToken', {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: false
-    });
+    // Set cookies with production-safe options
+    res.cookie('refreshToken', newRefresh, makeCookieOptions(1000 * 60 * 60 * 24 * 7, isProd ? 'none' : 'strict'));
+    res.cookie('accessToken', accessToken, makeCookieOptions(1000 * 60 * 15));
 
     res.json({ 
       accessToken, 
@@ -439,7 +426,7 @@ router.post('/logout', async (req, res) => {
         await pool.execute('UPDATE users SET refresh_token = NULL WHERE id = ?', [payload.id]);
       } catch (e) { /* ignore invalid token */ }
     }
-    res.clearCookie('refreshToken', { httpOnly: true, sameSite: 'strict', secure: process.env.NODE_ENV === 'production' });
+    res.clearCookie('refreshToken', { httpOnly: true, sameSite: isProd ? 'none' : 'strict', secure: isProd, domain: COOKIE_DOMAIN });
     res.json({ message: 'Logged out' });
   } catch (err) {
     console.error(err);

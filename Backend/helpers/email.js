@@ -216,7 +216,7 @@ async function sendVerificationEmail(toEmail, plainToken, userId) {
     }
 
     // FIXED: Use the correct verification endpoint
-    const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify?token=${plainToken}&id=${userId}`;
+    const verificationUrl = `${process.env.FRONTEND_URL || 'https://apmt.apivcm.shop'}/verify?token=${plainToken}&id=${userId}`;
     
     console.log(`🔗 Verification URL: ${verificationUrl}`);
     
@@ -318,7 +318,7 @@ async function sendPasswordResetEmail(toEmail, resetToken, userId) {
       throw new Error('SMTP transporter not verified');
     }
 
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}&id=${userId}`;
+    const resetUrl = `${process.env.FRONTEND_URL || 'https://apmt.apivcm.shop'}/reset-password?token=${resetToken}&id=${userId}`;
     
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
@@ -393,7 +393,7 @@ async function sendInvitationEmail(toEmail, plainToken, userId, role) {
       throw new Error('SMTP transporter not verified');
     }
 
-    const inviteUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/complete-registration?token=${plainToken}&id=${userId}`;
+    const inviteUrl = `${process.env.FRONTEND_URL || 'https://apmt.apivcm.shop'}/complete-registration?token=${plainToken}&id=${userId}`;
     
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">

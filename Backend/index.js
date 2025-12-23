@@ -1,185 +1,237 @@
 // index.js
 require('dotenv').config();
+
 const express = require('express');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
-const authRoutes = require('./routes/auth');
-const { verifyTransport } = require('./helpers/email');
 const path = require('path');
-// optional protected example route
+
+const { verifyTransport } = require('./helpers/email');
 const { authenticateToken } = require('./middleware/auth');
 
 const app = express();
-//fix proxy issue
-app.set('trust proxy',true);
-const limiter = rateLimit({
-  windowMs: 60_000,
-  max: 100, 
-  validate: { 
-    trustProxy: true, 
-    xForwardedForHeader: true 
-  },
+
+/* =====================================================
+   PROXY (IMPORTANT for Hostinger / Nginx / Cloudflare)
+===================================================== */
+app.set('trust proxy', 1);
+
+/* =====================================================
+   RATE LIMITERS
+===================================================== */
+const globalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 100,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: {
+    trustProxy: true,
+    xForwardedForHeader: true
+  },
   message: {
     status: 429,
     error: 'Too many requests, please try again later.'
   }
 });
 
-// Add this before your routes
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/evidance', express.static(path.join(__dirname, 'evidance')));
+const authLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({
+      status: 429,
+      error: 'Too many auth requests. Please try again later.'
+    });
+  }
+});
 
-app.use(helmet());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
-// app.use(cors
-//   ({ origin: process.env.FRONTEND_URL || '*', credentials: true }));
+/* =====================================================
+   CORS (NO WILDCARDS ❌)
+===================================================== */
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://apartment.valuecraftminds.com',
+  'https://apmt.apivcm.shop',
+  process.env.FRONTEND_URL
+].filter(Boolean);
 
-app.use(cors({ 
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    const allowedOrigins = [
-      process.env.FRONTEND_URL,
-      'http://localhost:3000',
-      'http://localhost:5173',
-      // `http://192.168.8.101:3000`,  // Your computer IP with frontend port
-      // `http://192.168.8.101:5173`   // Your computer IP with Vite port
-    ].filter(Boolean);
-
-    if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
-      callback(null, true);
-    } else {
-      console.log('Blocked by CORS:', origin);
-      callback(new Error('Not allowed by CORS'));
+app.use(cors({
+  origin: (origin, cb) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return cb(null, true);
     }
+    cb(new Error('CORS not allowed'));
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  exposedHeaders: ['Retry-After', 'Set-Cookie'],
+  optionsSuccessStatus: 200
 }));
 
- 
+// ✅ FIXED OPTIONS HANDLER (Node 20 safe)
+app.options(/.*/, cors());
 
-// const limiter = rateLimit({ windowMs: 60_000, max: 100 });
-app.use(limiter);
+/* =====================================================
+   SECURITY & BODY PARSERS
+===================================================== */
+// app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    crossOriginEmbedderPolicy: false
+  })
+);
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
-app.use('/api/auth', authRoutes);
+/* =====================================================
+   STATIC FILES
+===================================================== */
+// Add this before your routes
+// Ensure static file responses include CORS headers so browsers can load images/docs
+app.use('/uploads', (req, res, next) => {
+  const origin = req.headers.origin;
+  // allowedOrigins defined earlier in this file
+  if (origin && allowedOrigins && allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Vary', 'Origin');
+  } else if (!origin) {
+    // non-CORS (same-origin) requests - allow broadly
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  next();
+}, express.static(path.join(__dirname, 'uploads')));
 
+app.use('/evidance', (req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins && allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Vary', 'Origin');
+  } else if (!origin) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  next();
+}, express.static(path.join(__dirname, 'evidance')));
 
+/* =====================================================
+   RATE LIMIT APPLY (SKIP OPTIONS)
+===================================================== */
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') return next();
+
+  if (req.path.startsWith('/api/auth')) {
+    return authLimiter(req, res, next);
+  }
+  return globalLimiter(req, res, next);
+});
+
+/* =====================================================
+   SAFE ROUTE LOADER
+===================================================== */
+function safeRequireRoute(modulePath) {
+  try {
+    return require(modulePath);
+  } catch (err) {
+    console.error(`❌ Failed to load route ${modulePath}`, err);
+    const router = express.Router();
+    router.use((req, res) => {
+      res.status(500).json({
+        error: 'Route failed to load',
+        route: modulePath
+      });
+    });
+    return router;
+  }
+}
+
+function mountRoute(urlPath, modulePath, middlewares = []) {
+  const router = safeRequireRoute(modulePath);
+  if (middlewares.length) {
+    app.use(urlPath, ...middlewares, router);
+  } else {
+    app.use(urlPath, router);
+  }
+}
+
+/* =====================================================
+   ROUTES (ONLY RELATIVE PATHS ✅)
+===================================================== */
+mountRoute('/api/auth', './routes/auth');
 
 app.get('/api/me', authenticateToken, async (req, res) => {
-  // return user info example
   const pool = require('./db');
-  const [rows] = await pool.execute('SELECT id, firstname,lastname,country,mobile, email, role FROM users WHERE id = ?', [req.user.id]);
+  const [rows] = await pool.execute(
+    'SELECT id, firstname, lastname, country, mobile, email, role FROM users WHERE id = ?',
+    [req.user.id]
+  );
   res.json(rows[0]);
 });
 
-const PORT = process.env.PORT || '*';
-app.listen(PORT,'0.0.0.0',async () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-  await verifyTransport(); // test SMTP
-});
+mountRoute('/api/tenants', './routes/tenants', [authenticateToken]);
+mountRoute('/api/apartments', './routes/apartments', [authenticateToken]);
+mountRoute('/api/countries', './routes/countries');
+mountRoute('/api/floors', './routes/floors', [authenticateToken]);
+mountRoute('/api/houses', './routes/houses', [authenticateToken]);
+mountRoute('/api/housetype', './routes/houseType', [authenticateToken]);
+mountRoute('/api/houseowner', './routes/houseOwner', [authenticateToken]);
+mountRoute('/api/bills', './routes/bills', [authenticateToken]);
+mountRoute('/api/billranges', './routes/billRanges', [authenticateToken]);
+mountRoute('/api/billprice', './routes/billPrice', [authenticateToken]);
+mountRoute('/api/bill-assignments', './routes/billAssignments', [authenticateToken]);
+mountRoute('/api/bulk-import', './routes/bulkImports', [authenticateToken]);
+mountRoute('/api/roles', './routes/roles', [authenticateToken]);
+mountRoute('/api/role-components', './routes/roleComponent', [authenticateToken]);
+mountRoute('/api/apartment-documents', './routes/apartmentDocuments', [authenticateToken]);
+mountRoute('/api/floor-documents', './routes/floorDocuments', [authenticateToken]);
+mountRoute('/api/house-documents', './routes/houseDocuments', [authenticateToken]);
+mountRoute('/api/user-apartments', './routes/userApartments', [authenticateToken]);
+mountRoute('/api/shared-value-prices', './routes/sharedValuePrices', [authenticateToken]);
+mountRoute('/api/generate-bills', './routes/generateBills', [authenticateToken]);
+mountRoute('/api/bill-payments', './routes/billPayments', [authenticateToken]);
+mountRoute('/api/generate-measurable-bills', './routes/generateMeasurableBills', [authenticateToken]);
+mountRoute('/api/user-bills', './routes/userBills', [authenticateToken]);
+mountRoute('/api/family', './routes/family', [authenticateToken]);
 
+/* =====================================================
+   HEALTH CHECK
+===================================================== */
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+  res.json({ status: 'OK', time: new Date().toISOString() });
 });
 
-const tenantRoutes = require('./routes/tenants');
-app.use('/api/tenants', tenantRoutes);
+/* =====================================================
+   404 (REGEX – NO "*")
+===================================================== */
+app.use(/.*/, (req, res) => {
+  res.status(404).json({ error: 'Route not found' });
+});
 
-//Route usage of Apartments
-const apartmentRoutes = require('./routes/apartments');
-app.use('/api/apartments', authenticateToken, apartmentRoutes);
+/* =====================================================
+   ERROR SAFETY
+===================================================== */
+process.on('uncaughtException', err => {
+  console.error('🔥 Uncaught Exception:', err);
+});
 
-//Routes the countries
-const countryRoutes = require('./routes/countries');
-app.use('/api/countries', countryRoutes);
+process.on('unhandledRejection', err => {
+  console.error('🔥 Unhandled Rejection:', err);
+});
 
-//Routes the floor
-const floorRoutes = require('./routes/floors');
-app.use('/api/floors', authenticateToken, floorRoutes);
+/* =====================================================
+   START SERVER
+===================================================== */
+const PORT = process.env.PORT || 2500;
 
-//Routes the houses
-const houseRoutes = require('./routes/houses');
-app.use('/api/houses',authenticateToken,houseRoutes);
-
-//Routes the house types
-const houseTypeRoutes = require ('./routes/houseType');
-app.use('/api/housetype',authenticateToken,houseTypeRoutes);
-
-//Routes the house owner
-const houseOwnerRoutes = require('./routes/houseOwner');
-app.use('/api/houseowner',authenticateToken,houseOwnerRoutes);
-
-//Routes the bills
-const billRoutes = require('./routes/bills');
-app.use('/api/bills',authenticateToken,billRoutes);
-
-//Routes of bill range
-const billRangeRoutes = require('./routes/billRanges');
-app.use('/api/billranges', authenticateToken,billRangeRoutes);
-
-//Routes of bill price
-const billPriceRoutes = require('./routes/billPrice');
-app.use('/api/billprice', authenticateToken, billPriceRoutes)
-
-//Routes for bill assignments
-const billAssignmentsRoutes = require('./routes/billAssignments');
-app.use('/api/bill-assignments', billAssignmentsRoutes);
-
-//Routes for bulk imports
-const bulkImportRoutes = require('./routes/bulkImports');
-app.use('/api/bulk-import', bulkImportRoutes);
-
-//Routes for role
-const roleRoutes = require('./routes/roles')
-app.use('/api/roles',roleRoutes);
-
-//Routes for role components
-const roleComponentRoutes = require('./routes/roleComponent');
-app.use('/api/role-components', roleComponentRoutes);
-
-//Routes for apartment documents
-const apartmentDocumentRoutes = require('./routes/apartmentDocuments');
-app.use('/api/apartment-documents',apartmentDocumentRoutes)
-
-// Routes for floor documents
-const floorDocumentRoutes = require('./routes/floorDocuments');
-app.use('/api/floor-documents', floorDocumentRoutes);
-
-//Routes for house documents
-const houseDocumentRoutes = require('./routes/houseDocuments');
-app.use('/api/house-documents',houseDocumentRoutes);
-
-//Routes for assign apartments for users
-const userApartmentRoutes = require('./routes/userApartments');
-app.use('/api/user-apartments',userApartmentRoutes);
-
-//Routes for shared value price 
-const sharedValuePriceRoutes = require('./routes/sharedValuePrices');
-app.use('/api/shared-value-prices',sharedValuePriceRoutes);
-
-//Routes for generate bills
-const generateBillRoutes = require('./routes/generateBills');
-app.use('/api/generate-bills',generateBillRoutes);
-
-//Routes for bill Payments
-const billPaymentRoutes = require('./routes/billPayments');
-app.use('/api/bill-payments',billPaymentRoutes);
-
-//Routes for generate measurable bills
-const generateMeasurableBillsRoutes = require('./routes/generateMeasurableBills');
-app.use('/api/generate-measurable-bills', generateMeasurableBillsRoutes);
-
-//Routes for user bill assignments
-const userBillRoutes = require('./routes/userBills');
-app.use('/api/user-bills', userBillRoutes);
-
-//Routes for family or Residents
-const familyRoutes = require('./routes/family');
-app.use('/api/family',familyRoutes); 
+app.listen(PORT, '0.0.0.0', async () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+ 
+  await verifyTransport();
+});

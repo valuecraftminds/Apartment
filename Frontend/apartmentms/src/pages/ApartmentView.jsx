@@ -267,7 +267,8 @@ export default function ApartmentView() {
                                                         {apartment.picture ? (
                                                             // If picture is a path (string)
                                                             <img 
-                                                                src={`http://localhost:2500${apartment.picture}`}
+                                                                // src={`http://localhost:2500${apartment.picture}`}
+                                                                src={`https://apmt.apivcm.shop${apartment.picture}`}
                                                                 alt={apartment.name}
                                                                 className="w-12 h-12 object-cover rounded-lg"
                                                                 onError={(e) => {
