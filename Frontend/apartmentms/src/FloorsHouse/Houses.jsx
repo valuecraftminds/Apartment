@@ -152,7 +152,7 @@ export default function Houses() {
     
         const handleHouseUpdated = () => {
         loadHouses(floor_id);
-        setShowEditModal(false);
+        // setShowEditModal(false);
         toast.success('House updated successfully!');
         };
 

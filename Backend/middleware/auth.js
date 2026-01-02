@@ -24,7 +24,7 @@
 // }
 
 // module.exports = { authenticateToken };
-
+// middleware/auth.js
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 

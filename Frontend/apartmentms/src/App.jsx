@@ -38,6 +38,10 @@ import CalculateMeasurableBill from './Apartment_Technician/BillManagement/Calcu
 import MyBills from './Users/MyBills'
 import HouseBillMeter from './Apartment_Technician/BillManagement/HouseBillMeter'
 import BillPaymentSettle from './Bills/BillPaymentSettle'
+import HouseOwnerLogin from './HouseOwner/HouseOwnerLogin'
+import HouseOwnerDashboard from './pages/HouseOwnerDashboard'
+import HouseOwnerVerify from './HouseOwner/HouseOwnerVerify'
+import HouseOwnerHouseView from './HouseOwner/HouseOwnerHouseView'
 
 export default function App() {
   return (
@@ -80,6 +84,10 @@ export default function App() {
         <Route path='/my-bills' element={<MyBills/>}/>
         <Route path='/house-bill-meter/:bill_id' element={<HouseBillMeter/>}/>
         <Route path='/bill-payment-settle' element={<BillPaymentSettle/>}/>
+        <Route path='/houseowner/login' element= {<HouseOwnerLogin/>}/>
+        <Route path='/houseowner/verify' element= {<HouseOwnerVerify/>}/>
+        <Route path='/houseowner/dashboard' element= {<HouseOwnerDashboard/>}/>
+        <Route path='/houseowner-houseview' element= {<HouseOwnerHouseView/>}/>
       </Routes>
       </AuthProvider>
     </BrowserRouter>

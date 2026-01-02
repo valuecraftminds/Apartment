@@ -4,9 +4,9 @@ import React from 'react';
 import { AuthContext } from '../contexts/AuthContext';
 
 const api = axios.create({
-  //baseURL: 'http://localhost:2500/api',
+  baseURL: 'http://localhost:2500/api',
   // baseURL: 'http://192.168.8.101:2500/api',
-  baseURL: 'https://apmt.apivcm.shop/api',
+  //baseURL: 'https://apmt.apivcm.shop/api',
   withCredentials: true,
 });
 

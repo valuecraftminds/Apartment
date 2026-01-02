@@ -1,22 +1,38 @@
+// models/HouseOwner.js
 const pool = require('../db');
 const { v4: uuidv4 } = require('uuid');
 
 class HouseOwner {
-  // Create new owner
-  static async create(houseOwnerData) {
-    const { company_id,apartment_id,name, nic, occupation, country, mobile, email, occupied_way, proof } = houseOwnerData;
+//   // Create new owner
+//   static async create(houseOwnerData) {
+//     const { company_id,apartment_id,name, nic, occupation, country, mobile, email, occupied_way, proof } = houseOwnerData;
+//     const id = uuidv4().replace(/-/g, '').substring(0, 10);
+
+//     await pool.execute(
+//   `INSERT INTO houseowner 
+//   (id, company_id, apartment_id, name, nic, occupation, country, mobile, email,occupied_way, proof) 
+//   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+//   [id, company_id, apartment_id, name, nic, occupation, country, mobile, email, occupied_way, proof]
+// );
+
+
+//     return { id, ...houseOwnerData };
+//   }
+
+static async create(houseOwnerData) {
+    const { company_id, apartment_id, name, nic, occupation, country, mobile, email, occupied_way, proof } = houseOwnerData;
     const id = uuidv4().replace(/-/g, '').substring(0, 10);
 
     await pool.execute(
-  `INSERT INTO houseowner 
-  (id, company_id, apartment_id, name, nic, occupation, country, mobile, email,occupied_way, proof) 
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  [id, company_id, apartment_id, name, nic, occupation, country, mobile, email, occupied_way, proof]
-);
-
+        `INSERT INTO houseowner 
+        (id, company_id, apartment_id, name, nic, occupation, country, mobile, email, occupied_way, proof, 
+         is_active, is_verified, created_at, updated_at) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, NOW(), NOW())`,
+        [id, company_id, apartment_id, name, nic, occupation, country, mobile, email, occupied_way, proof]
+    );
 
     return { id, ...houseOwnerData };
-  }
+}
 
   // Find by ID
   static async findById(id) {

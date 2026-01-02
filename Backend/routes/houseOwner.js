@@ -38,6 +38,13 @@ const upload = multer({
 
 // Apply authentication to ALL apartment routes
 router.use(authenticateToken);
+router.get('/health-check', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    message: 'House owner route is working',
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Routes
 router.post('/', upload.single('proof'), houseOwnerController.createHouseOwner);

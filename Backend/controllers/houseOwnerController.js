@@ -1,5 +1,6 @@
 //controllers/houseOwnerController.js
 const HouseOwner=require('../models/HouseOwner');
+const pool = require('../db');
 
 const multer = require('multer');
 const path = require('path');
@@ -39,6 +40,27 @@ const houseOwnerController ={
             const { name, nic, occupation, country, mobile, email, occupied_way,apartment_id } = req.body;
             const company_id = req.user.company_id;
             // const apartment_id = req.apartment.id;
+
+            // Validate email format
+        if (!email || !email.includes('@')) {
+            return res.status(400).json({
+                success: false,
+                message: 'Valid email address is required'
+            });
+        }
+        
+        // Check if email already exists for this apartment
+        const [existing] = await pool.execute(
+            'SELECT id FROM houseowner WHERE email = ? AND apartment_id = ?',
+            [email, apartment_id]
+        );
+        
+        if (existing.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email already registered for a house owner in this apartment'
+            });
+        }
 
 
             let picturePath = null;

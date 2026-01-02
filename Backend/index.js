@@ -54,8 +54,9 @@ const authLimiter = rateLimit({
 ===================================================== */
 const allowedOrigins = [
   'http://localhost:5173',
-  'https://apartment.valuecraftminds.com',
-  'https://apmt.apivcm.shop',
+  // 'https://apartment.valuecraftminds.com',
+  // 'https://apmt.apivcm.shop',
+   'http://localhost:2500',
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
@@ -199,6 +200,7 @@ mountRoute('/api/bill-payments', './routes/billPayments', [authenticateToken]);
 mountRoute('/api/generate-measurable-bills', './routes/generateMeasurableBills', [authenticateToken]);
 mountRoute('/api/user-bills', './routes/userBills', [authenticateToken]);
 mountRoute('/api/family', './routes/family', [authenticateToken]);
+mountRoute('/api/houseowner-auth', './routes/houseOwnerAuth' );
 
 /* =====================================================
    HEALTH CHECK
