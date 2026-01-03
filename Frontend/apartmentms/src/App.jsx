@@ -42,6 +42,7 @@ import HouseOwnerLogin from './HouseOwner/HouseOwnerLogin'
 import HouseOwnerDashboard from './pages/HouseOwnerDashboard'
 import HouseOwnerVerify from './HouseOwner/HouseOwnerVerify'
 import HouseOwnerHouseView from './HouseOwner/HouseOwnerHouseView'
+import HouseOwnerViewBills from './HouseOwner/HouseOwnerViewBills'
 
 export default function App() {
   return (
@@ -87,7 +88,8 @@ export default function App() {
         <Route path='/houseowner/login' element= {<HouseOwnerLogin/>}/>
         <Route path='/houseowner/verify' element= {<HouseOwnerVerify/>}/>
         <Route path='/houseowner/dashboard' element= {<HouseOwnerDashboard/>}/>
-        <Route path='/houseowner-houseview' element= {<HouseOwnerHouseView/>}/>
+        <Route path='/houseowner/houseowner-houseview' element= {<HouseOwnerHouseView/>}/>
+        <Route path='/houseowner/houseowner-billview' element= {<HouseOwnerViewBills/>}/>
       </Routes>
       </AuthProvider>
     </BrowserRouter>

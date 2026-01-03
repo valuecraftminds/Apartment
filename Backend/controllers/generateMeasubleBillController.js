@@ -67,6 +67,8 @@ const generateMeasurableBillController = {
                 totalAmount: parseFloat(totalAmount)
             });
 
+            const houseowner_id = await GenerateMeasurableBill.getHouseOwnerId(house_id);
+
             // Create bill payment record
             const billPaymentId = `billpay_measurable_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             await GenerateMeasurableBill.createBillPayment({
@@ -75,6 +77,7 @@ const generateMeasurableBillController = {
                 apartment_id,
                 floor_id: floor_id || null,
                 house_id,
+                houseowner_id: houseowner_id,
                 bill_id,
                 generateMeasurable_bills_id: newMeasurableBill.id,
                 pendingAmount: parseFloat(totalAmount),
@@ -179,6 +182,7 @@ const generateMeasurableBillController = {
 
             // Create bill payment records
             for (const bill of createdBills) {
+                const houseowner_id = await GenerateMeasurableBill.getHouseOwnerId(bill.house_id);
                 const billPaymentId = `billpay_measurable_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
                 await GenerateMeasurableBill.createBillPayment({
                     id: billPaymentId,
@@ -186,6 +190,7 @@ const generateMeasurableBillController = {
                     apartment_id: bill.apartment_id,
                     floor_id: bill.floor_id || null,
                     house_id: bill.house_id,
+                    houseowner_id: houseowner_id,
                     bill_id: bill.bill_id,
                     generateMeasurable_bills_id: bill.id,
                     pendingAmount: bill.totalAmount,
@@ -579,6 +584,7 @@ const generateMeasurableBillController = {
                 totalAmount: parseFloat(totalAmount)
             });
 
+            const houseowner_id = await GenerateMeasurableBill.getHouseOwnerId(house_id);
             // Create bill payment record
             const billPaymentId = `billpay_calc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             await GenerateMeasurableBill.createBillPayment({
@@ -587,6 +593,7 @@ const generateMeasurableBillController = {
                 apartment_id,
                 floor_id: floor_id || null,
                 house_id,
+                houseowner_id: houseowner_id,
                 bill_id,
                 generateMeasurable_bills_id: measurableBill.id,
                 pendingAmount: parseFloat(totalAmount),

@@ -1,3 +1,4 @@
+//GenerateBills.jsx
 import { Plus, Eye, Edit, Trash2, Download, Search, Filter } from 'lucide-react'
 import React, { useState, useEffect } from 'react'
 import GenerateSharedValueBill from './GenerateSharedValueBill';

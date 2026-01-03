@@ -180,7 +180,7 @@ mountRoute('/api/tenants', './routes/tenants', [authenticateToken]);
 mountRoute('/api/apartments', './routes/apartments', [authenticateToken]);
 mountRoute('/api/countries', './routes/countries');
 mountRoute('/api/floors', './routes/floors', [authenticateToken]);
-mountRoute('/api/houses', './routes/houses', [authenticateToken]);
+mountRoute('/api/houses', './routes/houses');
 mountRoute('/api/housetype', './routes/houseType', [authenticateToken]);
 mountRoute('/api/houseowner', './routes/houseOwner', [authenticateToken]);
 mountRoute('/api/bills', './routes/bills', [authenticateToken]);
@@ -196,7 +196,7 @@ mountRoute('/api/house-documents', './routes/houseDocuments', [authenticateToken
 mountRoute('/api/user-apartments', './routes/userApartments', [authenticateToken]);
 mountRoute('/api/shared-value-prices', './routes/sharedValuePrices', [authenticateToken]);
 mountRoute('/api/generate-bills', './routes/generateBills', [authenticateToken]);
-mountRoute('/api/bill-payments', './routes/billPayments', [authenticateToken]);
+mountRoute('/api/bill-payments', './routes/billPayments');
 mountRoute('/api/generate-measurable-bills', './routes/generateMeasurableBills', [authenticateToken]);
 mountRoute('/api/user-bills', './routes/userBills', [authenticateToken]);
 mountRoute('/api/family', './routes/family', [authenticateToken]);

@@ -59,18 +59,33 @@ class GenerateBills{
     //store bill payments
     static async createBillPayment(billPaymentData) {
         const {
-            id, company_id, apartment_id, floor_id, house_id, bill_id, 
+            id, company_id, apartment_id, floor_id, house_id, houseowner_id, bill_id, 
             generate_bills_id, pendingAmount, due_date
         } = billPaymentData;
         
         const [result] = await pool.execute(
             `INSERT INTO bill_payments 
-            (id, company_id, apartment_id, floor_id, house_id, bill_id, generate_bills_id, pendingAmount, due_date, payment_status, paidAmount, created_at, updated_at) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', 0.00, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-            [id, company_id, apartment_id, floor_id, house_id, bill_id, generate_bills_id, pendingAmount, due_date]
+            (id, company_id, apartment_id, floor_id, house_id, houseowner_id,  bill_id, generate_bills_id, pendingAmount, due_date, payment_status, paidAmount, created_at, updated_at) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', 0.00, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+            [id, company_id, apartment_id, floor_id, house_id, houseowner_id, bill_id, generate_bills_id, pendingAmount, due_date]
         );
         
         return result.insertId;
+    }
+
+    static async getHouseOwnerId(house_id) {
+        if (!house_id) return null;
+        
+        try {
+            const [rows] = await pool.execute(
+                'SELECT houseowner_id FROM houses WHERE id = ?',
+                [house_id]
+            );
+            return rows[0]?.houseowner_id || null;
+        } catch (error) {
+            console.error('Error getting house owner:', error);
+            return null;
+        }
     }
 
     static async findById(id) {
@@ -173,6 +188,37 @@ class GenerateBills{
             [bill_id, apartment_id]
         );
         return rows[0].count;
+    }
+
+    // In models/GenerateBills.js - Add this method if needed
+    static async getHouseOwnersByApartment(apartment_id) {
+        try {
+            const [rows] = await pool.execute(
+                `SELECT h.id as house_id, h.houseowner_id 
+                FROM houses h
+                WHERE h.apartment_id = ? AND h.houseowner_id IS NOT NULL`,
+                [apartment_id]
+            );
+            return rows;
+        } catch (error) {
+            console.error('Error getting house owners by apartment:', error);
+            return [];
+        }
+    }
+
+    static async getHouseOwnersByFloor(floor_id) {
+        try {
+            const [rows] = await pool.execute(
+                `SELECT h.id as house_id, h.houseowner_id 
+                FROM houses h
+                WHERE h.floor_id = ? AND h.houseowner_id IS NOT NULL`,
+                [floor_id]
+            );
+            return rows;
+        } catch (error) {
+            console.error('Error getting house owners by floor:', error);
+            return [];
+        }
     }
 }
 module.exports = GenerateBills;

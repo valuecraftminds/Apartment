@@ -2,7 +2,9 @@
 const express = require('express');
 const router = express.Router();
 const houseOwnerController = require('../controllers/houseOwnerController')
+const houseController = require('../controllers/houseController');
 const { authenticateToken } = require('../middleware/auth');
+const { authenticateHouseOwner } = require('../middleware/houseOwnerAuth');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -37,7 +39,7 @@ const upload = multer({
 });
 
 // Apply authentication to ALL apartment routes
-router.use(authenticateToken);
+// router.use(authenticateToken);
 router.get('/health-check', (req, res) => {
   res.json({ 
     status: 'OK', 
@@ -45,6 +47,13 @@ router.get('/health-check', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+router.get('/my-profile', authenticateHouseOwner, houseOwnerController.getMyProfile);
+router.put('/my-profile', authenticateHouseOwner, upload.single('proof'), houseOwnerController.updateMyProfile);
+
+
+// Add this route in houseOwner.js
+router.get('/my-houses', authenticateHouseOwner, houseController.getHousesByAuthenticatedOwner);
 
 // Routes
 router.post('/', upload.single('proof'), houseOwnerController.createHouseOwner);
@@ -76,6 +85,59 @@ router.use((error, req, res, next) => {
         });
     }
     next();
+});
+
+//remove once error fixed
+// Add this route for testing
+router.get('/test-auth-flow', async (req, res) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  if (!token) {
+    return res.json({ message: 'No token provided' });
+  }
+  
+  try {
+    // 1. Decode JWT
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    const houseOwnerId = decoded.houseowner_id || decoded.id;
+    
+    // 2. Direct database query
+    const [result] = await pool.execute(
+      'SELECT id, email, name, is_active FROM houseowner WHERE id = ?',
+      [houseOwnerId]
+    );
+    
+    if (result.length === 0) {
+      // Try with different query
+      const [allResults] = await pool.execute(
+        'SELECT id, email FROM houseowner LIMIT 5'
+      );
+      
+      return res.json({
+        success: false,
+        message: 'Houseowner not found in direct query',
+        searchedId: houseOwnerId,
+        first5HouseOwners: allResults,
+        decodedToken: decoded
+      });
+    }
+    
+    return res.json({
+      success: true,
+      message: 'Authentication flow works!',
+      houseowner: result[0],
+      decodedToken: decoded
+    });
+    
+  } catch (error) {
+    return res.json({
+      success: false,
+      message: 'Error in auth flow',
+      error: error.message,
+      errorName: error.name
+    });
+  }
 });
 
 module.exports = router;

@@ -50,6 +50,12 @@ const generateBillController = {
                 house_id: house_id || null
             });
 
+             // Get houseowner_id if house_id exists
+            let houseowner_id = null;
+            if (house_id) {
+                houseowner_id = await GenerateBills.getHouseOwnerId(house_id);
+            }
+
              //Create bill payment record
             const billPaymentId = `billpay_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             await GenerateBills.createBillPayment({
@@ -58,6 +64,7 @@ const generateBillController = {
                 apartment_id,
                 floor_id: floor_id || null,
                 house_id: house_id || null,
+                houseowner_id: houseowner_id, 
                 bill_id,
                 generate_bills_id: newGeneratedBill.id,
                 pendingAmount: parseFloat(unitPrice), 
@@ -154,6 +161,7 @@ const generateBillController = {
 
               // Create bill payment records for each generated bill
             for (const bill of generatedBills) {
+                const houseowner_id = await GenerateBills.getHouseOwnerId(bill.house_id);
                 const billPaymentId = `billpay_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
                 await GenerateBills.createBillPayment({
                     id: billPaymentId,
@@ -161,6 +169,7 @@ const generateBillController = {
                     apartment_id: bill.apartment_id,
                     floor_id: bill.floor_id || null,
                     house_id: bill.house_id || null,
+                    houseowner_id: houseowner_id,
                     bill_id: bill.bill_id,
                     generate_bills_id: bill.id,
                     pendingAmount: bill.unitPrice, 

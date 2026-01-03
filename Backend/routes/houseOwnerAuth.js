@@ -25,6 +25,7 @@ function makeCookieOptions(maxAge, sameSite = isProd ? 'none' : 'lax', secure = 
 function signAccessToken(owner) {
   return jwt.sign({ 
     id: owner.id, 
+    houseowner_id: owner.id,
     name: owner.name,
     email: owner.email,
     role: 'houseowner',
@@ -645,6 +646,31 @@ router.post('/logout', async (req, res) => {
     res.status(200).json({ 
       success: true, 
       message: 'Logged out' 
+    });
+  }
+});
+
+// Add this to your routes/houseOwnerAuth.js or routes/houseOwner.js
+router.get('/debug-token', (req, res) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ message: 'No token' });
+  }
+  
+  try {
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    res.json({ 
+      success: true, 
+      decoded: decoded,
+      keys: Object.keys(decoded)
+    });
+  } catch (err) {
+    res.status(403).json({ 
+      success: false, 
+      message: 'Invalid token',
+      error: err.message 
     });
   }
 });

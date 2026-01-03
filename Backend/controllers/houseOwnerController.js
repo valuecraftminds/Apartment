@@ -407,6 +407,83 @@ const houseOwnerController ={
                 message: 'Error viewing proof document'
             });
         }
+    },
+
+   
+
+    // Get house owner's own profile
+    async getMyProfile(req, res) {
+        try {
+            // The authenticated house owner ID comes from the middleware
+            const houseowner_id = req.houseowner.id;
+            
+            const houseOwner = await HouseOwner.findById(houseowner_id);
+
+            if (!houseOwner) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'House owner not found'
+                });
+            }
+
+            // Return the data (exclude sensitive info if needed)
+            res.json({
+                success: true,
+                data: houseOwner
+            });
+        } catch (err) {
+            console.error('Get my profile error', err);
+            res.status(500).json({
+                success: false,
+                message: 'Server error while fetching profile'
+            });
+        }
+    },
+
+    // Update house owner's own profile
+    async updateMyProfile(req, res) {
+        try {
+            const houseowner_id = req.houseowner.id;
+            const { name, nic, occupation, country, mobile, email, occupied_way } = req.body;
+
+            // Check if house owner exists
+            const existingHouseOwner = await HouseOwner.findById(houseowner_id);
+            if (!existingHouseOwner) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'House owner not found'
+                });
+            }
+
+            let picturePath = null;
+            if (req.file) {
+                picturePath = '/evidance/proof/' + req.file.filename;
+            }
+
+            // Update profile
+            const updatedHouseOwner = await HouseOwner.updateHouseOwner(houseowner_id, {
+                name: name || existingHouseOwner.name,
+                nic: nic || existingHouseOwner.nic,
+                occupation: occupation || existingHouseOwner.occupation,
+                country: country || existingHouseOwner.country,
+                mobile: mobile || existingHouseOwner.mobile,
+                email: email || existingHouseOwner.email,
+                occupied_way: occupied_way || existingHouseOwner.occupied_way,
+                proof: picturePath || existingHouseOwner.proof,
+            });
+
+            res.json({
+                success: true,
+                message: 'Profile updated successfully',
+                data: updatedHouseOwner
+            });
+        } catch (err) {
+            console.error('Update my profile error:', err);
+            res.status(500).json({
+                success: false,
+                message: 'Server error while updating profile'
+            });
+        }
     }
 }
 module.exports=houseOwnerController;

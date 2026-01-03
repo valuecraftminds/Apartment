@@ -281,22 +281,22 @@ export default function HouseOwnerSidebar({ onCollapse }) {
     {
       title: 'My Bills',
       icon: <Receipt size={20} />,
-      path: '/houseowner/my-bills',
+      path: '/houseowner/houseowner-billview',
       exact: false,
-      subItems: [
-        {
-          title: 'Current Bills',
-          path: '/houseowner/my-bills/current'
-        },
-        {
-          title: 'Payment History',
-          path: '/houseowner/my-bills/history'
-        },
-        {
-          title: 'Pending Payments',
-          path: '/houseowner/my-bills/pending'
-        }
-      ]
+      // subItems: [
+      //   {
+      //     title: 'Current Bills',
+      //     path: '/houseowner/my-bills/current'
+      //   },
+      //   {
+      //     title: 'Payment History',
+      //     path: '/houseowner/my-bills/history'
+      //   },
+      //   {
+      //     title: 'Pending Payments',
+      //     path: '/houseowner/my-bills/pending'
+      //   }
+      // ]
     },
     {
       title: 'Profile',
@@ -400,7 +400,7 @@ export default function HouseOwnerSidebar({ onCollapse }) {
   const MobileToggleButton = () => (
     <button
       onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-      className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg"
+      className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white text-gray-800 dark:bg-gray-800  dark:text-gray-300 rounded-lg shadow-lg"
     >
       {isMobileSidebarOpen ? <X size={24} /> : <Menu size={24} />}
     </button>
@@ -460,7 +460,7 @@ export default function HouseOwnerSidebar({ onCollapse }) {
       >
         <SidebarContent />
         
-        <button
+        {/* <button
           onClick={() => {
             setIsSidebarOpen(!isSidebarOpen);
             if (onCollapse) onCollapse(!isSidebarOpen);
@@ -472,7 +472,7 @@ export default function HouseOwnerSidebar({ onCollapse }) {
           ) : (
             <ChevronDown className="transform rotate-90" size={16} />
           )}
-        </button>
+        </button> */}
       </aside>
     </>
   );

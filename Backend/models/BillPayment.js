@@ -358,7 +358,67 @@ class BillPayment{
             [id]
         );
         return result.affectedRows > 0;
-    }    
+    } 
+
+    // Add this method to models/BillPayment.js
+    // In models/BillPayment.js - Update the findAllByHouseOwner method
+static async findAllByHouseOwner(houseowner_id, filters = {}) {
+    let query = `
+        SELECT 
+            bp.*,
+            b.bill_name,
+            b.billtype,
+            COALESCE(gb.month, gmb.month) as month,
+            COALESCE(gb.year, gmb.year) as year,
+            COALESCE(gb.unitPrice, gmb.totalAmount) as unitPrice,
+            COALESCE(gb.totalAmount, gmb.totalAmount) as generated_total_amount,
+            a.name as apartment_name,
+            f.floor_id as floor_number,
+            h.house_id as house_number,
+            ht.name as house_type,
+            ho.name as houseowner_name,
+            ho.email as houseowner_email,
+            CASE 
+                WHEN bp.generateMeasurable_bills_id IS NOT NULL THEN 'Measurable'
+                WHEN bp.generate_bills_id IS NOT NULL THEN 'Shared'
+                ELSE 'Unknown'
+            END as bill_source_type
+        FROM bill_payments bp
+        LEFT JOIN bills b ON bp.bill_id = b.id
+        LEFT JOIN generate_bills gb ON bp.generate_bills_id = gb.id
+        LEFT JOIN generateMeasurable_bills gmb ON bp.generateMeasurable_bills_id = gmb.id
+        LEFT JOIN apartments a ON bp.apartment_id = a.id
+        LEFT JOIN floors f ON bp.floor_id = f.id
+        LEFT JOIN houses h ON bp.house_id = h.id
+        LEFT JOIN housetype ht ON h.housetype_id = ht.id
+        LEFT JOIN houseowner ho ON bp.houseowner_id = ho.id
+        WHERE bp.houseowner_id = ?
+    `;
+    
+    const params = [houseowner_id];
+    
+    // Add filters
+    if (filters.payment_status && filters.payment_status !== 'all') {
+        query += ' AND bp.payment_status = ?';
+        params.push(filters.payment_status);
+    }
+    
+    if (filters.month && filters.month !== 'all') {
+        query += ' AND (gb.month = ? OR gmb.month = ?)';
+        params.push(filters.month, filters.month);
+    }
+    
+    if (filters.year && filters.year !== 'all') {
+        query += ' AND (gb.year = ? OR gmb.year = ?)';
+        params.push(filters.year, filters.year);
+    }
+
+    query += ' ORDER BY COALESCE(gb.year, gmb.year) DESC, FIELD(COALESCE(gb.month, gmb.month), "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December") DESC,bp.created_at DESC';
+    
+    const [rows] = await pool.execute(query, params);
+    return rows;
+}
+
 }
 
 module.exports=BillPayment;

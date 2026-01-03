@@ -110,6 +110,22 @@ class House{
         );
         return true;
     }
+
+   static async findByHouseOwnerId(houseowner_id) {
+        const [rows] = await pool.execute(
+            'SELECT * FROM houses WHERE houseowner_id = ? ORDER BY created_at DESC',
+            [houseowner_id]
+        );
+        return rows; 
+    }
+
+    static async findPrimaryHouseByOwnerId(houseowner_id) {
+        const [rows] = await pool.execute(
+            'SELECT * FROM houses WHERE houseowner_id = ? ORDER BY created_at ASC LIMIT 1',
+            [houseowner_id]
+        );
+        return rows[0] || null;
+    }
 }
 
 module.exports = House;

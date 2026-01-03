@@ -96,12 +96,15 @@ export default function HouseOwnerDashboard() {
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-gray-900 w-screen transition-colors duration-200">
       {/* Sidebar - Hidden on mobile, shown on desktop */}
-      {!mobileView && <HouseOwnerSidebar onCollapse={setIsSidebarCollapsed} />}
+      <HouseOwnerSidebar onCollapse={setIsSidebarCollapsed} />
       
       {/* Main Content Area - Dynamic margin based on sidebar state */}
-      <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${
-        mobileView ? 'ml-0' : (isSidebarCollapsed ? 'ml-20' : 'ml-64')
-      }`}>
+      <div 
+      className={`
+        flex-1 flex flex-col overflow-hidden 
+        ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'} 
+        w-full transition-all duration-300
+      `}>
         {/* Navbar */}
         <HouseOwnerNavbar />
         
