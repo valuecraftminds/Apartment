@@ -299,6 +299,12 @@ export default function HouseOwnerSidebar({ onCollapse }) {
       // ]
     },
     {
+      title: 'Complaints',
+      icon: <Receipt size={20} />,
+      path: '/houseowner/complaints',
+      exact: false
+    },
+    {
       title: 'Profile',
       icon: <User size={20} />,
       path: '/houseowner/profile',
