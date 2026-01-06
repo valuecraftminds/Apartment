@@ -424,6 +424,13 @@ export default function ViewHouse() {
                                                 <h4 className="text-2xl font-bold text-gray-800 dark:text-white">{houseowner.name}</h4>
                                                 <p className="text-gray-600 dark:text-gray-400">Owner</p>
                                             </div>
+                                            {houseowner.houseowner_id && (
+                                                <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+                                                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                                                        <span className="font-semibold">Role:</span> House Owner
+                                                    </p>
+                                                </div>
+                                            )}
                                             <div className="flex space-x-2">
                                             <button
                                                 onClick={() => setEditOwnerModalOpen(true)}

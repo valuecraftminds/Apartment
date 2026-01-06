@@ -108,17 +108,17 @@ export default function HouseOwnerNavbar() {
             </button>
             
             {/* Notifications */}
-            <button className="p-2 rounded-full text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 relative">
+            {/* <button className="p-2 rounded-full text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 relative">
               <Bell size={20} />
               <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
                 3
               </span>
-            </button>
+            </button> */}
 
             {/* Settings - Hidden on mobile to save space */}
-            <button className="hidden sm:inline-flex p-2 rounded-full text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200">
+            {/* <button className="hidden sm:inline-flex p-2 rounded-full text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200">
               <Settings size={20} />
-            </button>
+            </button> */}
 
             {/* User info - Hidden on very small screens */}
             <div className="hidden md:flex items-center space-x-2">

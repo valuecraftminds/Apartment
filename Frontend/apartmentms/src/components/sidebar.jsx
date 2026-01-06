@@ -125,6 +125,13 @@ export default function Sidebar() {
         { name: 'Bill Payments',  path: '/bill-payment-settle' }
       ] 
     },
+    complaint_management: { 
+      id: 'complaint_management', 
+      name: 'Complaints',
+      path: '/view-complaints',
+      icon: ClipboardList,
+      isConstant: false 
+    },
     tenant_management: { 
       id: 'tenant_management', 
       name: 'Tenants', 
@@ -155,6 +162,7 @@ export default function Sidebar() {
     'role_management',
     'apartments_management',
     'expenses_management',
+    'complaint_management',
     'admin_profile'
   ];
 

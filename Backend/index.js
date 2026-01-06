@@ -201,6 +201,7 @@ mountRoute('/api/generate-measurable-bills', './routes/generateMeasurableBills',
 mountRoute('/api/user-bills', './routes/userBills', [authenticateToken]);
 mountRoute('/api/family', './routes/family', [authenticateToken]);
 mountRoute('/api/houseowner-auth', './routes/houseOwnerAuth' );
+mountRoute('/api/complaints', './routes/complaints');
 
 /* =====================================================
    HEALTH CHECK

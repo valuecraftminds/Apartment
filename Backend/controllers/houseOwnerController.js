@@ -35,13 +35,13 @@ const upload = multer({
 });
 
 const houseOwnerController ={
-    async createHouseOwner(req, res) {
-        try {
-            const { name, nic, occupation, country, mobile, email, occupied_way,apartment_id } = req.body;
-            const company_id = req.user.company_id;
-            // const apartment_id = req.apartment.id;
+    // controllers/houseOwnerController.js
+async createHouseOwner(req, res) {
+    try {
+        const { name, nic, occupation, country, mobile, email, occupied_way, apartment_id, role_id } = req.body;
+        const company_id = req.user.company_id;
 
-            // Validate email format
+        // Validate email format
         if (!email || !email.includes('@')) {
             return res.status(400).json({
                 success: false,
@@ -62,45 +62,44 @@ const houseOwnerController ={
             });
         }
 
+        let picturePath = null;
+        if (req.file) {
+            picturePath = '/evidance/proof/' + req.file.filename;
+        }
 
-            let picturePath = null;
-            if (req.file) {
-                picturePath = '/evidance/proof/' + req.file.filename;
-            }
-
-            if (!name || !nic || !occupation || !country || !mobile || !email || !occupied_way ) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'All fields are required'
-                });
-            }
-
-            const newApartment = await HouseOwner.create({
-                    company_id,
-                    apartment_id,
-                    name,
-                    nic,
-                    occupation,
-                    country,
-                    mobile,
-                    email,
-                    occupied_way,
-                    proof: picturePath // Store the path, not the binary
-                    
-            });
-            res.status(201).json({
-            success: true,
-            message: 'House owner added successfully',
-            data: newApartment
-            });
-        } catch (err) {
-            console.error('Add house owner error', err);
-            res.status(500).json({
+        if (!name || !nic || !occupation || !country || !mobile || !email || !occupied_way ) {
+            return res.status(400).json({
                 success: false,
-                message: 'Server error while adding house owner'
+                message: 'All fields are required'
             });
         }
-    },
+
+        const newHouseOwner = await HouseOwner.create({
+            company_id,
+            apartment_id,
+            name,
+            nic,
+            occupation,
+            country,
+            mobile,
+            email,
+            occupied_way,
+            proof: picturePath
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'House owner added successfully',
+            data: newHouseOwner
+        });
+    } catch (err) {
+        console.error('Add house owner error', err);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while adding house owner'
+        });
+    }
+},
 
     // Get all house
     async getAllHouseOwner(req, res) {

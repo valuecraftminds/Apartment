@@ -68,6 +68,29 @@ router.get('/download-proof/:id', houseOwnerController.downloadProof);
 // In routes/houseOwner.js, add this route:
 router.get('/view-proof/:id', houseOwnerController.viewProof);
 
+// routes/houseOwner.js - Add this route
+router.get('/available-roles', authenticateToken, async (req, res) => {
+    try {
+        const company_id = req.user.company_id;
+        
+        const [roles] = await pool.execute(
+            'SELECT id, role_name FROM roles WHERE company_id = ? AND is_active = 1 AND (role_name LIKE "%owner%" OR role_name LIKE "%Owner%")',
+            [company_id]
+        );
+        
+        res.json({
+            success: true,
+            data: roles
+        });
+    } catch (err) {
+        console.error('Error fetching roles:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching roles'
+        });
+    }
+});
+
 // Error handling middleware for multer
 router.use((error, req, res, next) => {
     if (error instanceof multer.MulterError) {

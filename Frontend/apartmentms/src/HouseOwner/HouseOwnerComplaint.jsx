@@ -35,18 +35,13 @@ export default function HouseOwnerComplaints() {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    category: 'Plumbing',
-    priority: 'Medium',
     apartment_id: '',
     floor_id: '',
     house_id: '',
-    attachment: null
   });
   const [errors, setErrors] = useState({});
   const [filters, setFilters] = useState({
     status: 'all',
-    category: 'all',
-    priority: 'all'
   });
   const [statistics, setStatistics] = useState({
     total: 0,
@@ -133,97 +128,83 @@ export default function HouseOwnerComplaints() {
       filtered = filtered.filter(complaint => complaint.status === filters.status);
     }
 
-    if (filters.category !== 'all') {
-      filtered = filtered.filter(complaint => complaint.category === filters.category);
-    }
-
-    if (filters.priority !== 'all') {
-      filtered = filtered.filter(complaint => complaint.priority === filters.priority);
-    }
-
     setFilteredComplaints(filtered);
   }, [complaints, filters]);
 
-  const handleCreateComplaint = async (e) => {
-    e.preventDefault();
-    
-    // Validation
-    const newErrors = {};
-    if (!formData.title.trim()) newErrors.title = 'Title is required';
-    if (!formData.description.trim()) newErrors.description = 'Description is required';
-    if (!formData.house_id) newErrors.house = 'Please select a house';
-    
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
+  // In HouseOwnerComplaint.jsx, change handleCreateComplaint:
+const handleCreateComplaint = async (e) => {
+  e.preventDefault();
+  
+  // Validation
+  const newErrors = {};
+  if (!formData.title.trim()) newErrors.title = 'Title is required';
+  if (!formData.description.trim()) newErrors.description = 'Description is required';
+  if (!formData.house_id) newErrors.house = 'Please select a house';
+  
+  if (Object.keys(newErrors).length > 0) {
+    setErrors(newErrors);
+    return;
+  }
 
-    try {
-      const formDataToSend = new FormData();
-      formDataToSend.append('title', formData.title);
-      formDataToSend.append('description', formData.description);
-      formDataToSend.append('category', formData.category);
-      formDataToSend.append('priority', formData.priority);
-      formDataToSend.append('apartment_id', formData.apartment_id);
-      formDataToSend.append('floor_id', formData.floor_id);
-      formDataToSend.append('house_id', formData.house_id);
-      
-      if (formData.attachment) {
-        formDataToSend.append('attachment', formData.attachment);
+  try {
+    const res = await api.post('/complaints', {
+      title: formData.title,
+      description: formData.description,
+      apartment_id: formData.apartment_id,
+      floor_id: formData.floor_id,
+      house_id: formData.house_id,
+      // Remove category and priority as they don't exist in DB
+      // category: formData.category,
+      // priority: formData.priority
+    }, {
+      headers: { 
+        Authorization: `Bearer ${auth.accessToken}`,
+        'Content-Type': 'application/json' // Send as JSON
       }
+    });
 
-      const res = await api.post('/complaints', formDataToSend, {
-        headers: { 
-          Authorization: `Bearer ${auth.accessToken}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
-      if (res.data.success) {
-        setShowCreateModal(false);
-        resetForm();
-        fetchComplaints();
-      }
-    } catch (err) {
-      console.error('Failed to create complaint:', err);
-      alert(err.response?.data?.message || 'Failed to create complaint');
+    if (res.data.success) {
+      setShowCreateModal(false);
+      resetForm();
+      fetchComplaints();
     }
-  };
+  } catch (err) {
+    console.error('Failed to create complaint:', err);
+    alert(err.response?.data?.message || 'Failed to create complaint');
+  }
+};
 
   const resetForm = () => {
     setFormData({
       title: '',
       description: '',
-      category: 'Plumbing',
-      priority: 'Medium',
       apartment_id: selectedHouse?.apartment_id || '',
       floor_id: selectedHouse?.floor_id || '',
       house_id: selectedHouse?.id || '',
-      attachment: null
     });
     setErrors({});
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Validate file size (5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('File size must be less than 5MB');
-        return;
-      }
+  // const handleFileChange = (e) => {
+  //   const file = e.target.files[0];
+  //   if (file) {
+  //     // Validate file size (5MB)
+  //     if (file.size > 5 * 1024 * 1024) {
+  //       alert('File size must be less than 5MB');
+  //       return;
+  //     }
       
-      // Validate file type
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf', 
-                           'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-      if (!allowedTypes.includes(file.type)) {
-        alert('Only images, PDF and Word documents are allowed');
-        return;
-      }
+  //     // Validate file type
+  //     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf', 
+  //                          'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+  //     if (!allowedTypes.includes(file.type)) {
+  //       alert('Only images, PDF and Word documents are allowed');
+  //       return;
+  //     }
       
-      setFormData(prev => ({ ...prev, attachment: file }));
-    }
-  };
+  //     setFormData(prev => ({ ...prev, attachment: file }));
+  //   }
+  // };
 
   const handleHouseSelect = (house) => {
     setSelectedHouse(house);
@@ -252,79 +233,79 @@ export default function HouseOwnerComplaints() {
     }
   };
 
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'Emergency':
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
-      case 'High':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300';
-      case 'Medium':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
-      case 'Low':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-    }
-  };
+  // const getPriorityColor = (priority) => {
+  //   switch (priority) {
+  //     case 'Emergency':
+  //       return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+  //     case 'High':
+  //       return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300';
+  //     case 'Medium':
+  //       return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+  //     case 'Low':
+  //       return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+  //     default:
+  //       return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+  //   }
+  // };
 
-  const getCategoryIcon = (category) => {
-    switch (category) {
-      case 'Plumbing':
-        return <Wrench className="text-blue-500" size={16} />;
-      case 'Electrical':
-        return <Zap className="text-yellow-500" size={16} />;
-      case 'Security':
-        return <Shield className="text-green-500" size={16} />;
-      case 'Common Area':
-        return <Users className="text-purple-500" size={16} />;
-      default:
-        return <Tool className="text-gray-500" size={16} />;
-    }
-  };
+  // const getCategoryIcon = (category) => {
+  //   switch (category) {
+  //     case 'Plumbing':
+  //       return <Wrench className="text-blue-500" size={16} />;
+  //     case 'Electrical':
+  //       return <Zap className="text-yellow-500" size={16} />;
+  //     case 'Security':
+  //       return <Shield className="text-green-500" size={16} />;
+  //     case 'Common Area':
+  //       return <Users className="text-purple-500" size={16} />;
+  //     default:
+  //       return <Tool className="text-gray-500" size={16} />;
+  //   }
+  // };
 
   const handleViewComplaint = (complaint) => {
     setSelectedComplaint(complaint);
     setShowViewModal(true);
   };
 
-  const handleDownloadAttachment = async (complaint) => {
-    try {
-      const response = await api.get(`/complaints/${complaint.id}/download`, {
-        headers: { 
-          Authorization: `Bearer ${auth.accessToken}`
-        },
-        responseType: 'blob'
-      });
+  // const handleDownloadAttachment = async (complaint) => {
+  //   try {
+  //     const response = await api.get(`/complaints/${complaint.id}/download`, {
+  //       headers: { 
+  //         Authorization: `Bearer ${auth.accessToken}`
+  //       },
+  //       responseType: 'blob'
+  //     });
       
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `complaint-${complaint.complaint_number}.${complaint.attachment_path.split('.').pop()}`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (err) {
-      console.error('Failed to download attachment:', err);
-      alert('Failed to download attachment');
-    }
-  };
+  //     const url = window.URL.createObjectURL(new Blob([response.data]));
+  //     const link = document.createElement('a');
+  //     link.href = url;
+  //     link.setAttribute('download', `complaint-${complaint.complaint_number}.${complaint.attachment_path.split('.').pop()}`);
+  //     document.body.appendChild(link);
+  //     link.click();
+  //     link.remove();
+  //   } catch (err) {
+  //     console.error('Failed to download attachment:', err);
+  //     alert('Failed to download attachment');
+  //   }
+  // };
 
-  const categories = [
-    { value: 'Plumbing', label: 'Plumbing', icon: <Wrench size={16} /> },
-    { value: 'Electrical', label: 'Electrical', icon: <Zap size={16} /> },
-    { value: 'Structural', label: 'Structural', icon: <Building2 size={16} /> },
-    { value: 'Common Area', label: 'Common Area', icon: <Users size={16} /> },
-    { value: 'Security', label: 'Security', icon: <Shield size={16} /> },
-    { value: 'Maintenance', label: 'Maintenance', icon: <Settings size={16} /> },
-    { value: 'Other', label: 'Other', icon: <AlertCircle size={16} /> }
-  ];
+  // const categories = [
+  //   { value: 'Plumbing', label: 'Plumbing', icon: <Wrench size={16} /> },
+  //   { value: 'Electrical', label: 'Electrical', icon: <Zap size={16} /> },
+  //   { value: 'Structural', label: 'Structural', icon: <Building2 size={16} /> },
+  //   { value: 'Common Area', label: 'Common Area', icon: <Users size={16} /> },
+  //   { value: 'Security', label: 'Security', icon: <Shield size={16} /> },
+  //   { value: 'Maintenance', label: 'Maintenance', icon: <Settings size={16} /> },
+  //   { value: 'Other', label: 'Other', icon: <AlertCircle size={16} /> }
+  // ];
 
-  const priorities = [
-    { value: 'Low', label: 'Low', color: 'text-green-600' },
-    { value: 'Medium', label: 'Medium', color: 'text-yellow-600' },
-    { value: 'High', label: 'High', color: 'text-orange-600' },
-    { value: 'Emergency', label: 'Emergency', color: 'text-red-600' }
-  ];
+  // const priorities = [
+  //   { value: 'Low', label: 'Low', color: 'text-green-600' },
+  //   { value: 'Medium', label: 'Medium', color: 'text-yellow-600' },
+  //   { value: 'High', label: 'High', color: 'text-orange-600' },
+  //   { value: 'Emergency', label: 'Emergency', color: 'text-red-600' }
+  // ];
 
   if (loading && !complaints.length) {
     return (
@@ -457,40 +438,7 @@ export default function HouseOwnerComplaints() {
                     <option value="Rejected">Rejected</option>
                   </select>
                 </div>
-
-                {/* Category Filter */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                    Category
-                  </label>
-                  <select
-                    value={filters.category}
-                    onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
-                  >
-                    <option value="all">All Categories</option>
-                    {categories.map(cat => (
-                      <option key={cat.value} value={cat.value}>{cat.label}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Priority Filter */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                    Priority
-                  </label>
-                  <select
-                    value={filters.priority}
-                    onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
-                  >
-                    <option value="all">All Priorities</option>
-                    {priorities.map(pri => (
-                      <option key={pri.value} value={pri.value}>{pri.label}</option>
-                    ))}
-                  </select>
-                </div>
+        
               </div>
             </div>
 
@@ -523,13 +471,7 @@ export default function HouseOwnerComplaints() {
                           Complaint Details
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                          Category
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           Status
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                          Priority
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           Date
@@ -559,21 +501,8 @@ export default function HouseOwnerComplaints() {
                             </div>
                           </td>
                           <td className="px-4 py-4">
-                            <div className="flex items-center">
-                              {getCategoryIcon(complaint.category)}
-                              <span className="ml-2 text-sm text-gray-900 dark:text-white">
-                                {complaint.category}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-4">
                             <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(complaint.status)}`}>
                               {complaint.status}
-                            </span>
-                          </td>
-                          <td className="px-4 py-4">
-                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(complaint.priority)}`}>
-                              {complaint.priority}
                             </span>
                           </td>
                           <td className="px-4 py-4">
@@ -594,7 +523,7 @@ export default function HouseOwnerComplaints() {
                                 <FileText size={16} />
                               </button>
                               
-                              {complaint.attachment_path && (
+                              {/* {complaint.attachment_path && (
                                 <button
                                   onClick={() => handleDownloadAttachment(complaint)}
                                   className="p-2 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 transition-colors hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg"
@@ -602,7 +531,7 @@ export default function HouseOwnerComplaints() {
                                 >
                                   <Download size={16} />
                                 </button>
-                              )}
+                              )} */}
                               
                               {complaint.status === 'Pending' && (
                                 <button
@@ -611,12 +540,9 @@ export default function HouseOwnerComplaints() {
                                     setFormData({
                                       title: complaint.title,
                                       description: complaint.description,
-                                      category: complaint.category,
-                                      priority: complaint.priority,
                                       apartment_id: complaint.apartment_id,
                                       floor_id: complaint.floor_id,
-                                      house_id: complaint.house_id,
-                                      attachment: null
+                                      house_id: complaint.house_id
                                     });
                                     setSelectedComplaint(complaint);
                                     setShowCreateModal(true);
@@ -745,44 +671,12 @@ export default function HouseOwnerComplaints() {
 
                   {/* Category and Priority */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Category *
-                      </label>
-                      <select
-                        value={formData.category}
-                        onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
-                      >
-                        {categories.map(cat => (
-                          <option key={cat.value} value={cat.value}>
-                            {cat.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Priority *
-                      </label>
-                      <select
-                        value={formData.priority}
-                        onChange={(e) => setFormData(prev => ({ ...prev, priority: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
-                      >
-                        {priorities.map(pri => (
-                          <option key={pri.value} value={pri.value}>
-                            {pri.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                
                   </div>
 
                   {/* File Attachment */}
                   <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {/* <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Attachment (Optional)
                     </label>
                     <div className="flex items-center justify-center w-full">
@@ -803,8 +697,8 @@ export default function HouseOwnerComplaints() {
                           accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
                         />
                       </label>
-                    </div>
-                    {formData.attachment && (
+                    </div> */}
+                    {/* {formData.attachment && (
                       <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center">
@@ -822,7 +716,7 @@ export default function HouseOwnerComplaints() {
                           </button>
                         </div>
                       </div>
-                    )}
+                    )} */}
                   </div>
 
                   {/* Submit Button */}
@@ -885,11 +779,11 @@ export default function HouseOwnerComplaints() {
                       {selectedComplaint.title}
                     </h3>
                   </div>
-                  <div className="mt-4 md:mt-0">
+                  {/* <div className="mt-4 md:mt-0">
                     <span className={`px-3 py-1 text-sm font-semibold rounded-full ${getPriorityColor(selectedComplaint.priority)}`}>
                       {selectedComplaint.priority} Priority
                     </span>
-                  </div>
+                  </div> */}
                 </div>
               </div>
 
@@ -915,13 +809,13 @@ export default function HouseOwnerComplaints() {
 
                 <div>
                   <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                    Category & Dates
+                     Dates
                   </h4>
                   <div className="space-y-2">
-                    <div className="flex items-center">
+                    {/* <div className="flex items-center">
                       {getCategoryIcon(selectedComplaint.category)}
                       <span className="ml-2 text-gray-900 dark:text-white">{selectedComplaint.category}</span>
-                    </div>
+                    </div> */}
                     <div className="text-sm">
                       <div className="text-gray-900 dark:text-white">
                         Filed: {new Date(selectedComplaint.created_at).toLocaleString()}
@@ -949,7 +843,7 @@ export default function HouseOwnerComplaints() {
               </div>
 
               {/* Resolution Note */}
-              {selectedComplaint.resolution_note && (
+              {/* {selectedComplaint.resolution_note && (
                 <div className="mb-6">
                   <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                     Resolution Note
@@ -960,10 +854,10 @@ export default function HouseOwnerComplaints() {
                     </p>
                   </div>
                 </div>
-              )}
+              )} */}
 
               {/* Assigned To */}
-              {selectedComplaint.assigned_to_name && (
+              {/* {selectedComplaint.assigned_to_name && (
                 <div className="mb-6">
                   <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                     Assigned To
@@ -973,10 +867,10 @@ export default function HouseOwnerComplaints() {
                     <span className="text-gray-900 dark:text-white">{selectedComplaint.assigned_to_name}</span>
                   </div>
                 </div>
-              )}
+              )} */}
 
               {/* Attachment */}
-              {selectedComplaint.attachment_path && (
+              {/* {selectedComplaint.attachment_path && (
                 <div className="mb-6">
                   <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                     Attachment
@@ -989,7 +883,7 @@ export default function HouseOwnerComplaints() {
                     <span>Download Attachment</span>
                   </button>
                 </div>
-              )}
+              )} */}
 
               <div className="flex justify-end pt-4">
                 <button

@@ -23,7 +23,7 @@ const complaintController = {
             }
 
             // Validation
-            if (!title || !description || !apartment_id || !floor_id || !house_id) {
+            if (!title || !description || !apartment_id || !floor_id || !house_id === undefined) {
                 return res.status(400).json({
                     success: false,
                     message: 'Title, description, and location details are required'
@@ -36,10 +36,7 @@ const complaintController = {
                     house_id,
                     houseowner_id,
                     title,
-                    description,
-                    category,
-                    priority: priority || 'Medium',
-                    attachment_path
+                    description
                 });
 
                 res.status(201).json({
