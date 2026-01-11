@@ -218,49 +218,7 @@ router.post('/verify', async (req, res) => {
   }
 });
 
-/* Resend verification (rate-limit this from main server) */
-// router.post('/resend', async (req, res) => {
-//   try {
-//     const { email } = req.body;
-//     console.log('Resend verification request for:', email);
-    
-//     if (!email) return res.status(400).json({ message: 'Email required' });
 
-//     const [rows] = await pool.execute('SELECT id, is_verified FROM users WHERE email = ?', [email]);
-//     if (!rows.length) {
-//       console.log('User not found for email:', email);
-//       return res.status(404).json({ message: 'User not found' });
-//     }
-
-//     const user = rows[0];
-//     console.log('User found:', { id: user.id, is_verified: user.is_verified });
-    
-//     if (user.is_verified) {
-//       console.log('User already verified');
-//       return res.status(400).json({ message: 'Already verified' });
-//     }
-
-//     const plainToken = crypto.randomBytes(32).toString('hex');
-//     const tokenHash = crypto.createHash('sha256').update(plainToken).digest('hex');
-//     const expiresAt = new Date(Date.now() + (Number(process.env.VERIFICATION_TOKEN_EXPIRES_HOURS || 24) * 3600 * 1000));
-    
-//     await pool.execute(
-//       'UPDATE users SET verification_token_hash = ?, verification_token_expires = ? WHERE id = ?', 
-//       [tokenHash, expiresAt, user.id]
-//     );
-
-//     console.log('Sending verification email to:', email);
-    
-//     // Use the email helper
-//     await sendVerificationEmail(email, plainToken, user.id);
-//     console.log(`Verification email sent successfully to: ${email}`);
-
-//     res.json({ message: 'Verification email resent' });
-//   } catch (err) {
-//     console.error('Resend verification error:', err);
-//     res.status(500).json({ message: 'Server error while sending verification email' });
-//   }
-// });
 /* Resend verification */
 router.post('/resend', async (req, res) => {
   try {
@@ -321,49 +279,201 @@ router.post('/resend', async (req, res) => {
 });
 
 /* Login (enforce verification) */
-router.post('/login', async (req, res) => {
+// router.post('/login', async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+//     if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
+
+//     const [rows] = await pool.execute(
+//       `SELECT u.id, u.email, u.password_hash, u.is_verified, u.company_id, u.role_id, r.role_name 
+//        FROM users u 
+//        LEFT JOIN roles r ON u.role_id = r.id 
+//        WHERE u.email = ?`,
+//       [email]
+//     );
+    
+//     const user = rows[0];
+//     if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+//     if (!user.is_verified) return res.status(403).json({ message: 'Please verify your email first' });
+
+//     const ok = await bcrypt.compare(password, user.password_hash);
+//     if (!ok) return res.status(401).json({ message: 'Invalid credentials' });
+
+//     const accessToken = signAccessToken(user);
+//     const refreshToken = signRefreshToken(user);
+
+//     await pool.execute('UPDATE users SET refresh_token = ? WHERE id = ?', [refreshToken, user.id]);
+
+//     // Use environment-aware cookie options
+//     res.cookie('accessToken', accessToken, makeCookieOptions(1000 * 60 * 15)); // 15 min
+//     res.cookie('refreshToken', refreshToken, makeCookieOptions(1000 * 60 * 60 * 24 * 7, isProd ? 'none' : 'strict')); // 7 days
+
+//     res.json({ 
+//       accessToken, 
+//       user: { 
+//         id: user.id, 
+//         firstname: user.firstname,
+//         email: user.email, 
+//         role: user.role_name, 
+//         role_id: user.role_id,
+//         company_id: user.company_id 
+//       } 
+//     });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: 'Server error, Refresh the page' });
+//   }
+// });
+/* Unified Login Route (handles both admin/employee and houseowner) */
+router.post('/login-unified', async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
 
-    const [rows] = await pool.execute(
-      `SELECT u.id, u.email, u.password_hash, u.is_verified, u.company_id, u.role_id, r.role_name 
+    // First, check if it's a regular user (admin/employee)
+    const [users] = await pool.execute(
+      `SELECT u.id, u.email, u.password_hash, u.is_verified, u.company_id, u.role_id, r.role_name, 
+              u.firstname, u.is_active, 'user' as user_type
        FROM users u 
        LEFT JOIN roles r ON u.role_id = r.id 
        WHERE u.email = ?`,
       [email]
     );
     
-    const user = rows[0];
-    if (!user) return res.status(401).json({ message: 'Invalid credentials' });
-    if (!user.is_verified) return res.status(403).json({ message: 'Please verify your email first' });
+    if (users.length > 0) {
+      // This is a regular user (admin/employee)
+      const user = users[0];
+      
+      if (!user.is_active) {
+        return res.status(403).json({ message: 'Account is deactivated' });
+      }
+      
+      if (!user.is_verified) {
+        return res.status(403).json({ message: 'Please verify your email first' });
+      }
 
-    const ok = await bcrypt.compare(password, user.password_hash);
-    if (!ok) return res.status(401).json({ message: 'Invalid credentials' });
+      const ok = await bcrypt.compare(password, user.password_hash);
+      if (!ok) return res.status(401).json({ message: 'Invalid credentials' });
 
-    const accessToken = signAccessToken(user);
-    const refreshToken = signRefreshToken(user);
-
-    await pool.execute('UPDATE users SET refresh_token = ? WHERE id = ?', [refreshToken, user.id]);
-
-    // Use environment-aware cookie options
-    res.cookie('accessToken', accessToken, makeCookieOptions(1000 * 60 * 15)); // 15 min
-    res.cookie('refreshToken', refreshToken, makeCookieOptions(1000 * 60 * 60 * 24 * 7, isProd ? 'none' : 'strict')); // 7 days
-
-    res.json({ 
-      accessToken, 
-      user: { 
+      const accessToken = jwt.sign({ 
         id: user.id, 
         firstname: user.firstname,
         email: user.email, 
-        role: user.role_name, 
+        role: user.role_name || user.role,
         role_id: user.role_id,
-        company_id: user.company_id 
-      } 
-    });
+        company_id: user.company_id,
+        user_type: 'user'
+      }, process.env.ACCESS_TOKEN_SECRET, { 
+        expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN
+      });
+
+      const refreshToken = jwt.sign({ 
+        id: user.id,
+        user_type: 'user'
+      }, process.env.REFRESH_TOKEN_SECRET, { 
+        expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN 
+      });
+
+      await pool.execute('UPDATE users SET refresh_token = ? WHERE id = ?', [refreshToken, user.id]);
+
+      // Set cookies
+      res.cookie('accessToken', accessToken, makeCookieOptions(1000 * 60 * 15));
+      res.cookie('refreshToken', refreshToken, makeCookieOptions(1000 * 60 * 60 * 24 * 7, isProd ? 'none' : 'strict'));
+
+      return res.json({ 
+        accessToken, 
+        user: { 
+          id: user.id, 
+          firstname: user.firstname,
+          email: user.email, 
+          role: user.role_name, 
+          role_id: user.role_id,
+          company_id: user.company_id,
+          user_type: 'user'
+        } 
+      });
+    }
+
+    // If not found in users table, check houseowner table
+    const [houseOwners] = await pool.execute(
+      `SELECT id, email, password_hash, is_verified, is_active, name, apartment_id, company_id,
+              'houseowner' as user_type
+       FROM houseowner WHERE email = ?`,
+      [email]
+    );
+    
+    if (houseOwners.length > 0) {
+      // This is a house owner
+      const owner = houseOwners[0];
+      
+      if (!owner.is_active) {
+        return res.status(403).json({ message: 'Account is deactivated' });
+      }
+
+      if (!owner.is_verified) {
+        return res.status(403).json({ message: 'Please verify your email first' });
+      }
+
+      // Check if password is set
+      if (!owner.password_hash) {
+        return res.status(403).json({ 
+          message: 'Password not set. Please contact admin or use verification link.' 
+        });
+      }
+
+      const ok = await bcrypt.compare(password, owner.password_hash);
+      if (!ok) return res.status(401).json({ message: 'Invalid credentials' });
+
+      const accessToken = jwt.sign({ 
+        id: owner.id, 
+        houseowner_id: owner.id,
+        name: owner.name,
+        email: owner.email,
+        role: 'houseowner',
+        apartment_id: owner.apartment_id,
+        company_id: owner.company_id,
+        user_type: 'houseowner'
+      }, process.env.ACCESS_TOKEN_SECRET, { 
+        expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN
+      });
+
+      const refreshToken = jwt.sign({ 
+        id: owner.id,
+        user_type: 'houseowner'
+      }, process.env.REFRESH_TOKEN_SECRET, { 
+        expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN 
+      });
+
+      // Update last login
+      await pool.execute(
+        'UPDATE houseowner SET last_login = CURRENT_TIMESTAMP WHERE id = ?',
+        [owner.id]
+      );
+
+      // Set cookies
+      res.cookie('accessToken', accessToken, makeCookieOptions(1000 * 60 * 15));
+      res.cookie('refreshToken', refreshToken, makeCookieOptions(1000 * 60 * 60 * 24 * 7, isProd ? 'none' : 'strict'));
+
+      return res.json({ 
+        accessToken, 
+        user: { 
+          id: owner.id, 
+          name: owner.name,
+          email: owner.email, 
+          role: 'houseowner',
+          apartment_id: owner.apartment_id,
+          company_id: owner.company_id,
+          user_type: 'houseowner'
+        } 
+      });
+    }
+
+    // If email not found in either table
+    return res.status(401).json({ message: 'Invalid credentials' });
+
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Server error, Refresh the page' });
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
@@ -499,30 +609,133 @@ const resetPasswordLimiter = rateLimit({
 });
 
 // Send password reset link
-router.post('/forgot-password', async (req, res) => {
+// router.post('/forgot-password', async (req, res) => {
+//   try {
+//     const { email } = req.body;
+//     if (!email) return res.status(400).json({ message: 'Email is required' });
+
+//     // find user
+//     const [rows] = await pool.execute('SELECT id, email FROM users WHERE email = ?', [email]);
+//     if (!rows.length) return res.status(404).json({ message: 'No account found with that email' });
+
+//     const user = rows[0];
+
+//     // generate reset token
+//     const resetToken = crypto.randomBytes(32).toString('hex');
+//     const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+//     const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+//     await pool.execute(
+//       'UPDATE users SET reset_token_hash = ?, reset_token_expires = ? WHERE id = ?',
+//       [resetTokenHash, expiresAt, user.id]
+//     );
+
+//     // Use email helper
+//     await sendPasswordResetEmail(email, resetToken, user.id);
+//     console.log(`Password reset email sent to: ${user.email}`);
+
+//     res.json({ message: 'Password reset link sent to your email' });
+//   } catch (err) {
+//     console.error('Forgot password error:', err);
+//     res.status(500).json({ message: 'Server error while sending reset link' });
+//   }
+// });
+
+// // Reset password route
+// router.post('/reset-password',resetPasswordLimiter, async (req, res) => {
+//   try {
+//     const { token, id, password } = req.body;
+//     if (!token || !id || !password)
+//       return res.status(400).json({ message: 'Token, ID, and new password are required' });
+
+//     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+//     const [rows] = await pool.execute(
+//       'SELECT reset_token_hash, reset_token_expires FROM users WHERE id = ?',
+//       [id]
+//     );
+
+//     if (!rows.length) return res.status(404).json({ message: 'User not found' });
+//     const user = rows[0];
+
+//     if (user.reset_token_hash !== tokenHash)
+//       return res.status(400).json({ message: 'Invalid or already used token' });
+
+//     if (new Date(user.reset_token_expires) < new Date())
+//       return res.status(400).json({ message: 'Reset token expired' });
+
+//     const hashedPassword = await bcrypt.hash(password, 12);
+
+//     await pool.execute(
+//       'UPDATE users SET password_hash = ?, reset_token_hash = NULL, reset_token_expires = NULL WHERE id = ?',
+//       [hashedPassword, id]
+//     );
+
+//     res.json({ message: 'Password reset successful' });
+//   } catch (err) {
+//     console.error('Reset password error:', err);
+//     res.status(500).json({ message: 'Server error while resetting password' });
+//   }
+// });
+
+/* Unified Forgot Password Route */
+router.post('/forgot-password-unified', async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ message: 'Email is required' });
 
-    // find user
-    const [rows] = await pool.execute('SELECT id, email FROM users WHERE email = ?', [email]);
-    if (!rows.length) return res.status(404).json({ message: 'No account found with that email' });
+    // Check users table first
+    const [users] = await pool.execute(
+      'SELECT id, email, "user" as user_type FROM users WHERE email = ?',
+      [email]
+    );
+    
+    let userType = '';
+    let userId = null;
+    let userEmail = null;
+    
+    if (users.length > 0) {
+      userType = 'user';
+      userId = users[0].id;
+      userEmail = users[0].email;
+    } else {
+      // Check houseowner table
+      const [houseOwners] = await pool.execute(
+        'SELECT id, email FROM houseowner WHERE email = ?',
+        [email]
+      );
+      
+      if (houseOwners.length > 0) {
+        userType = 'houseowner';
+        userId = houseOwners[0].id;
+        userEmail = houseOwners[0].email;
+      }
+    }
 
-    const user = rows[0];
+    if (!userId) {
+      return res.status(404).json({ message: 'No account found with that email' });
+    }
 
-    // generate reset token
+    // Generate reset token
     const resetToken = crypto.randomBytes(32).toString('hex');
     const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
-    await pool.execute(
-      'UPDATE users SET reset_token_hash = ?, reset_token_expires = ? WHERE id = ?',
-      [resetTokenHash, expiresAt, user.id]
-    );
+    if (userType === 'user') {
+      await pool.execute(
+        'UPDATE users SET reset_token_hash = ?, reset_token_expires = ? WHERE id = ?',
+        [resetTokenHash, expiresAt, userId]
+      );
+    } else {
+      await pool.execute(
+        'UPDATE houseowner SET reset_token_hash = ?, reset_token_expires = ? WHERE id = ?',
+        [resetTokenHash, expiresAt, userId]
+      );
+    }
 
-    // Use email helper
-    await sendPasswordResetEmail(email, resetToken, user.id);
-    console.log(`Password reset email sent to: ${user.email}`);
+    // Send email with user_type parameter
+    await sendPasswordResetEmail(userEmail, resetToken, userId, userType);
+    console.log(`Password reset email sent to: ${userEmail} (${userType})`);
 
     res.json({ message: 'Password reset link sent to your email' });
   } catch (err) {
@@ -531,40 +744,140 @@ router.post('/forgot-password', async (req, res) => {
   }
 });
 
-// Reset password route
-router.post('/reset-password',resetPasswordLimiter, async (req, res) => {
+/* Unified Reset Password Route */
+router.post('/reset-password-unified', async (req, res) => {
   try {
-    const { token, id, password } = req.body;
-    if (!token || !id || !password)
-      return res.status(400).json({ message: 'Token, ID, and new password are required' });
+    const { token, id, password, user_type } = req.body;
+    if (!token || !id || !password || !user_type)
+      return res.status(400).json({ message: 'All fields are required' });
 
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
 
-    const [rows] = await pool.execute(
-      'SELECT reset_token_hash, reset_token_expires FROM users WHERE id = ?',
-      [id]
-    );
+    if (user_type === 'user') {
+      const [rows] = await pool.execute(
+        'SELECT reset_token_hash, reset_token_expires FROM users WHERE id = ?',
+        [id]
+      );
 
-    if (!rows.length) return res.status(404).json({ message: 'User not found' });
-    const user = rows[0];
+      if (!rows.length) return res.status(404).json({ message: 'User not found' });
+      const user = rows[0];
 
-    if (user.reset_token_hash !== tokenHash)
-      return res.status(400).json({ message: 'Invalid or already used token' });
+      if (user.reset_token_hash !== tokenHash)
+        return res.status(400).json({ message: 'Invalid or already used token' });
 
-    if (new Date(user.reset_token_expires) < new Date())
-      return res.status(400).json({ message: 'Reset token expired' });
+      if (new Date(user.reset_token_expires) < new Date())
+        return res.status(400).json({ message: 'Reset token expired' });
 
-    const hashedPassword = await bcrypt.hash(password, 12);
+      const hashedPassword = await bcrypt.hash(password, 12);
 
-    await pool.execute(
-      'UPDATE users SET password_hash = ?, reset_token_hash = NULL, reset_token_expires = NULL WHERE id = ?',
-      [hashedPassword, id]
-    );
+      await pool.execute(
+        'UPDATE users SET password_hash = ?, reset_token_hash = NULL, reset_token_expires = NULL WHERE id = ?',
+        [hashedPassword, id]
+      );
+    } else if (user_type === 'houseowner') {
+      const [rows] = await pool.execute(
+        'SELECT reset_token_hash, reset_token_expires FROM houseowner WHERE id = ?',
+        [id]
+      );
+
+      if (!rows.length) return res.status(404).json({ message: 'House owner not found' });
+      const owner = rows[0];
+
+      if (owner.reset_token_hash !== tokenHash)
+        return res.status(400).json({ message: 'Invalid or already used token' });
+
+      if (new Date(owner.reset_token_expires) < new Date())
+        return res.status(400).json({ message: 'Reset token expired' });
+
+      const hashedPassword = await bcrypt.hash(password, 12);
+
+      await pool.execute(
+        'UPDATE houseowner SET password_hash = ?, reset_token_hash = NULL, reset_token_expires = NULL WHERE id = ?',
+        [hashedPassword, id]
+      );
+    } else {
+      return res.status(400).json({ message: 'Invalid user type' });
+    }
 
     res.json({ message: 'Password reset successful' });
   } catch (err) {
     console.error('Reset password error:', err);
     res.status(500).json({ message: 'Server error while resetting password' });
+  }
+});
+
+/* Check reset token (for validation) */
+router.post('/check-reset-token', async (req, res) => {
+  try {
+    const { token, id } = req.body;
+    
+    if (!token || !id) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Token and ID are required' 
+      });
+    }
+
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    // Check users table
+    const [users] = await pool.execute(
+      'SELECT id, email, reset_token_expires FROM users WHERE id = ? AND reset_token_hash = ?',
+      [id, tokenHash]
+    );
+
+    if (users.length > 0) {
+      const user = users[0];
+      
+      // Check if token is expired
+      if (new Date(user.reset_token_expires) < new Date()) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Reset token expired' 
+        });
+      }
+
+      return res.json({
+        success: true,
+        user_type: 'user',
+        email: user.email
+      });
+    }
+
+    // If not found in users table, check houseowner table
+    const [houseOwners] = await pool.execute(
+      'SELECT id, email, reset_token_expires FROM houseowner WHERE id = ? AND reset_token_hash = ?',
+      [id, tokenHash]
+    );
+
+    if (houseOwners.length > 0) {
+      const owner = houseOwners[0];
+      
+      if (new Date(owner.reset_token_expires) < new Date()) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Reset token expired' 
+        });
+      }
+
+      return res.json({
+        success: true,
+        user_type: 'houseowner',
+        email: owner.email
+      });
+    }
+
+    return res.status(404).json({ 
+      success: false, 
+      message: 'Invalid reset token' 
+    });
+
+  } catch (err) {
+    console.error('Check reset token error:', err);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error while verifying reset token' 
+    });
   }
 });
 

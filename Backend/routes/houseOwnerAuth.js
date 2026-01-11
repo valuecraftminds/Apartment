@@ -603,6 +603,56 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
+/* Check house owner reset token (for validation) */
+router.post('/check-reset-token', async (req, res) => {
+  try {
+    const { token, id } = req.body;
+    
+    if (!token || !id) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Token and ID are required' 
+      });
+    }
+
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    const [owners] = await pool.execute(
+      'SELECT id, email, reset_token_expires FROM houseowner WHERE id = ? AND reset_token_hash = ?',
+      [id, tokenHash]
+    );
+
+    if (owners.length > 0) {
+      const owner = owners[0];
+      
+      if (new Date(owner.reset_token_expires) < new Date()) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Reset token expired' 
+        });
+      }
+
+      return res.json({
+        success: true,
+        user_type: 'houseowner',
+        email: owner.email
+      });
+    }
+
+    return res.status(404).json({ 
+      success: false, 
+      message: 'Invalid reset token' 
+    });
+
+  } catch (err) {
+    console.error('Check house owner reset token error:', err);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error while verifying reset token' 
+    });
+  }
+});
+
 /* Get house owner profile */
 router.get('/profile', async (req, res) => {
   try {

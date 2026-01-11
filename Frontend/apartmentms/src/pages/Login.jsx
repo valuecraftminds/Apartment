@@ -609,76 +609,130 @@ export default function Login() {
     }
   };
 
-  async function submit(e) {
-    e.preventDefault();
+  // async function submit(e) {
+  //   e.preventDefault();
     
-    // Prevent multiple submissions
-    if (isVerifying || isRateLimited) {
+  //   // Prevent multiple submissions
+  //   if (isVerifying || isRateLimited) {
+  //     return;
+  //   }
+    
+  //   setMsg(null);
+  //   setIsVerifying(true);
+    
+  //   try {
+  //     let res;
+      
+  //     if (userType === 'houseowner') {
+  //       // House owner login
+  //       res = await api.post('/houseowner-auth/login', { email, password });
+        
+  //       if (res.data.success) {
+  //         // Store house owner data differently
+  //         const houseOwnerData = {
+  //           accessToken: res.data.accessToken,
+  //           user: {
+  //             ...res.data.owner,
+  //             isHouseOwner: true // Flag to identify this as a house owner
+  //           }
+  //         };
+          
+  //         setAuth(houseOwnerData);
+  //         toast.success("Login Successful!");
+          
+  //         // Store in localStorage
+  //         try {
+  //           localStorage.setItem('accessToken', res.data.accessToken);
+  //           localStorage.setItem('user', JSON.stringify(houseOwnerData.user));
+  //           localStorage.setItem('userType', 'houseowner');
+  //         } catch (storageError) {
+  //           console.warn('Could not save to localStorage:', storageError);
+  //         }
+          
+  //         // Navigate to house owner dashboard
+  //         navigate('/houseowner/dashboard');
+  //         return;
+  //       }
+  //     } else {
+  //       // Regular user login
+  //       res = await api.post('/auth/login', { email, password });
+        
+  //       if (res.data.accessToken) {
+  //         setAuth({ accessToken: res.data.accessToken, user: res.data.user });
+  //         toast.success("Login Successful!");
+          
+  //         // Store token in localStorage
+  //         try {
+  //           localStorage.setItem('accessToken', res.data.accessToken);
+  //           localStorage.setItem('user', JSON.stringify(res.data.user));
+  //           localStorage.setItem('userType', 'admin');
+  //         } catch (storageError) {
+  //           console.warn('Could not save to localStorage:', storageError);
+  //         }
+          
+  //         return navigateToDashboard(res.data.user.role);
+  //       }
+  //     }
+  //   } catch (err) {
+  //     handleLoginError(err);
+  //   } finally {
+  //     setIsVerifying(false);
+  //   }
+  // }
+
+  // Remove the userType state and buttons for selecting user type
+// Keep only the unified login logic
+
+async function submit(e) {
+  e.preventDefault();
+  
+  if (isVerifying || isRateLimited) {
+    return;
+  }
+  
+  setMsg(null);
+  setIsVerifying(true);
+  
+  try {
+    // Use the unified login endpoint
+    const res = await api.post('/auth/login-unified', { email, password });
+    
+    if (res.data.accessToken) {
+      setAuth({ accessToken: res.data.accessToken, user: res.data.user });
+      toast.success("Login Successful!");
+      
+      // Store in localStorage
+      try {
+        localStorage.setItem('accessToken', res.data.accessToken);
+        localStorage.setItem('user', JSON.stringify(res.data.user));
+        localStorage.setItem('userType', res.data.user.user_type);
+      } catch (storageError) {
+        console.warn('Could not save to localStorage:', storageError);
+      }
+      
+      // Navigate based on user type and role
+      navigateToDashboard(res.data.user);
       return;
     }
-    
-    setMsg(null);
-    setIsVerifying(true);
-    
-    try {
-      let res;
-      
-      if (userType === 'houseowner') {
-        // House owner login
-        res = await api.post('/houseowner-auth/login', { email, password });
-        
-        if (res.data.success) {
-          // Store house owner data differently
-          const houseOwnerData = {
-            accessToken: res.data.accessToken,
-            user: {
-              ...res.data.owner,
-              isHouseOwner: true // Flag to identify this as a house owner
-            }
-          };
-          
-          setAuth(houseOwnerData);
-          toast.success("Login Successful!");
-          
-          // Store in localStorage
-          try {
-            localStorage.setItem('accessToken', res.data.accessToken);
-            localStorage.setItem('user', JSON.stringify(houseOwnerData.user));
-            localStorage.setItem('userType', 'houseowner');
-          } catch (storageError) {
-            console.warn('Could not save to localStorage:', storageError);
-          }
-          
-          // Navigate to house owner dashboard
-          navigate('/houseowner/dashboard');
-          return;
-        }
-      } else {
-        // Regular user login
-        res = await api.post('/auth/login', { email, password });
-        
-        if (res.data.accessToken) {
-          setAuth({ accessToken: res.data.accessToken, user: res.data.user });
-          toast.success("Login Successful!");
-          
-          // Store token in localStorage
-          try {
-            localStorage.setItem('accessToken', res.data.accessToken);
-            localStorage.setItem('user', JSON.stringify(res.data.user));
-            localStorage.setItem('userType', 'admin');
-          } catch (storageError) {
-            console.warn('Could not save to localStorage:', storageError);
-          }
-          
-          return navigateToDashboard(res.data.user.role);
-        }
-      }
-    } catch (err) {
-      handleLoginError(err);
-    } finally {
-      setIsVerifying(false);
+  } catch (err) {
+    handleLoginError(err);
+  } finally {
+    setIsVerifying(false);
+  }
+}
+
+const navigateToDashboard = (user) => {
+  if (user.user_type === 'houseowner') {
+    navigate('/houseowner/dashboard');
+  } else {
+    // Regular user
+    if (user.role === 'Admin') {
+      navigate('/admindashboard');
+    } else {
+      navigate('/employee-dashboard');
     }
   }
+};
 
   const handleLoginError = (err) => {
     const status = err.response?.status;
@@ -749,14 +803,6 @@ export default function Login() {
     );
   };
 
-  const navigateToDashboard = (role) => {
-    if(role === 'Admin'){
-      navigate('/admindashboard')
-    }else{
-      navigate('/employee-dashboard')
-    }
-  };
-
   const handleResend = async (e) => {
     e.preventDefault();
     if (!email) {
@@ -811,41 +857,6 @@ export default function Login() {
               className="w-10 h-10"
             />
             <h1 className="font-bold text-xl">Log In</h1>
-          </div>
-
-          {/* User Type Selection */}
-          <div className="mb-6">
-            <div className="flex justify-center space-x-4">
-              <button
-                type="button"
-                onClick={() => setUserType('admin')}
-                className={`flex items-center justify-center px-4 py-2 rounded-md transition-colors ${
-                  userType === 'admin' 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                }`}
-              >
-                <Building size={18} className="mr-2" />
-                Admin/Employee
-              </button>
-              <button
-                type="button"
-                onClick={() => setUserType('houseowner')}
-                className={`flex items-center justify-center px-4 py-2 rounded-md transition-colors ${
-                  userType === 'houseowner' 
-                    ? 'bg-green-600 text-white' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                }`}
-              >
-                <Home size={18} className="mr-2" />
-                House Owner
-              </button>
-            </div>
-            {/* <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-2">
-              {userType === 'admin' 
-                ? 'Login as administrator or apartment staff' 
-                : 'Login as house owner/tenant'}
-            </p> */}
           </div>
 
           {isVerifying && <div className="mb-4 text-purple-600">Verifying your email...</div>}

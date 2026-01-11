@@ -129,106 +129,6 @@ export default function EditHouse({ house, onClose, onUpdated, apartment_id, flo
         setFile(e.target.files[0]);
     };
 
-    // const handleSubmit = async (e) => {
-    //     e.preventDefault();
-    //     setLoading(true);
-        
-    //     try {
-    //         let houseOwnerId = formData.houseowner_id;
-
-    //         if (formData.status === 'occupied' && !houseOwnerId) {
-    //             const ownerFormDataToSend = new FormData();
-    //             ownerFormDataToSend.append('name', ownerFormData.name);
-    //             ownerFormDataToSend.append('nic', ownerFormData.nic);
-    //             ownerFormDataToSend.append('occupation', ownerFormData.occupation);
-    //             ownerFormDataToSend.append('country', ownerFormData.country);
-    //             ownerFormDataToSend.append('mobile', ownerFormData.mobile);
-    //             ownerFormDataToSend.append('email',ownerFormData.email);
-    //             ownerFormDataToSend.append('occupied_way', ownerFormData.occupied_way);
-    //             ownerFormDataToSend.append('apartment_id', apartment_id);
-    //             if (file) {
-    //                 ownerFormDataToSend.append('proof', file);
-    //             }
-
-    //             const ownerRes = await api.post('/houseowner', ownerFormDataToSend, {
-    //                 headers: {
-    //                     'Content-Type': 'multipart/form-data',
-    //                 },
-    //             });
-
-    //             if (ownerRes.data.success) {
-    //                 houseOwnerId = ownerRes.data.data.id;
-    //             }
-    //         }
-
-    //         const updateData = {
-    //             ...formData,
-    //             house_owner_id: houseOwnerId
-    //         };
-
-    //         const res = await api.put(`/houses/${house.id}`, updateData);
-    //         if (res.data.success) {
-    //             onUpdated();
-    //         }
-    //     } catch (err) {
-    //         console.error('Error updating house:', err);
-    //         alert('Error updating house. Please try again.');
-    //     } finally {
-    //         setLoading(false);
-    //     }
-    // };
-//     const handleSubmit = async (e) => {
-//     e.preventDefault();
-//     setLoading(true);
-    
-//     try {
-//         let houseOwnerId = formData.houseowner_id;
-
-//         if (formData.status === 'occupied' && !houseOwnerId) {
-//             const ownerFormDataToSend = new FormData();
-//             ownerFormDataToSend.append('name', ownerFormData.name);
-//             ownerFormDataToSend.append('nic', ownerFormData.nic);
-//             ownerFormDataToSend.append('occupation', ownerFormData.occupation);
-//             ownerFormDataToSend.append('country', ownerFormData.country);
-//             ownerFormDataToSend.append('mobile', ownerFormData.mobile);
-//             ownerFormDataToSend.append('email', ownerFormData.email); // Make sure email is included
-//             ownerFormDataToSend.append('occupied_way', ownerFormData.occupied_way);
-//             ownerFormDataToSend.append('apartment_id', apartment_id);
-//             if (file) {
-//                 ownerFormDataToSend.append('proof', file);
-//             }
-
-//             const ownerRes = await api.post('/houseowner', ownerFormDataToSend, {
-//                 headers: {
-//                     'Content-Type': 'multipart/form-data',
-//                 },
-//             });
-
-//             if (ownerRes.data.success) {
-//                 houseOwnerId = ownerRes.data.data.id;
-//                 // Update formData with the new houseowner_id
-//                 setFormData(prev => ({ ...prev, houseowner_id: houseOwnerId }));
-//             }
-//         }
-
-//         const updateData = {
-//             ...formData,
-//             house_owner_id: houseOwnerId
-//         };
-
-//         const res = await api.put(`/houses/${house.id}`, updateData);
-//         if (res.data.success) {
-//             onUpdated();
-//             // Return the houseOwnerId for use in setup
-//             return houseOwnerId;
-//         }
-//     } catch (err) {
-//         console.error('Error updating house:', err);
-//         alert('Error updating house. Please try again.');
-//     } finally {
-//         setLoading(false);
-//     }
-// };
 
 const handleSubmit = async (e) => {
     e.preventDefault();
@@ -358,7 +258,7 @@ const handleSubmit = async (e) => {
 
     return (
         <form onSubmit={handleSubmit} className="flex flex-col max-h-[80vh]">
-            <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+            <div className="flex-1 overflow-y-auto space-y-4 pr-2 pl-1">
                 {/* Basic House Information */}
                 <div className="space-y-4">
                     <div>

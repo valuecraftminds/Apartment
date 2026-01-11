@@ -100,13 +100,6 @@ export default function Sidebar() {
       icon: Users, 
       isConstant: false 
     },
-    role_management: { 
-      id: 'role_management', 
-      name: 'Roles', 
-      path: '/role', 
-      icon: UserCog, 
-      isConstant: false 
-    },
     apartments_management: { 
       id: 'apartments_management', 
       name: 'Apartments', 
@@ -159,7 +152,6 @@ export default function Sidebar() {
   const getAdminNavigationItems = () => [
     'admin_dashboard',
     'users_management', 
-    'role_management',
     'apartments_management',
     'expenses_management',
     'complaint_management',

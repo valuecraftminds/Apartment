@@ -1013,7 +1013,7 @@ export default function AdminDashboard() {
             {/* Stats Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
               {/* Total Users Card */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
+              {/* <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300">Total Users</h3>
@@ -1034,7 +1034,7 @@ export default function AdminDashboard() {
                     {totalUsers > 0 ? 'Active system' : 'No users yet'}
                   </span>
                 </div>
-              </div>
+              </div> */}
               
               {/* Total Apartments Card */}
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
@@ -1061,7 +1061,7 @@ export default function AdminDashboard() {
               </div>
 
               {/* Total Roles Card */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
+              {/* <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300">User Roles</h3>
@@ -1082,7 +1082,7 @@ export default function AdminDashboard() {
                     {totalRoles > 0 ? 'Role system active' : 'No roles defined'}
                   </span>
                 </div>
-              </div>
+              </div> */}
             </div>
             
             {/* Recent Activity Section */}

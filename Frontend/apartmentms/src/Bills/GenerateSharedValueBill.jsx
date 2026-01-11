@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import api from '../api/axios';
 
-export default function GenerateSharedValueBill({ onClose, onCreated }) {
+export default function GenerateSharedValueBill({ onClose, onCreated,apartment_id }) {
     const [loadingBills, setLoadingBills] = useState(false);
     const [generating, setGenerating] = useState(false);
     const [error, setError] = useState(null);
@@ -17,6 +17,7 @@ export default function GenerateSharedValueBill({ onClose, onCreated }) {
     const [apartments, setApartments] = useState([]);
     const [loadingApartments, setLoadingApartments] = useState(false);
     const [dueDate, setDueDate] = useState('');
+    const [houseTypes, setHouseTypes] = useState([]);
     
     // New state for selections
     const [selectedApartment, setSelectedApartment] = useState('');
@@ -291,8 +292,22 @@ export default function GenerateSharedValueBill({ onClose, onCreated }) {
         return 0;
     };
 
+    useEffect(() => {
+        const fetchHouseTypes = async () => {
+            try {
+                const res = await api.get(`/housetype?apartment_id=${apartment_id}`, {
+                    headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+                });
+                setHouseTypes(res.data.data || []);
+            } catch (err) {
+                console.error("Error fetching house types:", err);
+            }
+        };
+        fetchHouseTypes();
+    }, [apartment_id]);
+
     return (
-        <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+        <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 pl-1">
             {error && (
                 <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded text-sm">
                     {error}

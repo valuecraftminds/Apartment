@@ -157,7 +157,7 @@ async function sendVerificationEmail(toEmail, plainToken, userId) {
 }
 
 // Send password reset email
-async function sendPasswordResetEmail(toEmail, resetToken, userId) {
+async function sendPasswordResetEmail(toEmail, resetToken, userId, userType = 'user') {
   try {
     console.log(`📧 Attempting to send password reset email to: ${toEmail}`);
     
@@ -166,8 +166,10 @@ async function sendPasswordResetEmail(toEmail, resetToken, userId) {
       throw new Error('SMTP transporter not verified');
     }
 
-    const resetUrl = `${process.env.FRONTEND_URL || 'https://apmt.apivcm.shop'}/reset-password?token=${resetToken}&id=${userId}`;
+    // FIXED: Use consistent parameter name 'user_type'
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&id=${userId}&user_type=${userType}`;
     
+    console.log(`🔗 Reset URL generated: ${resetUrl}`);
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
         <div style="text-align: center; margin-bottom: 20px;">

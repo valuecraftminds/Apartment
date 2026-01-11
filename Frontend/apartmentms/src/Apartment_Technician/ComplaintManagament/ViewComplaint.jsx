@@ -28,6 +28,7 @@ import {
 import { AuthContext } from '../../contexts/AuthContext';
 import api from '../../api/axios';
 import Sidebar from '../../components/Sidebar';
+import Navbar from '../../components/Navbar';
 
 export default function ViewComplaint() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -260,34 +261,36 @@ export default function ViewComplaint() {
   }
 
   return (
-    // <div className='flex h-screen bg-gray-100 dark:bg-gray-900 w-screen transition-colors duration-200'>
-    <div className="p-4 md:p-6">
-        <Sidebar onCollapse={setIsSidebarCollapsed} />
-      <div className="mx-auto w-full max-w-7xl">
-        {/* Header */}
-        <div className='flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-gray-800 rounded-xl p-4 mb-6 gap-4'>
-          <div className='flex items-center'>
-            <AlertCircle size={32} className='text-purple-600 dark:text-purple-400 mr-3'/>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
-                All Complaints
-              </h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Manage and assign complaints to technicians
-              </p>
+    <div className="flex h-screen bg-gray-100 dark:bg-gray-900 w-screen transition-colors duration-200">
+      <Sidebar onCollapse={setIsSidebarCollapsed} />
+      <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${isSidebarCollapsed ? 'ml-20' : 'ml-64'}`}>
+        <Navbar/>
+        <div className='flex-1 overflow-y-auto p-6'>
+          <div className="mx-auto max-w-7xl">
+            {/* Header */}
+            <div className='flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-gray-800 rounded-xl p-4 mb-6 gap-4'>
+              <div className='flex items-center'>
+                <AlertCircle size={32} className='text-purple-600 dark:text-purple-400 mr-3'/>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
+                    All Complaints
+                  </h1>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Manage and assign complaints to technicians
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <button 
+                  onClick={() => window.location.href = '/complaints/reports'}
+                  className='flex items-center gap-2 px-4 py-2 rounded-lg font-semibold shadow transition-all duration-300 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                >
+                  <FileText size={20} />
+                  <span>Generate Report</span>
+                </button>
+              </div>
             </div>
-          </div>
-          
-          <div className="flex items-center space-x-3">
-            <button 
-              onClick={() => window.location.href = '/complaints/reports'}
-              className='flex items-center gap-2 px-4 py-2 rounded-lg font-semibold shadow transition-all duration-300 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-            >
-              <FileText size={20} />
-              <span>Generate Report</span>
-            </button>
-          </div>
-        </div>
 
         {/* Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -572,102 +575,103 @@ export default function ViewComplaint() {
         </div>
       </div>
 
-      {/* Assign to Technician Modal */}
-      {showAssignModal && selectedComplaint && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
-                  Assign Complaint
-                </h2>
-                <button
-                  onClick={() => setShowAssignModal(false)}
-                  className="text-gray-500 hover:text-gray-800 dark:hover:text-white text-xl"
-                >
-                  ✖
-                </button>
-              </div>
-
-              {/* Complaint Info */}
-              <div className="mb-6">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                  {selectedComplaint.complaint_number}: {selectedComplaint.title}
-                </h3>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  <p>Location: {selectedComplaint.apartment_name}, Floor {selectedComplaint.floor_number}, House {selectedComplaint.house_number}</p>
-                  <p>Submitted by: {selectedComplaint.houseowner_name}</p>
-                </div>
-              </div>
-
-              {/* Technician Selection */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Select Technician *
-                </label>
-                {technicians.length === 0 ? (
-                  <div className="text-center py-4 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
-                    <User className="mx-auto text-gray-400 mb-2" size={24} />
-                    <p className="text-gray-500 dark:text-gray-400">No technicians available</p>
-                    <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-                      Add technicians in the Users section first
-                    </p>
-                  </div>
-                ) : (
-                  <select
-                    value={selectedTechnician?.id || ''}
-                    onChange={(e) => {
-                      const tech = technicians.find(t => t.id === e.target.value);
-                      setSelectedTechnician(tech);
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
+        {/* Assign to Technician Modal */}
+        {showAssignModal && selectedComplaint && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                    Assign Complaint
+                  </h2>
+                  <button
+                    onClick={() => setShowAssignModal(false)}
+                    className="text-gray-500 hover:text-gray-800 dark:hover:text-white text-xl"
                   >
-                    <option value="">Select a technician</option>
-                    {technicians.map((tech) => (
-                      <option key={tech.id} value={tech.id}>
-                        {tech.name} ({tech.role})
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
+                    ✖
+                  </button>
+                </div>
 
-              {/* Assignment Note */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Assignment Note (Optional)
-                </label>
-                <textarea
-                  value={assignmentNote}
-                  onChange={(e) => setAssignmentNote(e.target.value)}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
-                  placeholder="Add any specific instructions or notes for the technician..."
-                />
-              </div>
+                {/* Complaint Info */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                    {selectedComplaint.complaint_number}: {selectedComplaint.title}
+                  </h3>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    <p>Location: {selectedComplaint.apartment_name}, Floor {selectedComplaint.floor_number}, House {selectedComplaint.house_number}</p>
+                    <p>Submitted by: {selectedComplaint.houseowner_name}</p>
+                  </div>
+                </div>
 
-              {/* Submit Button */}
-              <div className="flex justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={() => setShowAssignModal(false)}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSubmitAssignment}
-                  disabled={!selectedTechnician}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Assign Complaint
-                </button>
+                {/* Technician Selection */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Select Technician *
+                  </label>
+                  {technicians.length === 0 ? (
+                    <div className="text-center py-4 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+                      <User className="mx-auto text-gray-400 mb-2" size={24} />
+                      <p className="text-gray-500 dark:text-gray-400">No technicians available</p>
+                      <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
+                        Add technicians in the Users section first
+                      </p>
+                    </div>
+                  ) : (
+                    <select
+                      value={selectedTechnician?.id || ''}
+                      onChange={(e) => {
+                        const tech = technicians.find(t => t.id === e.target.value);
+                        setSelectedTechnician(tech);
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
+                    >
+                      <option value="">Select a technician</option>
+                      {technicians.map((tech) => (
+                        <option key={tech.id} value={tech.id}>
+                          {tech.name} ({tech.role})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                {/* Assignment Note */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Assignment Note (Optional)
+                  </label>
+                  <textarea
+                    value={assignmentNote}
+                    onChange={(e) => setAssignmentNote(e.target.value)}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
+                    placeholder="Add any specific instructions or notes for the technician..."
+                  />
+                </div>
+
+                {/* Submit Button */}
+                <div className="flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowAssignModal(false)}
+                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSubmitAssignment}
+                    disabled={!selectedTechnician}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Assign Complaint
+                  </button>
+                </div>
               </div>
             </div>
           </div>
+        )}
         </div>
-      )}
+      </div>
     </div>
-    // </div>
   );
 }

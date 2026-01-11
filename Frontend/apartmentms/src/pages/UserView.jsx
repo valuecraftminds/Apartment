@@ -8,6 +8,7 @@ import { AuthContext } from '../contexts/AuthContext';
 import CreateUser from '../Users/CreateUser';
 import EditUser from '../Users/EditUser';
 import UserApartmentsModal from '../Users/UserApartmentModal';
+import Role from './Role';
 
 export default function UserView() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -26,6 +27,7 @@ export default function UserView() {
   const [deletingUser, setDeletingUser] = useState(null); 
    const [showAssignModal, setShowAssignModal] = useState(false);
   const [assigningUser, setAssigningUser] = useState(null); 
+  const [activeTab, setActiveTab] = useState("users");
 
   // Load users and roles
   const loadUsers = async () => {
@@ -201,18 +203,42 @@ export default function UserView() {
             <div className="flex items-center justify-between bg-white dark:bg-gray-800 rounded-2xl p-4 mb-6">
               <div className="flex items-center">
                 <Users size={40} className="text-purple-600 dark:text-purple-400 mr-3" />
-                <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Users</h1>
+                <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Users Management</h1>
               </div>
+            </div>
+
+            <div className="flex space-x-4 border-b border-gray-300 dark:border-gray-700 mb-4">
+              <button
+                  onClick={() => setActiveTab("users")}
+                  className={`px-4 py-2 font-semibold 
+                      ${activeTab === "users"
+                          ? "text-purple-600 border-b-2 border-purple-600"
+                          : "text-gray-600 dark:text-gray-300 hover:text-purple-600"}`}
+              >
+                  User Info
+              </button>
+              <button
+                  onClick={() => setActiveTab("roles")}
+                  className={`px-4 py-2 font-semibold 
+                      ${activeTab === "roles"
+                          ? "text-purple-600 border-b-2 border-purple-600"
+                          : "text-gray-600 dark:text-gray-300 hover:text-purple-600"}`}
+              >
+                  User Roles 
+              </button>
+          </div>
+
+          {activeTab === "users" && (
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-6">
               <button
                 onClick={handleAddNew}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold shadow-md transition-all duration-300 text-white bg-purple-600 hover:bg-purple-700 hover:scale-105"
               >
                 <Plus size={20} />
-                <span>Add New</span>
+                <span>Add User</span>
               </button>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6">
+              </div>
               {loading ? (
                 <div className="flex justify-center items-center py-12">
                   <Loader size={32} className="animate-spin text-purple-600" />
@@ -243,7 +269,6 @@ export default function UserView() {
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Mobile</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Role</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Created</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
                       </tr>
                     </thead>
@@ -326,11 +351,7 @@ export default function UserView() {
                                 </span>
                               </div>
                             </td>
-
-                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                              {formatDate(user.created_at)}
-                            </td>
-
+                            
                             <td className="whitespace-nowrap text-sm font-medium">
                               <div className="flex">
                                 <button
@@ -401,6 +422,12 @@ export default function UserView() {
                 </div>
               )}
             </div>
+          )}
+          {activeTab === "roles" && (
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6">
+              <Role/>
+            </div>
+          )}
           </div>
         </div>
       </div>
