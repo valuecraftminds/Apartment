@@ -145,6 +145,13 @@ export default function Sidebar() {
       path: '/my-bills',
       icon: CreditCard,
       isConstant: false
+    },
+    my_complaints: {
+      id: 'my_complaints',
+      name: 'My Complaints',
+      path: '/my-complaints',
+      icon: ClipboardList,
+      isConstant: false
     }
   };
 

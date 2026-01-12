@@ -45,6 +45,7 @@ import HouseOwnerHouseView from './HouseOwner/HouseOwnerHouseView'
 import HouseOwnerViewBills from './HouseOwner/HouseOwnerViewBills'
 import HouseOwnerComplaints from './HouseOwner/HouseOwnerComplaint'
 import ViewComplaint from './Apartment_Technician/ComplaintManagament/ViewComplaint'
+import MyComplaints from './Users/MyComplaints'
 
 export default function App() {
   return (
@@ -94,6 +95,7 @@ export default function App() {
         <Route path='/houseowner/houseowner-billview' element= {<HouseOwnerViewBills/>}/>
         <Route path='/houseowner/complaints' element= {<HouseOwnerComplaints/>}/>
         <Route path='/view-complaints' element= {<ViewComplaint/>}/>
+        <Route path='/my-complaints' element= {<MyComplaints/>}/>
       </Routes>
       </AuthProvider>
     </BrowserRouter>

@@ -77,6 +77,13 @@ const RoleAssignmentModal = ({ role, onClose, onAssign }) => {
       description: 'View and manage your bills',
       category: 'Financial',
       icon: 'CreditCard',
+    },
+    {
+      id: 'my_complaints',
+      name: 'My Complaints',
+      description: 'View and manage your complaints',
+      category: 'Personal',
+      icon: 'ClipboardList',
     }
   ];
 

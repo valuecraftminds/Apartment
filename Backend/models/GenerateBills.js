@@ -220,5 +220,164 @@ class GenerateBills{
             return [];
         }
     }
+
+    // NEW: Get square footage for houses
+    static async getHousesWithSquareFootage(apartment_id, bill_id, floor_ids = [], house_ids = []) {
+        try {
+            console.log('Getting houses with square footage for:', {
+                apartment_id,
+                bill_id,
+                floor_ids,
+                house_ids
+            });
+
+            let query = `
+                SELECT 
+                    h.id as house_id,
+                    h.houseowner_id, 
+                    h.floor_id, 
+                    h.housetype_id,
+                    h.house_id as house_number,
+                    f.floor_id as floor_number,
+                    ht.sqrfeet as square_footage,
+                    ht.name as house_type_name,
+                    ba.id as bill_assignment_id
+                FROM houses h
+                LEFT JOIN housetype ht ON h.housetype_id = ht.id
+                LEFT JOIN floors f ON h.floor_id = f.id
+                LEFT JOIN bill_assignments ba ON h.id = ba.house_id AND ba.bill_id = ?
+                WHERE h.apartment_id = ? 
+                AND h.is_active = 1
+                AND h.status IN ('occupied', 'vacant') -- Only active houses
+            `;
+            
+            const params = [bill_id, apartment_id];
+            
+            // Check if bill is assigned
+            query += ' AND ba.id IS NOT NULL';
+            
+            if (floor_ids.length > 0) {
+                query += ' AND h.floor_id IN (?)';
+                params.push(floor_ids);
+            }
+            
+            if (house_ids.length > 0) {
+                query += ' AND h.id IN (?)';
+                params.push(house_ids);
+            }
+            
+            query += ' ORDER BY f.floor_id, h.house_id';
+            
+            console.log('Query:', query);
+            console.log('Params:', params);
+            
+            const [rows] = await pool.execute(query, params);
+            console.log('Found rows:', rows.length);
+            
+            // Debug: Log first few rows
+            if (rows.length > 0) {
+                console.log('Sample house data:', rows.slice(0, 3).map(r => ({
+                    house_id: r.house_id,
+                    house_number: r.house_number,
+                    housetype_id: r.housetype_id,
+                    square_footage: r.square_footage,
+                    bill_assignment: r.bill_assignment_id
+                })));
+            }
+            
+            return rows;
+        } catch (error) {
+            console.error('Error getting houses with square footage:', error);
+            console.error('Error details:', error.message);
+            console.error('Error stack:', error.stack);
+            return [];
+        }
+    }
+
+    // NEW: Calculate bills by square footage
+    static async calculateBySquareFootage(billData) {
+        const { bill_id, apartment_id, floor_ids, house_ids, totalAmount } = billData;
+        
+        console.log('Starting square footage calculation:', billData);
+        
+        // Get houses with their square footage
+        const houses = await this.getHousesWithSquareFootage(apartment_id, bill_id, floor_ids, house_ids);
+        
+        console.log('Houses found:', houses.length);
+        
+        if (houses.length === 0) {
+            // Log more details for debugging
+            const errorMsg = 'No houses found with square footage data. Check: ';
+            errorMsg += '1. Are houses linked to house types? ';
+            errorMsg += '2. Is the bill assigned to these houses? ';
+            errorMsg += '3. Are the houses active?';
+            console.error(errorMsg);
+            throw new Error(errorMsg);
+        }
+        
+        // Check if any house is missing square footage
+        const housesWithoutSqrFeet = houses.filter(house => !house.square_footage || house.square_footage <= 0);
+        if (housesWithoutSqrFeet.length > 0) {
+            console.warn('Some houses are missing square footage:', housesWithoutSqrFeet.map(h => ({
+                house_id: h.house_id,
+                house_number: h.house_number,
+                housetype_id: h.housetype_id
+            })));
+        }
+        
+        // Calculate total square footage
+        const totalSqrFeet = houses.reduce((sum, house) => sum + (parseFloat(house.square_footage) || 0), 0);
+        
+        console.log('Total square footage:', totalSqrFeet);
+        
+        if (totalSqrFeet <= 0) {
+            throw new Error(`Total square footage must be greater than 0. Found: ${totalSqrFeet}`);
+        }
+        
+        // Calculate price per sqr ft
+        const pricePerSqrFt = parseFloat(totalAmount) / totalSqrFeet;
+        
+        console.log('Price per sqr ft:', pricePerSqrFt);
+        console.log('Total amount:', totalAmount);
+        
+        // Calculate amount for each house
+        const bills = houses.map(house => {
+            const sqrFeet = parseFloat(house.square_footage) || 0;
+            const unitPrice = sqrFeet * pricePerSqrFt;
+            
+            return {
+                house_id: house.house_id,
+                houseowner_id: house.houseowner_id,
+                floor_id: house.floor_id,
+                square_footage: sqrFeet,
+                unitPrice: unitPrice,
+                totalAmount: unitPrice,
+                pricePerSqrFt: pricePerSqrFt,
+                house_number: house.house_number,
+                floor_number: house.floor_number,
+                house_type_name: house.house_type_name
+            };
+        });
+        
+        // Log calculation summary
+        console.log('Calculation summary:', {
+            totalHouses: houses.length,
+            totalSqrFeet: totalSqrFeet,
+            pricePerSqrFt: pricePerSqrFt,
+            totalAmount: parseFloat(totalAmount),
+            sampleBill: bills[0] // Show first bill as sample
+        });
+        
+        return {
+            bills,
+            summary: {
+                totalSqrFeet,
+                pricePerSqrFt,
+                totalHouses: houses.length,
+                totalAmount: parseFloat(totalAmount),
+                calculation_method: 'square_footage'
+            }
+        };
+    }
 }
 module.exports = GenerateBills;

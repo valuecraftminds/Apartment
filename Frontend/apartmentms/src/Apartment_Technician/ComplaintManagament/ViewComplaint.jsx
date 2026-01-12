@@ -1,4 +1,4 @@
-// pages/ViewComplaint.jsx
+//ViewComplaint.jsx
 import React, { useState, useEffect, useContext } from 'react';
 
 import { 
@@ -53,51 +53,85 @@ export default function ViewComplaint() {
     resolved: 0
   });
   const { auth } = useContext(AuthContext);
+  const [categories, setCategories] = useState(['General', 'Electrical', 'Plumbing', 'Carpentry', 'Painting', 'Cleaning', 'Security', 'Other']);
+  const [selectedCategory, setSelectedCategory] = useState('');
 
   // Fetch complaints
+  // const fetchComplaints = async () => {
+  //   try {
+  //     setLoading(true);
+  //     const res = await api.get('/complaints', {
+  //       headers: { 
+  //         Authorization: `Bearer ${auth.accessToken}`
+  //       },
+  //       params: filters
+  //     });
+      
+  //     if (res.data.success) {
+  //       setComplaints(res.data.data || []);
+  //       setFilteredComplaints(res.data.data || []);
+  //       calculateStatistics(res.data.data || []);
+  //     }
+  //   } catch (err) {
+  //     console.error('Failed to fetch complaints:', err);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
   const fetchComplaints = async () => {
     try {
-      setLoading(true);
-      const res = await api.get('/complaints', {
-        headers: { 
-          Authorization: `Bearer ${auth.accessToken}`
-        },
-        params: filters
-      });
-      
-      if (res.data.success) {
-        setComplaints(res.data.data || []);
-        setFilteredComplaints(res.data.data || []);
-        calculateStatistics(res.data.data || []);
-      }
+        setLoading(true);
+        const res = await api.get('/complaints', {
+            headers: { 
+                Authorization: `Bearer ${auth.accessToken}`
+            },
+            params: filters
+        });
+        
+        if (res.data.success) {
+            setComplaints(res.data.data || []);
+            setFilteredComplaints(res.data.data || []);
+            calculateStatistics(res.data.data || []);
+            if (res.data.categories) {
+                setCategories(res.data.categories);
+            }
+        }
     } catch (err) {
-      console.error('Failed to fetch complaints:', err);
+        console.error('Failed to fetch complaints:', err);
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
+};
+
 
   // Fetch technicians
-  const fetchTechnicians = async () => {
+const fetchTechnicians = async (category = '') => {
     try {
-      const res = await api.get('/users', {
-        headers: { 
-          Authorization: `Bearer ${auth.accessToken}`
+        const params = {};
+        if (category) {
+            params.category = category;
         }
-      });
-      
-      if (res.data.success) {
-        // Filter for technicians (assuming role name contains "technician")
-        const techs = res.data.data.filter(user => 
-          user.role?.toLowerCase().includes('technician') || 
-          user.role?.toLowerCase().includes('maintenance')
-        );
-        setTechnicians(techs);
-      }
+        
+        const res = await api.get('/complaints/technicians/category', {
+            headers: { 
+                Authorization: `Bearer ${auth.accessToken}`
+            },
+            params: params
+        });
+        
+        if (res.data.success) {
+            // Map the data to include proper name field
+            const techs = res.data.data.map(tech => ({
+                ...tech,
+                // Use the 'name' field from database or combine firstname/lastname
+                name: tech.name || `${tech.firstname || ''} ${tech.lastname || ''}`.trim()
+            }));
+            setTechnicians(techs);
+        }
     } catch (err) {
-      console.error('Failed to fetch technicians:', err);
+        console.error('Failed to fetch technicians:', err);
     }
-  };
+};
 
   useEffect(() => {
     if (auth.accessToken) {
@@ -194,12 +228,21 @@ export default function ViewComplaint() {
     }
   };
 
-  const handleAssignComplaint = (complaint) => {
+  // Update the handleAssignComplaint function
+const handleAssignComplaint = (complaint) => {
     setSelectedComplaint(complaint);
     setSelectedTechnician(null);
     setAssignmentNote('');
+    
+    // Set category from complaint or default
+    const complaintCategory = complaint.category || 'General';
+    setSelectedCategory(complaintCategory);
+    
+    // Fetch technicians for this category
+    fetchTechnicians(complaintCategory);
+    
     setShowAssignModal(true);
-  };
+};
 
   const handleSubmitAssignment = async () => {
     if (!selectedTechnician) {
@@ -247,6 +290,25 @@ export default function ViewComplaint() {
       alert(err.response?.data?.message || 'Failed to update status');
     }
   };
+
+  const getCategoryColor = (category) => {
+    switch (category.toLowerCase()) {
+        case 'electrical':
+            return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+        case 'plumbing':
+            return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
+        case 'carpentry':
+            return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300';
+        case 'painting':
+            return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+        case 'cleaning':
+            return 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300';
+        case 'security':
+            return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+        default:
+            return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+    }
+};
 
   // You'll need to add this API endpoint in your backend
   // router.patch('/:id/assign', authenticateToken, complaintController.assignComplaint);
@@ -432,6 +494,25 @@ export default function ViewComplaint() {
               </select>
             </div>
 
+            {/* Category Filter */}
+            <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    Category
+                </label>
+                <select
+                    value={filters.category || 'all'}
+                    onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
+                >
+                    <option value="all">All Categories</option>
+                    {categories.map((category) => (
+                        <option key={category} value={category}>
+                            {category}
+                        </option>
+                    ))}
+                </select>
+            </div>
+
             {/* Clear Filters Button */}
             <div className="flex items-end">
               <button
@@ -578,98 +659,144 @@ export default function ViewComplaint() {
         {/* Assign to Technician Modal */}
         {showAssignModal && selectedComplaint && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
-                    Assign Complaint
-                  </h2>
-                  <button
-                    onClick={() => setShowAssignModal(false)}
-                    className="text-gray-500 hover:text-gray-800 dark:hover:text-white text-xl"
-                  >
-                    ✖
-                  </button>
-                </div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
+                  <div className="p-6">
+                      <div className="flex justify-between items-center mb-6">
+                          <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                              Assign Complaint
+                          </h2>
+                          <button
+                              onClick={() => setShowAssignModal(false)}
+                              className="text-gray-500 hover:text-gray-800 dark:hover:text-white text-xl"
+                          >
+                              ✖
+                          </button>
+                      </div>
 
-                {/* Complaint Info */}
-                <div className="mb-6">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                    {selectedComplaint.complaint_number}: {selectedComplaint.title}
-                  </h3>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    <p>Location: {selectedComplaint.apartment_name}, Floor {selectedComplaint.floor_number}, House {selectedComplaint.house_number}</p>
-                    <p>Submitted by: {selectedComplaint.houseowner_name}</p>
+                      {/* Complaint Info */}
+                      <div className="mb-6">
+                          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                              {selectedComplaint.complaint_number}: {selectedComplaint.title}
+                          </h3>
+                          <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                              <p>Location: {selectedComplaint.apartment_name}, Floor {selectedComplaint.floor_number}, House {selectedComplaint.house_number}</p>
+                              <p>Submitted by: {selectedComplaint.houseowner_name}</p>
+                              <div className="flex items-center mt-2">
+                                  <span className="mr-2">Category:</span>
+                                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getCategoryColor(selectedComplaint.category || 'General')}`}>
+                                      {selectedComplaint.category || 'General'}
+                                  </span>
+                              </div>
+                          </div>
+                      </div>
+
+                      {/* Category Selection */}
+                      <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                              Complaint Category
+                          </label>
+                          <select
+                              value={selectedCategory}
+                              onChange={(e) => {
+                                  setSelectedCategory(e.target.value);
+                                  fetchTechnicians(e.target.value);
+                                  setSelectedTechnician(null);
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
+                          >
+                              {categories.map((cat) => (
+                                  <option key={cat} value={cat}>
+                                      {cat}
+                                  </option>
+                              ))}
+                          </select>
+                      </div>
+
+                      {/* Technician Selection */}
+                      <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                              Select Technician *
+                          </label>
+                          {technicians.length === 0 ? (
+                              <div className="text-center py-4 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+                                  <User className="mx-auto text-gray-400 mb-2" size={24} />
+                                  <p className="text-gray-500 dark:text-gray-400">No technicians available for {selectedCategory}</p>
+                                  <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
+                                      Add technicians in the Users section first
+                                  </p>
+                              </div>
+                          ) : (
+                              <div className="space-y-2 max-h-60 overflow-y-auto">
+                                  {technicians.map((tech) => (
+                                    <div
+                                        key={tech.id}
+                                        className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                                            selectedTechnician?.id === tech.id
+                                                ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                                                : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                        }`}
+                                        onClick={() => setSelectedTechnician(tech)}
+                                    >
+                                        <div className="flex justify-between items-center">
+                                            <div>
+                                                <h4 className="font-medium text-gray-900 dark:text-white">
+                                                    {tech.name || `${tech.firstname} ${tech.lastname}`}
+                                                </h4>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                                    {tech.role_name || tech.role} 
+                                                    {tech.specialization ? ` • ${tech.specialization}` : ''}
+                                                </p>
+                                                {tech.mobile && (
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                        📱 {tech.mobile}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            {selectedTechnician?.id === tech.id && (
+                                                <Check className="text-purple-600 dark:text-purple-400" size={20} />
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                              </div>
+                          )}
+                      </div>
+
+                      {/* Assignment Note */}
+                      <div className="mb-6">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                              Assignment Note (Optional)
+                          </label>
+                          <textarea
+                              value={assignmentNote}
+                              onChange={(e) => setAssignmentNote(e.target.value)}
+                              rows={3}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
+                              placeholder="Add any specific instructions or notes for the technician..."
+                          />
+                      </div>
+
+                      {/* Submit Button */}
+                      <div className="flex justify-end space-x-3">
+                          <button
+                              type="button"
+                              onClick={() => setShowAssignModal(false)}
+                              className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                          >
+                              Cancel
+                          </button>
+                          <button
+                              onClick={handleSubmitAssignment}
+                              disabled={!selectedTechnician}
+                              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                              Assign Complaint
+                          </button>
+                      </div>
                   </div>
-                </div>
-
-                {/* Technician Selection */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Select Technician *
-                  </label>
-                  {technicians.length === 0 ? (
-                    <div className="text-center py-4 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
-                      <User className="mx-auto text-gray-400 mb-2" size={24} />
-                      <p className="text-gray-500 dark:text-gray-400">No technicians available</p>
-                      <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-                        Add technicians in the Users section first
-                      </p>
-                    </div>
-                  ) : (
-                    <select
-                      value={selectedTechnician?.id || ''}
-                      onChange={(e) => {
-                        const tech = technicians.find(t => t.id === e.target.value);
-                        setSelectedTechnician(tech);
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
-                    >
-                      <option value="">Select a technician</option>
-                      {technicians.map((tech) => (
-                        <option key={tech.id} value={tech.id}>
-                          {tech.name} ({tech.role})
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-
-                {/* Assignment Note */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Assignment Note (Optional)
-                  </label>
-                  <textarea
-                    value={assignmentNote}
-                    onChange={(e) => setAssignmentNote(e.target.value)}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
-                    placeholder="Add any specific instructions or notes for the technician..."
-                  />
-                </div>
-
-                {/* Submit Button */}
-                <div className="flex justify-end space-x-3">
-                  <button
-                    type="button"
-                    onClick={() => setShowAssignModal(false)}
-                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSubmitAssignment}
-                    disabled={!selectedTechnician}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Assign Complaint
-                  </button>
-                </div>
               </div>
-            </div>
           </div>
-        )}
+      )}
         </div>
       </div>
     </div>

@@ -85,9 +85,117 @@ const generateBillController = {
         }
     },
 
+    // async generateMultipleBills(req, res) {
+    //     try {
+    //         const { bill_id, year, month, totalAmount, apartment_id, selected_floors, selected_houses } = req.body;
+    //         const company_id = req.user.company_id;
+
+    //         if (!bill_id || !month || year === undefined || !totalAmount || !apartment_id) {
+    //             return res.status(400).json({
+    //                 success: false,
+    //                 message: 'Bill ID, year, month, total amount, and apartment are required'
+    //             });
+    //         }
+
+    //         // Get assigned houses based on selection
+    //         let assignedHouses = [];
+    //         if (selected_houses && selected_houses.length > 0) {
+    //             // Generate for specific houses
+    //             assignedHouses = await GenerateBills.getAssignedHouses(bill_id, apartment_id);
+    //             assignedHouses = assignedHouses.filter(house => selected_houses.includes(house.house_id));
+    //         } else if (selected_floors && selected_floors.length > 0) {
+    //             // Generate for all houses in selected floors
+    //             for (const floor_id of selected_floors) {
+    //                 const floorHouses = await GenerateBills.getAssignedHouses(bill_id, apartment_id, floor_id);
+    //                 assignedHouses = assignedHouses.concat(floorHouses);
+    //             }
+    //         } else {
+    //             // Generate for all houses in apartment (original behavior)
+    //             assignedHouses = await GenerateBills.getAssignedHouses(bill_id, apartment_id);
+    //         }
+
+    //         if (assignedHouses.length === 0) {
+    //             return res.status(400).json({
+    //                 success: false,
+    //                 message: 'No houses found for the selected criteria'
+    //             });
+    //         }
+
+    //         // Calculate unit price
+    //         const unitPrice = parseFloat(totalAmount) / assignedHouses.length;
+
+    //         // Prepare bills data
+    //         const billsData = assignedHouses.map(house => ({
+    //             year: parseInt(year),
+    //             month,
+    //             company_id,
+    //             bill_id,
+    //             totalAmount: unitPrice, // Individual house amount
+    //             assignedHouses: 1, // Each bill is for one house
+    //             unitPrice: unitPrice,
+    //             apartment_id,
+    //             floor_id: house.floor_id,
+    //             house_id: house.house_id
+    //         }));
+
+    //         // Check for duplicates and filter
+    //         const billsToCreate = [];
+    //         for (const billData of billsData) {
+    //             const isDuplicate = await GenerateBills.checkDuplicate(
+    //                 company_id, bill_id, billData.year, month, apartment_id, billData.house_id
+    //             );
+    //             if (!isDuplicate) {
+    //                 billsToCreate.push(billData);
+    //             }
+    //         }
+
+    //         if (billsToCreate.length === 0) {
+    //             return res.status(400).json({
+    //                 success: false,
+    //                 message: 'All bills for the selected houses have already been generated'
+    //             });
+    //         }
+
+    //         // Create bills
+    //         const generatedBills = await GenerateBills.createMultiple(billsToCreate);
+
+    //           // Create bill payment records for each generated bill
+    //         for (const bill of generatedBills) {
+    //             const houseowner_id = await GenerateBills.getHouseOwnerId(bill.house_id);
+    //             const billPaymentId = `billpay_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    //             await GenerateBills.createBillPayment({
+    //                 id: billPaymentId,
+    //                 company_id,
+    //                 apartment_id: bill.apartment_id,
+    //                 floor_id: bill.floor_id || null,
+    //                 house_id: bill.house_id || null,
+    //                 houseowner_id: houseowner_id,
+    //                 bill_id: bill.bill_id,
+    //                 generate_bills_id: bill.id,
+    //                 pendingAmount: bill.unitPrice, 
+    //                 due_date: req.body.due_date || null
+    //             });
+    //         }
+
+    //         res.status(201).json({
+    //             success: true,
+    //             message: `Successfully generated ${generatedBills.length} bills`,
+    //             data: generatedBills
+    //         });
+
+    //     } catch (err) {
+    //         console.error('Generate multiple bills error:', err);
+    //         res.status(500).json({
+    //             success: false,
+    //             message: 'Server error while generating bills'
+    //         });
+    //     }
+    // },
+    // In controllers/generateBillController.js - Update generateMultipleBills method:
+
     async generateMultipleBills(req, res) {
         try {
-            const { bill_id, year, month, totalAmount, apartment_id, selected_floors, selected_houses } = req.body;
+            const { bill_id, year, month, totalAmount, apartment_id, selected_floors, selected_houses, calculation_method, due_date } = req.body;
             const company_id = req.user.company_id;
 
             if (!bill_id || !month || year === undefined || !totalAmount || !apartment_id) {
@@ -97,59 +205,100 @@ const generateBillController = {
                 });
             }
 
-            // Get assigned houses based on selection
-            let assignedHouses = [];
-            if (selected_houses && selected_houses.length > 0) {
-                // Generate for specific houses
-                assignedHouses = await GenerateBills.getAssignedHouses(bill_id, apartment_id);
-                assignedHouses = assignedHouses.filter(house => selected_houses.includes(house.house_id));
-            } else if (selected_floors && selected_floors.length > 0) {
-                // Generate for all houses in selected floors
-                for (const floor_id of selected_floors) {
-                    const floorHouses = await GenerateBills.getAssignedHouses(bill_id, apartment_id, floor_id);
-                    assignedHouses = assignedHouses.concat(floorHouses);
-                }
-            } else {
-                // Generate for all houses in apartment (original behavior)
-                assignedHouses = await GenerateBills.getAssignedHouses(bill_id, apartment_id);
-            }
-
-            if (assignedHouses.length === 0) {
+            // Validate calculation method
+            const validMethods = ['house_count', 'square_footage'];
+            const calcMethod = calculation_method || 'house_count';
+            
+            if (!validMethods.includes(calcMethod)) {
                 return res.status(400).json({
                     success: false,
-                    message: 'No houses found for the selected criteria'
+                    message: 'Invalid calculation method'
                 });
             }
 
-            // Calculate unit price
-            const unitPrice = parseFloat(totalAmount) / assignedHouses.length;
+            let billsToCreate = [];
+            let summary = null;
 
-            // Prepare bills data
-            const billsData = assignedHouses.map(house => ({
-                year: parseInt(year),
-                month,
-                company_id,
-                bill_id,
-                totalAmount: unitPrice, // Individual house amount
-                assignedHouses: 1, // Each bill is for one house
-                unitPrice: unitPrice,
-                apartment_id,
-                floor_id: house.floor_id,
-                house_id: house.house_id
-            }));
+            if (calcMethod === 'square_footage') {
+                // Calculate by square footage
+                const result = await GenerateBills.calculateBySquareFootage({
+                    bill_id,
+                    apartment_id,
+                    floor_ids: selected_floors || [],
+                    house_ids: selected_houses || [],
+                    totalAmount: parseFloat(totalAmount)
+                });
+                
+                // Prepare bills data for creation
+                billsToCreate = result.bills.map(house => ({
+                    year: parseInt(year),
+                    month,
+                    company_id,
+                    bill_id,
+                    totalAmount: house.unitPrice,
+                    assignedHouses: 1,
+                    unitPrice: house.unitPrice,
+                    apartment_id,
+                    floor_id: house.floor_id,
+                    house_id: house.house_id,
+                    square_footage: house.square_footage,
+                    pricePerSqrFt: house.pricePerSqrFt
+                }));
+                
+                summary = result.summary;
+            } else {
+                // Original house count method (current logic)
+                // Get assigned houses based on selection
+                let assignedHouses = [];
+                if (selected_houses && selected_houses.length > 0) {
+                    assignedHouses = await GenerateBills.getAssignedHouses(bill_id, apartment_id);
+                    assignedHouses = assignedHouses.filter(house => selected_houses.includes(house.house_id));
+                } else if (selected_floors && selected_floors.length > 0) {
+                    for (const floor_id of selected_floors) {
+                        const floorHouses = await GenerateBills.getAssignedHouses(bill_id, apartment_id, floor_id);
+                        assignedHouses = assignedHouses.concat(floorHouses);
+                    }
+                } else {
+                    assignedHouses = await GenerateBills.getAssignedHouses(bill_id, apartment_id);
+                }
+
+                if (assignedHouses.length === 0) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'No houses found for the selected criteria'
+                    });
+                }
+
+                // Calculate unit price
+                const unitPrice = parseFloat(totalAmount) / assignedHouses.length;
+
+                // Prepare bills data
+                billsToCreate = assignedHouses.map(house => ({
+                    year: parseInt(year),
+                    month,
+                    company_id,
+                    bill_id,
+                    totalAmount: unitPrice,
+                    assignedHouses: 1,
+                    unitPrice: unitPrice,
+                    apartment_id,
+                    floor_id: house.floor_id,
+                    house_id: house.house_id
+                }));
+            }
 
             // Check for duplicates and filter
-            const billsToCreate = [];
-            for (const billData of billsData) {
+            const uniqueBillsToCreate = [];
+            for (const billData of billsToCreate) {
                 const isDuplicate = await GenerateBills.checkDuplicate(
                     company_id, bill_id, billData.year, month, apartment_id, billData.house_id
                 );
                 if (!isDuplicate) {
-                    billsToCreate.push(billData);
+                    uniqueBillsToCreate.push(billData);
                 }
             }
 
-            if (billsToCreate.length === 0) {
+            if (uniqueBillsToCreate.length === 0) {
                 return res.status(400).json({
                     success: false,
                     message: 'All bills for the selected houses have already been generated'
@@ -157,9 +306,9 @@ const generateBillController = {
             }
 
             // Create bills
-            const generatedBills = await GenerateBills.createMultiple(billsToCreate);
+            const generatedBills = await GenerateBills.createMultiple(uniqueBillsToCreate);
 
-              // Create bill payment records for each generated bill
+            // Create bill payment records for each generated bill
             for (const bill of generatedBills) {
                 const houseowner_id = await GenerateBills.getHouseOwnerId(bill.house_id);
                 const billPaymentId = `billpay_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -173,21 +322,22 @@ const generateBillController = {
                     bill_id: bill.bill_id,
                     generate_bills_id: bill.id,
                     pendingAmount: bill.unitPrice, 
-                    due_date: req.body.due_date || null
+                    due_date: due_date || null
                 });
             }
 
             res.status(201).json({
                 success: true,
-                message: `Successfully generated ${generatedBills.length} bills`,
-                data: generatedBills
+                message: `Successfully generated ${generatedBills.length} bills using ${calcMethod === 'square_footage' ? 'square footage' : 'house count'} method`,
+                data: generatedBills,
+                summary: calcMethod === 'square_footage' ? summary : null
             });
 
         } catch (err) {
             console.error('Generate multiple bills error:', err);
             res.status(500).json({
                 success: false,
-                message: 'Server error while generating bills'
+                message: 'Server error while generating bills: ' + err.message
             });
         }
     },
@@ -436,6 +586,63 @@ const generateBillController = {
             res.status(500).json({
                 success: false,
                 message: 'Server error while deleting generated bill'
+            });
+        }
+    },
+
+    // In controllers/generateBillController.js - Add a debug endpoint:
+    async debugSquareFootage(req, res) {
+        try {
+            const { bill_id, apartment_id } = req.query;
+            const company_id = req.user.company_id;
+            
+            console.log('Debug square footage request:', { bill_id, apartment_id, company_id });
+            
+            // First, check if bill is assigned to any houses
+            const [assignments] = await pool.execute(
+                'SELECT * FROM bill_assignments WHERE bill_id = ? AND apartment_id = ?',
+                [bill_id, apartment_id]
+            );
+            
+            console.log('Bill assignments:', assignments);
+            
+            // Check houses
+            const [houses] = await pool.execute(
+                `SELECT h.*, ht.sqrfeet, ht.name as house_type_name 
+                FROM houses h 
+                LEFT JOIN housetype ht ON h.housetype_id = ht.id 
+                WHERE h.apartment_id = ? AND h.is_active = 1`,
+                [apartment_id]
+            );
+            
+            console.log('Houses in apartment:', houses.length);
+            
+            // Check house types
+            const [houseTypes] = await pool.execute(
+                'SELECT * FROM housetype WHERE apartment_id = ?',
+                [apartment_id]
+            );
+            
+            res.json({
+                success: true,
+                data: {
+                    bill_assignments_count: assignments.length,
+                    houses_count: houses.length,
+                    houses_with_sqrfeet: houses.filter(h => h.sqrfeet).length,
+                    house_types_count: houseTypes.length,
+                    sample_data: {
+                        assignments: assignments.slice(0, 3),
+                        houses: houses.slice(0, 3),
+                        house_types: houseTypes.slice(0, 3)
+                    }
+                }
+            });
+            
+        } catch (error) {
+            console.error('Debug error:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Debug error: ' + error.message
             });
         }
     }
