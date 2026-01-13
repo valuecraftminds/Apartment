@@ -55,29 +55,35 @@ export default function ViewComplaint() {
   const { auth } = useContext(AuthContext);
   const [categories, setCategories] = useState(['General', 'Electrical', 'Plumbing', 'Carpentry', 'Painting', 'Cleaning', 'Security', 'Other']);
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [loadingApartments, setLoadingApartments] = useState(false);
+  const [apartments, setApartments] = useState([]);
+  const [apartmentMap, setApartmentMap] = useState({});
 
-  // Fetch complaints
-  // const fetchComplaints = async () => {
-  //   try {
-  //     setLoading(true);
-  //     const res = await api.get('/complaints', {
-  //       headers: { 
-  //         Authorization: `Bearer ${auth.accessToken}`
-  //       },
-  //       params: filters
-  //     });
-      
-  //     if (res.data.success) {
-  //       setComplaints(res.data.data || []);
-  //       setFilteredComplaints(res.data.data || []);
-  //       calculateStatistics(res.data.data || []);
-  //     }
-  //   } catch (err) {
-  //     console.error('Failed to fetch complaints:', err);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
+  const loadApartments = async () => {
+        try {
+            setLoadingApartments(true);
+            const result = await api.get('/apartments');
+            if (result.data.success) {
+                setApartments(result.data.data || []);
+                // Also update apartment map
+                const apartmentData = {};
+                result.data.data.forEach(apt => {
+                    apartmentData[apt.id] = apt.name;
+                });
+                setApartmentMap(apartmentData);
+            }
+        } catch (err) {
+            console.error('Error loading apartments:', err);
+            toast.error('Failed to load apartments');
+        } finally {
+            setLoadingApartments(false);
+        }
+    };
+
+    useEffect(() => {
+        loadApartments();
+    }, []);
+  
   const fetchComplaints = async () => {
     try {
         setLoading(true);
@@ -343,7 +349,7 @@ const handleAssignComplaint = (complaint) => {
                 </div>
               </div>
               
-              <div className="flex items-center space-x-3">
+              {/* <div className="flex items-center space-x-3">
                 <button 
                   onClick={() => window.location.href = '/complaints/reports'}
                   className='flex items-center gap-2 px-4 py-2 rounded-lg font-semibold shadow transition-all duration-300 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
@@ -351,7 +357,7 @@ const handleAssignComplaint = (complaint) => {
                   <FileText size={20} />
                   <span>Generate Report</span>
                 </button>
-              </div>
+              </div> */}
             </div>
 
         {/* Statistics */}
@@ -430,25 +436,22 @@ const handleAssignComplaint = (complaint) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             {/* Search */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <Search className="absolute left-3 top-1/3 transform -translate-y-1/2 text-gray-400" size={20} />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search by complaint number, title, or house owner..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white text-gray-500"
               />
             </div>
 
             {/* Status Filter */}
             <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                Status
-              </label>
               <select
                 value={filters.status}
                 onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-3 py-2 text-sm border text-gray-500 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
               >
                 <option value="all">All Status</option>
                 <option value="Pending">Pending</option>
@@ -469,7 +472,7 @@ const handleAssignComplaint = (complaint) => {
               <select
                 value={filters.apartment_id}
                 onChange={(e) => setFilters(prev => ({ ...prev, apartment_id: e.target.value }))}
-                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-3 py-2 text-sm border text-gray-500 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
               >
                 <option value="all">All Apartments</option>
                 {/* Map through apartments here */}
@@ -486,7 +489,7 @@ const handleAssignComplaint = (complaint) => {
               <select
                 value={filters.assigned}
                 onChange={(e) => setFilters(prev => ({ ...prev, assigned: e.target.value }))}
-                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-3 py-2 text-sm text-gray-500 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
               >
                 <option value="all">All Complaints</option>
                 <option value="assigned">Assigned Only</option>
@@ -502,7 +505,7 @@ const handleAssignComplaint = (complaint) => {
                 <select
                     value={filters.category || 'all'}
                     onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
+                    className="w-full px-3 py-2 text-sm text-gray-500 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
                 >
                     <option value="all">All Categories</option>
                     {categories.map((category) => (
@@ -636,15 +639,7 @@ const handleAssignComplaint = (complaint) => {
                             title="Mark as Resolved"
                           >
                             <Check size={16} />
-                          </button>
-                          
-                          <button
-                            onClick={() => window.open(`/complaints/${complaint.id}`, '_blank')}
-                            className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-900/30 rounded-lg"
-                            title="View Details"
-                          >
-                            <FileText size={16} />
-                          </button>
+                          </button>                
                         </div>
                       </td>
                     </tr>

@@ -1,6 +1,7 @@
 // GenerateSharedValueBill.jsx to create bill
 import React, { useState, useEffect } from 'react'
 import api from '../api/axios';
+import { ToastContainer } from 'react-toastify';
 
 export default function GenerateSharedValueBill({ onClose, onCreated,apartment_id }) {
     const [loadingBills, setLoadingBills] = useState(false);
@@ -218,77 +219,165 @@ export default function GenerateSharedValueBill({ onClose, onCreated,apartment_i
         setSelectedHouses([]);
     };
 
-    const handleGenerateBill = async () => {
-        if (!selectedBill) {
-            setError('Please select a bill.');
-            return;
-        }
+//     const handleGenerateBill = async () => {
+//         if (!selectedBill) {
+//             setError('Please select a bill.');
+//             return;
+//         }
 
-        if (!selectedApartment) {
-            setError('Please select an apartment.');
-            return;
-        }
+//         if (!selectedApartment) {
+//             setError('Please select an apartment.');
+//             return;
+//         }
 
-        if (!totalAmount || parseFloat(totalAmount) <= 0) {
-            setError('Please enter a valid total amount.');
-            return;
-        }
+//         if (!totalAmount || parseFloat(totalAmount) <= 0) {
+//             setError('Please enter a valid total amount.');
+//             return;
+//         }
 
-        let count = 0;
-        if (generationMode === 'apartment') {
-            count = assignedHousesCount;
-        } else if (generationMode === 'floor') {
-            count = selectedFloors.length > 0 ? housesData.filter(house => selectedFloors.includes(house.floor_id)).length : 0;
-        } else if (generationMode === 'house') {
-            count = selectedHouses.length;
-        }
+//         let count = 0;
+//         if (generationMode === 'apartment') {
+//             count = assignedHousesCount;
+//         } else if (generationMode === 'floor') {
+//             count = selectedFloors.length > 0 ? housesData.filter(house => selectedFloors.includes(house.floor_id)).length : 0;
+//         } else if (generationMode === 'house') {
+//             count = selectedHouses.length;
+//         }
 
-        if (count === 0) {
-            setError('No houses selected for bill generation.');
-            return;
-        }
+//         if (count === 0) {
+//             setError('No houses selected for bill generation.');
+//             return;
+//         }
 
-        // try {
-        //     setGenerating(true);
-        //     setError(null);
+//         // try {
+//         //     setGenerating(true);
+//         //     setError(null);
 
-        //     let response;
+//         //     let response;
             
-        //     if (generationMode === 'apartment') {
-        //         // Original apartment-level generation
-        //         const billData = {
-        //             bill_id: selectedBill,
-        //             year: year,
-        //             month: month,
-        //             totalAmount: parseFloat(totalAmount),
-        //             assignedHouses: assignedHousesCount,
-        //             unitPrice: unitPrice,
-        //             apartment_id: selectedApartment,
-        //             due_date: dueDate || null
-        //         };
+//         //     if (generationMode === 'apartment') {
+//         //         // Original apartment-level generation
+//         //         const billData = {
+//         //             bill_id: selectedBill,
+//         //             year: year,
+//         //             month: month,
+//         //             totalAmount: parseFloat(totalAmount),
+//         //             assignedHouses: assignedHousesCount,
+//         //             unitPrice: unitPrice,
+//         //             apartment_id: selectedApartment,
+//         //             due_date: dueDate || null
+//         //         };
 
-        //         response = await api.post('/generate-bills', billData);
-        //     } else {
-        //         // Floor or house level generation
-        //         const billData = {
-        //             bill_id: selectedBill,
-        //             year: year,
-        //             month: month,
-        //             totalAmount: parseFloat(totalAmount),
-        //             apartment_id: selectedApartment,
-        //             selected_floors: generationMode === 'floor' ? selectedFloors : [],
-        //             selected_houses: generationMode === 'house' ? selectedHouses : []
-        //         };
+//         //         response = await api.post('/generate-bills', billData);
+//         //     } else {
+//         //         // Floor or house level generation
+//         //         const billData = {
+//         //             bill_id: selectedBill,
+//         //             year: year,
+//         //             month: month,
+//         //             totalAmount: parseFloat(totalAmount),
+//         //             apartment_id: selectedApartment,
+//         //             selected_floors: generationMode === 'floor' ? selectedFloors : [],
+//         //             selected_houses: generationMode === 'house' ? selectedHouses : []
+//         //         };
 
-        //         response = await api.post('/generate-bills/multiple', billData);
-        //     }
+//         //         response = await api.post('/generate-bills/multiple', billData);
+//         //     }
             
-        //     if (response.data.success) {
-        //         onCreated(response.data.data);
-        //     } else {
-        //         setError(response.data.message || 'Failed to generate bill');
-        //     }
-        const billData = {
+//         //     if (response.data.success) {
+//         //         onCreated(response.data.data);
+//         //     } else {
+//         //         setError(response.data.message || 'Failed to generate bill');
+//         //     }
+//         const billData = {
+//         bill_id: selectedBill,
+//         year: year,
+//         month: month,
+//         totalAmount: parseFloat(totalAmount),
+//         apartment_id: selectedApartment,
+//         selected_floors: generationMode === 'floor' ? selectedFloors : [],
+//         selected_houses: generationMode === 'house' ? selectedHouses : [],
+//         calculation_method: calculationMethod, // Add this line
+//         due_date: dueDate || null
+//     };
+
+//      try {
+//         setGenerating(true);
+//         setError(null);
+        
+//         let response;
+        
+//         if (generationMode === 'apartment' && calculationMethod === 'house_count') {
+//             // ... existing code ...
+//         } else {
+//             // Use multiple bills generation for floor/house selection or square footage
+//             response = await api.post('/generate-bills/multiple', billData);
+//         }
+        
+//         if (response.data.success) {
+//             onCreated(response.data.data);
+//             if (response.data.summary && calculationMethod === 'square_footage') {
+//                 // Show square footage summary
+//                 const summary = response.data.summary;
+//                 alert(`Bills generated successfully!\n\n` +
+//                       `Calculation Method: Square Footage\n` +
+//                       `Total Houses: ${summary.totalHouses}\n` +
+//                       `Total Square Feet: ${summary.totalSqrFeet.toFixed(2)}\n` +
+//                       `Price per sq ft: $${summary.pricePerSqrFt.toFixed(4)}\n` +
+//                       `Total Amount: $${summary.totalAmount.toFixed(2)}`);
+//             }
+//         } else {
+//             setError(response.data.message || 'Failed to generate bill');
+//         }
+
+//     } catch (err) {
+//         console.error('Error generating bill:', err);
+//         const errorMsg = err.response?.data?.message || err.message || 'Failed to generate bill. Please try again.';
+        
+//         if (calculationMethod === 'square_footage') {
+//             // Add helpful hints for square footage errors
+//             setError(`${errorMsg}\n\nPlease check:\n1. Houses are assigned to this bill\n2. Houses have house types linked\n3. House types have square footage defined`);
+//         } else {
+//             setError(errorMsg);
+//         }
+//     } finally {
+//         setGenerating(false);
+//     }
+// };
+
+// In GenerateSharedValueBill.jsx - Fix the handleGenerateBill function:
+
+const handleGenerateBill = async () => {
+    if (!selectedBill) {
+        setError('Please select a bill.');
+        return;
+    }
+
+    if (!selectedApartment) {
+        setError('Please select an apartment.');
+        return;
+    }
+
+    if (!totalAmount || parseFloat(totalAmount) <= 0) {
+        setError('Please enter a valid total amount.');
+        return;
+    }
+
+    let count = 0;
+    if (generationMode === 'apartment') {
+        count = assignedHousesCount;
+    } else if (generationMode === 'floor') {
+        count = selectedFloors.length > 0 ? housesData.filter(house => selectedFloors.includes(house.floor_id)).length : 0;
+    } else if (generationMode === 'house') {
+        count = selectedHouses.length;
+    }
+
+    if (count === 0) {
+        setError('No houses selected for bill generation.');
+        return;
+    }
+
+    const billData = {
         bill_id: selectedBill,
         year: year,
         month: month,
@@ -296,18 +385,30 @@ export default function GenerateSharedValueBill({ onClose, onCreated,apartment_i
         apartment_id: selectedApartment,
         selected_floors: generationMode === 'floor' ? selectedFloors : [],
         selected_houses: generationMode === 'house' ? selectedHouses : [],
-        calculation_method: calculationMethod, // Add this line
+        calculation_method: calculationMethod,
         due_date: dueDate || null
     };
 
-     try {
+    try {
         setGenerating(true);
         setError(null);
         
         let response;
         
         if (generationMode === 'apartment' && calculationMethod === 'house_count') {
-            // ... existing code ...
+            // For apartment-level house count generation, use the original endpoint
+            const singleBillData = {
+                bill_id: selectedBill,
+                year: year,
+                month: month,
+                totalAmount: parseFloat(totalAmount),
+                assignedHouses: assignedHousesCount,
+                unitPrice: unitPrice,
+                apartment_id: selectedApartment,
+                due_date: dueDate || null
+            };
+            
+            response = await api.post('/generate-bills', singleBillData);
         } else {
             // Use multiple bills generation for floor/house selection or square footage
             response = await api.post('/generate-bills/multiple', billData);
@@ -318,12 +419,13 @@ export default function GenerateSharedValueBill({ onClose, onCreated,apartment_i
             if (response.data.summary && calculationMethod === 'square_footage') {
                 // Show square footage summary
                 const summary = response.data.summary;
-                alert(`Bills generated successfully!\n\n` +
-                      `Calculation Method: Square Footage\n` +
-                      `Total Houses: ${summary.totalHouses}\n` +
-                      `Total Square Feet: ${summary.totalSqrFeet.toFixed(2)}\n` +
-                      `Price per sq ft: $${summary.pricePerSqrFt.toFixed(4)}\n` +
-                      `Total Amount: $${summary.totalAmount.toFixed(2)}`);
+                // alert(`Bills generated successfully!\n\n` +
+                //       `Calculation Method: Square Footage\n` +
+                //       `Total Houses: ${summary.totalHouses}\n` +
+                //       `Total Square Feet: ${summary.totalSqrFeet.toFixed(2)}\n` +
+                //       `Price per sq ft: $${summary.pricePerSqrFt.toFixed(4)}\n` +
+                //       `Total Amount: $${summary.totalAmount.toFixed(2)}`);
+                // Toast.success(`Bills generated successfully!`);
             }
         } else {
             setError(response.data.message || 'Failed to generate bill');
@@ -791,6 +893,7 @@ export default function GenerateSharedValueBill({ onClose, onCreated,apartment_i
                     </button>
                 </div>
             </div>
+            <ToastContainer position="top-center" autoClose={3000}/>
         </div>
     );
 }

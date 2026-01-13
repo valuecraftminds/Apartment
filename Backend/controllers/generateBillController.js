@@ -591,61 +591,260 @@ const generateBillController = {
     },
 
     // In controllers/generateBillController.js - Add a debug endpoint:
-    async debugSquareFootage(req, res) {
-        try {
-            const { bill_id, apartment_id } = req.query;
-            const company_id = req.user.company_id;
-            
-            console.log('Debug square footage request:', { bill_id, apartment_id, company_id });
-            
-            // First, check if bill is assigned to any houses
-            const [assignments] = await pool.execute(
-                'SELECT * FROM bill_assignments WHERE bill_id = ? AND apartment_id = ?',
-                [bill_id, apartment_id]
-            );
-            
-            console.log('Bill assignments:', assignments);
-            
-            // Check houses
-            const [houses] = await pool.execute(
-                `SELECT h.*, ht.sqrfeet, ht.name as house_type_name 
-                FROM houses h 
-                LEFT JOIN housetype ht ON h.housetype_id = ht.id 
-                WHERE h.apartment_id = ? AND h.is_active = 1`,
-                [apartment_id]
-            );
-            
-            console.log('Houses in apartment:', houses.length);
-            
-            // Check house types
-            const [houseTypes] = await pool.execute(
-                'SELECT * FROM housetype WHERE apartment_id = ?',
-                [apartment_id]
-            );
-            
-            res.json({
-                success: true,
-                data: {
-                    bill_assignments_count: assignments.length,
-                    houses_count: houses.length,
-                    houses_with_sqrfeet: houses.filter(h => h.sqrfeet).length,
-                    house_types_count: houseTypes.length,
-                    sample_data: {
-                        assignments: assignments.slice(0, 3),
-                        houses: houses.slice(0, 3),
-                        house_types: houseTypes.slice(0, 3)
-                    }
+    // In controllers/generateBillController.js - Fix the debugSquareFootage method:
+
+async debugSquareFootage(req, res) {
+    try {
+        const { bill_id, apartment_id } = req.query;
+        const company_id = req.user.company_id;
+        
+        console.log('Debug square footage request:', { bill_id, apartment_id, company_id });
+        
+        // IMPORTANT: Import pool here
+        const pool = require('../db');
+        
+        // First, check if bill is assigned to any houses
+        const [assignments] = await pool.execute(
+            'SELECT ba.*, h.house_id as house_number FROM bill_assignments ba JOIN houses h ON ba.house_id = h.id WHERE ba.bill_id = ? AND ba.apartment_id = ?',
+            [bill_id, apartment_id]
+        );
+        
+        console.log('Bill assignments:', assignments);
+        
+        // Check houses
+        const [houses] = await pool.execute(
+            `SELECT h.*, ht.sqrfeet, ht.name as house_type_name 
+             FROM houses h 
+             LEFT JOIN housetype ht ON h.housetype_id = ht.id 
+             WHERE h.apartment_id = ? AND h.is_active = 1`,
+            [apartment_id]
+        );
+        
+        console.log('Houses in apartment:', houses.length);
+        
+        // Check house types
+        const [houseTypes] = await pool.execute(
+            'SELECT * FROM housetype WHERE apartment_id = ?',
+            [apartment_id]
+        );
+        
+        res.json({
+            success: true,
+            data: {
+                bill_assignments_count: assignments.length,
+                houses_count: houses.length,
+                houses_with_sqrfeet: houses.filter(h => h.sqrfeet).length,
+                houses_with_housetype: houses.filter(h => h.housetype_id).length,
+                house_types_count: houseTypes.length,
+                sample_data: {
+                    assignments: assignments.slice(0, 5),
+                    houses: houses.slice(0, 5).map(h => ({
+                        id: h.id,
+                        house_id: h.house_id,
+                        housetype_id: h.housetype_id,
+                        house_type_name: h.house_type_name,
+                        sqrfeet: h.sqrfeet
+                    })),
+                    house_types: houseTypes.slice(0, 5)
                 }
-            });
-            
-        } catch (error) {
-            console.error('Debug error:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Debug error: ' + error.message
-            });
-        }
+            }
+        });
+        
+    } catch (error) {
+        console.error('Debug error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Debug error: ' + error.message
+        });
     }
+},
+
+// Add this to your controller (generateBillController.js):
+
+async testHouseData(req, res) {
+    try {
+        const { apartment_id, bill_id } = req.query;
+        const company_id = req.user.company_id;
+        
+        console.log('🧪 TEST HOUSE DATA ===============================');
+        
+        const pool = require('../db');
+        
+        // 1. Get all houses in apartment
+        const [houses] = await pool.execute(
+            `SELECT 
+                h.id, 
+                h.house_id as house_number,
+                h.housetype_id,
+                h.is_active,
+                h.status,
+                ht.name as house_type_name,
+                ht.sqrfeet
+            FROM houses h
+            LEFT JOIN housetype ht ON h.housetype_id = ht.id
+            WHERE h.apartment_id = ?`,
+            [apartment_id]
+        );
+        
+        // 2. Get bill assignments
+        const [assignments] = await pool.execute(
+            `SELECT ba.*, h.house_id as house_number 
+             FROM bill_assignments ba
+             JOIN houses h ON ba.house_id = h.id
+             WHERE ba.bill_id = ? AND ba.apartment_id = ?`,
+            [bill_id, apartment_id]
+        );
+        
+        // 3. Get house types
+        const [houseTypes] = await pool.execute(
+            'SELECT * FROM housetype WHERE apartment_id = ?',
+            [apartment_id]
+        );
+        
+        // 4. Check which houses would be selected
+        const [selectedHouses] = await pool.execute(
+            `SELECT 
+                h.id as house_id,
+                h.house_id as house_number,
+                ht.sqrfeet,
+                ba.id as assignment_id,
+                CASE 
+                    WHEN h.housetype_id IS NULL THEN 'NO HOUSETYPE'
+                    WHEN ht.sqrfeet IS NULL THEN 'NO SQRFEET'
+                    WHEN ht.sqrfeet <= 0 THEN 'ZERO SQRFEET'
+                    WHEN ba.id IS NULL THEN 'NO ASSIGNMENT'
+                    ELSE 'OK'
+                END as status
+            FROM houses h
+            LEFT JOIN housetype ht ON h.housetype_id = ht.id
+            LEFT JOIN bill_assignments ba ON h.id = ba.house_id AND ba.bill_id = ?
+            WHERE h.apartment_id = ? AND h.is_active = 1`,
+            [bill_id, apartment_id]
+        );
+        
+        res.json({
+            success: true,
+            data: {
+                summary: {
+                    total_houses: houses.length,
+                    houses_with_housetype: houses.filter(h => h.housetype_id).length,
+                    houses_with_sqrfeet: houses.filter(h => h.sqrfeet).length,
+                    active_houses: houses.filter(h => h.is_active === 1).length,
+                    bill_assignments: assignments.length,
+                    house_types: houseTypes.length
+                },
+                houses: houses.slice(0, 10),
+                assignments: assignments.slice(0, 10),
+                house_types: houseTypes.slice(0, 10),
+                selection_check: selectedHouses.map(h => ({
+                    house_id: h.house_id,
+                    house_number: h.house_number,
+                    sqrfeet: h.sqrfeet,
+                    assignment_id: h.assignment_id,
+                    status: h.status
+                }))
+            }
+        });
+        
+    } catch (error) {
+        console.error('Test error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Test error: ' + error.message
+        });
+    }
+},
+
+async diagnoseSquareFootage(req, res) {
+    try {
+        const { bill_id, apartment_id } = req.query;
+        
+        console.log('🔍 DIAGNOSE Square Footage Request:', { bill_id, apartment_id });
+        
+        const pool = require('../db');
+        
+        // Run multiple diagnostic queries
+        const diagnostics = {};
+        
+        // 1. Check if bill exists
+        const [bill] = await pool.execute('SELECT bill_name FROM bills WHERE id = ?', [bill_id]);
+        diagnostics.bill_exists = bill.length > 0;
+        diagnostics.bill_name = bill.length > 0 ? bill[0].bill_name : 'Not found';
+        
+        // 2. Check if apartment exists
+        const [apartment] = await pool.execute('SELECT name FROM apartments WHERE id = ?', [apartment_id]);
+        diagnostics.apartment_exists = apartment.length > 0;
+        diagnostics.apartment_name = apartment.length > 0 ? apartment[0].name : 'Not found';
+        
+        // 3. Check houses count
+        const [housesCount] = await pool.execute(`
+            SELECT COUNT(*) as count FROM houses WHERE apartment_id = ? AND is_active = 1
+        `, [apartment_id]);
+        diagnostics.total_active_houses = housesCount[0].count;
+        
+        // 4. Check houses with house types
+        const [housesWithType] = await pool.execute(`
+            SELECT COUNT(*) as count FROM houses h 
+            WHERE h.apartment_id = ? AND h.is_active = 1 AND h.housetype_id IS NOT NULL
+        `, [apartment_id]);
+        diagnostics.houses_with_housetype = housesWithType[0].count;
+        
+        // 5. Check houses with square footage
+        const [housesWithSqrFeet] = await pool.execute(`
+            SELECT COUNT(*) as count FROM houses h 
+            JOIN housetype ht ON h.housetype_id = ht.id 
+            WHERE h.apartment_id = ? AND h.is_active = 1 AND ht.sqrfeet IS NOT NULL AND ht.sqrfeet > 0
+        `, [apartment_id]);
+        diagnostics.houses_with_sqrfeet = housesWithSqrFeet[0].count;
+        
+        // 6. Check bill assignments
+        const [billAssignments] = await pool.execute(`
+            SELECT COUNT(*) as count FROM bill_assignments 
+            WHERE bill_id = ? AND apartment_id = ?
+        `, [bill_id, apartment_id]);
+        diagnostics.bill_assignments = billAssignments[0].count;
+        
+        // 7. Check if bill assignments match with houses
+        const [matchingHouses] = await pool.execute(`
+            SELECT COUNT(*) as count FROM bill_assignments ba
+            JOIN houses h ON ba.house_id = h.id
+            WHERE ba.bill_id = ? AND ba.apartment_id = ? AND h.apartment_id = ?
+        `, [bill_id, apartment_id, apartment_id]);
+        diagnostics.matching_houses = matchingHouses[0].count;
+        
+        // 8. Get sample data
+        const [sampleData] = await pool.execute(`
+            SELECT 
+                h.id as house_id,
+                h.house_id as house_number,
+                h.housetype_id,
+                ht.name as house_type_name,
+                ht.sqrfeet,
+                ba.id as assignment_id,
+                ba.bill_id as assigned_bill_id,
+                ba.apartment_id as assigned_apartment_id
+            FROM houses h
+            LEFT JOIN housetype ht ON h.housetype_id = ht.id
+            LEFT JOIN bill_assignments ba ON h.id = ba.house_id AND ba.bill_id = ?
+            WHERE h.apartment_id = ? AND h.is_active = 1
+            LIMIT 10
+        `, [bill_id, apartment_id]);
+        
+        diagnostics.sample_data = sampleData;
+        
+        res.json({
+            success: true,
+            data: diagnostics
+        });
+        
+    } catch (error) {
+        console.error('Diagnose error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Diagnose error: ' + error.message
+        });
+    }
+}
 }
 
 module.exports = generateBillController;

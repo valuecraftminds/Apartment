@@ -18,5 +18,8 @@ router.delete('/:id', generateBillController.deleteGeneratedBill);
 router.get('/assigned-houses/count', generateBillController.getAssignedHousesCount);
 router.get('/assigned-houses/details', generateBillController.getAssignedHousesDetails); 
 router.get('/debug/square-footage', generateBillController.debugSquareFootage);
+// In routes/generateBills.js:
+router.get('/test-house-data', generateBillController.testHouseData);
+router.get('/diagnose/square-footage', generateBillController.diagnoseSquareFootage);
 
 module.exports = router;
