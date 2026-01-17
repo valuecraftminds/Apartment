@@ -1,3 +1,4 @@
+//HouseOwnerComplaint.jsx
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
 import api from '../api/axios';
@@ -20,7 +21,8 @@ import {
   Zap,
   Shield,
   Users,
-  Settings
+  Settings,
+  Check
 } from 'lucide-react';
 
 export default function HouseOwnerComplaints() {
@@ -171,6 +173,28 @@ const handleCreateComplaint = async (e) => {
   } catch (err) {
     console.error('Failed to create complaint:', err);
     alert(err.response?.data?.message || 'Failed to create complaint');
+  }
+};
+
+// Add this function to handle status update
+const handleUpdateStatus = async (complaintId, newStatus) => {
+  try {
+    const res = await api.patch(`/complaints/${complaintId}/status`, {
+      status: newStatus
+    }, {
+      headers: { 
+        Authorization: `Bearer ${auth.accessToken}`
+      }
+    });
+
+    if (res.data.success) {
+      fetchComplaints();
+      alert(`Complaint marked as ${newStatus}!`);
+      setShowViewModal(false); // Close the view modal if open
+    }
+  } catch (err) {
+    console.error('Failed to update status:', err);
+    alert(err.response?.data?.message || 'Failed to update status');
   }
 };
 
@@ -422,13 +446,10 @@ const handleCreateComplaint = async (e) => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {/* Status Filter */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                    Status
-                  </label>
                   <select
                     value={filters.status}
                     onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
+                    className="w-full px-3 py-2 text-sm border text-gray-500 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
                   >
                     <option value="all">All Status</option>
                     <option value="Pending">Pending</option>
@@ -523,17 +544,7 @@ const handleCreateComplaint = async (e) => {
                                 <FileText size={16} />
                               </button>
                               
-                              {/* {complaint.attachment_path && (
-                                <button
-                                  onClick={() => handleDownloadAttachment(complaint)}
-                                  className="p-2 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 transition-colors hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg"
-                                  title="Download Attachment"
-                                >
-                                  <Download size={16} />
-                                </button>
-                              )} */}
-                              
-                              {complaint.status === 'Pending' && (
+                              {/* {complaint.status === 'Pending' && (
                                 <button
                                   onClick={() => {
                                     // Handle edit
@@ -551,6 +562,34 @@ const handleCreateComplaint = async (e) => {
                                   title="Edit Complaint"
                                 >
                                   <Edit size={16} />
+                                </button>
+                              )} */}
+                              {/* {complaint.status === 'Resolved' && (
+                                <button
+                                  onClick={() => handleUpdateStatus(complaint.id, 'Closed')}
+                                  className="p-2 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 transition-colors hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg"
+                                  title="Confirm"
+                                >
+                                  <CheckCircle size={16} />
+                                </button>
+                              )} */}
+                              {complaint.status === 'In Progress' && (
+                                <button
+                                  onClick={() => handleUpdateStatus(complaint.id, 'Resolved')}
+                                  className="p-2 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 transition-colors hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg"
+                                  title="Resolved"
+                                >
+                                  <Check size={16} />
+                                </button>
+                              )}
+                              
+                              {complaint.status === 'Pending' && (
+                                <button
+                                  onClick={() => handleUpdateStatus(complaint.id, 'In Progress')}
+                                  className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"
+                                  title="Mark as In Progress"
+                                >
+                                  <Clock size={16} />
                                 </button>
                               )}
                             </div>
@@ -644,7 +683,7 @@ const handleCreateComplaint = async (e) => {
                       type="text"
                       value={formData.title}
                       onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
+                      className="w-full px-3 py-2 border border-gray-300 text-gray-700 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
                       placeholder="Brief description of the issue"
                     />
                     {errors.title && (
@@ -661,62 +700,12 @@ const handleCreateComplaint = async (e) => {
                       value={formData.description}
                       onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                       rows={4}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
+                      className="w-full px-3 py-2 border text-gray-700 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
                       placeholder="Please provide detailed information about the issue..."
                     />
                     {errors.description && (
                       <p className="text-red-500 text-sm mt-1">{errors.description}</p>
                     )}
-                  </div>
-
-                  {/* Category and Priority */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                
-                  </div>
-
-                  {/* File Attachment */}
-                  <div className="mb-6">
-                    {/* <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Attachment (Optional)
-                    </label>
-                    <div className="flex items-center justify-center w-full">
-                      <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-purple-500 dark:hover:border-purple-400">
-                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                          <FileText className="w-8 h-8 mb-2 text-gray-500 dark:text-gray-400" />
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            <span className="font-semibold">Click to upload</span> or drag and drop
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            Images, PDF, DOC up to 5MB
-                          </p>
-                        </div>
-                        <input
-                          type="file"
-                          className="hidden"
-                          onChange={handleFileChange}
-                          accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
-                        />
-                      </label>
-                    </div> */}
-                    {/* {formData.attachment && (
-                      <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center">
-                            <FileText className="text-green-600 dark:text-green-400 mr-2" size={16} />
-                            <span className="text-sm text-green-800 dark:text-green-300">
-                              {formData.attachment.name}
-                            </span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setFormData(prev => ({ ...prev, attachment: null }))}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </div>
-                    )} */}
                   </div>
 
                   {/* Submit Button */}
@@ -746,6 +735,129 @@ const handleCreateComplaint = async (e) => {
         </div>
       )}
 
+      {/* View Complaint Modal */}
+      {/* {showViewModal && selectedComplaint && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                  Complaint Details
+                </h2>
+                <button
+                  onClick={() => setShowViewModal(false)}
+                  className="text-gray-500 hover:text-gray-800 dark:hover:text-white text-xl"
+                >
+                  ✖
+                </button>
+              </div>
+
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between">
+                  <div>
+                    <div className="flex items-center">
+                      <span className="text-lg font-bold text-gray-900 dark:text-white">
+                        {selectedComplaint.complaint_number}
+                      </span>
+                      <span className={`ml-3 px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(selectedComplaint.status)}`}>
+                        {selectedComplaint.status}
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mt-2">
+                      {selectedComplaint.title}
+                    </h3>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+                    Location Details
+                  </h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center">
+                      <Building2 className="text-gray-400 mr-2" size={16} />
+                      <span className="text-gray-900 dark:text-white">{selectedComplaint.apartment_name}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Home className="text-gray-400 mr-2" size={16} />
+                      <span className="text-gray-900 dark:text-white">
+                        Floor {selectedComplaint.floor_number} • House {selectedComplaint.house_number}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+                     Dates
+                  </h4>
+                  <div className="space-y-2">
+                    <div className="text-sm">
+                      <div className="text-gray-900 dark:text-white">
+                        Filed: {new Date(selectedComplaint.created_at).toLocaleString()}
+                      </div>
+                      {selectedComplaint.resolved_at && (
+                        <div className="text-gray-900 dark:text-white">
+                          Resolved: {new Date(selectedComplaint.resolved_at).toLocaleString()}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+                  Description
+                </h4>
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                  <p className="text-gray-900 dark:text-white whitespace-pre-wrap">
+                    {selectedComplaint.description}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                {selectedComplaint.status === 'In Progress' && (
+                  <button
+                    onClick={() => handleUpdateStatus(selectedComplaint.id, 'Confirmed')}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                  >
+                    Mark as Confirmed
+                  </button>
+                )}
+                {selectedComplaint.status === 'Pending' && (
+                  <button
+                    onClick={() => handleUpdateStatus(selectedComplaint.id, 'In Progress')}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    Mark as In Progress
+                  </button>
+                )}
+                {selectedComplaint.status === 'Resolved' && (
+                  <button
+                    onClick={() => handleUpdateStatus(selectedComplaint.id, 'Closed')}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                  >
+                    Mark as Closed
+                  </button>
+                )}
+</div>
+
+              <div className="flex justify-end pt-4">
+                <button
+                  onClick={() => setShowViewModal(false)}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )} */}
       {/* View Complaint Modal */}
       {showViewModal && selectedComplaint && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -779,11 +891,6 @@ const handleCreateComplaint = async (e) => {
                       {selectedComplaint.title}
                     </h3>
                   </div>
-                  {/* <div className="mt-4 md:mt-0">
-                    <span className={`px-3 py-1 text-sm font-semibold rounded-full ${getPriorityColor(selectedComplaint.priority)}`}>
-                      {selectedComplaint.priority} Priority
-                    </span>
-                  </div> */}
                 </div>
               </div>
 
@@ -809,17 +916,18 @@ const handleCreateComplaint = async (e) => {
 
                 <div>
                   <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                     Dates
+                    Dates
                   </h4>
                   <div className="space-y-2">
-                    {/* <div className="flex items-center">
-                      {getCategoryIcon(selectedComplaint.category)}
-                      <span className="ml-2 text-gray-900 dark:text-white">{selectedComplaint.category}</span>
-                    </div> */}
                     <div className="text-sm">
                       <div className="text-gray-900 dark:text-white">
                         Filed: {new Date(selectedComplaint.created_at).toLocaleString()}
                       </div>
+                      {selectedComplaint.assigned_at && (
+                        <div className="text-gray-900 dark:text-white">
+                          Assigned: {new Date(selectedComplaint.assigned_at).toLocaleString()}
+                        </div>
+                      )}
                       {selectedComplaint.resolved_at && (
                         <div className="text-gray-900 dark:text-white">
                           Resolved: {new Date(selectedComplaint.resolved_at).toLocaleString()}
@@ -829,6 +937,28 @@ const handleCreateComplaint = async (e) => {
                   </div>
                 </div>
               </div>
+
+              {/* Assigned Technician */}
+              {selectedComplaint.assigned_to_name && (
+                <div className="mb-6">
+                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+                    Assigned Technician
+                  </h4>
+                  <div className="flex items-center bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                    <Users className="text-blue-600 dark:text-blue-400 mr-3" size={18} />
+                    <div>
+                      <div className="text-gray-900 dark:text-white font-medium">
+                        {selectedComplaint.assigned_to_name}
+                      </div>
+                      {selectedComplaint.assignment_notes && (
+                        <div className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                          Note: {selectedComplaint.assignment_notes}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Description */}
               <div className="mb-6">
@@ -842,48 +972,63 @@ const handleCreateComplaint = async (e) => {
                 </div>
               </div>
 
-              {/* Resolution Note */}
-              {/* {selectedComplaint.resolution_note && (
-                <div className="mb-6">
-                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                    Resolution Note
-                  </h4>
-                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-                    <p className="text-green-800 dark:text-green-300 whitespace-pre-wrap">
-                      {selectedComplaint.resolution_note}
-                    </p>
-                  </div>
-                </div>
-              )} */}
+              {/* Status Update Buttons - ONLY FOR HOUSE OWNERS */}
+              <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">
+                  Update Status
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {/* Allow house owner to confirm when technician marks as resolved */}
+                  {selectedComplaint.status === 'Resolved' && (
+                    <button
+                      onClick={() => handleUpdateStatus(selectedComplaint.id, 'Closed')}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                    >
+                      Confirm Resolution & Close
+                    </button>
+                  )}
+                  
+                  {/* Allow house owner to mark as in progress if they're working on it */}
+                  {selectedComplaint.status === 'Pending' && (
+                    <button
+                      onClick={() => handleUpdateStatus(selectedComplaint.id, 'In Progress')}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                    >
+                      Mark as In Progress
+                    </button>
+                  )}
 
-              {/* Assigned To */}
-              {/* {selectedComplaint.assigned_to_name && (
-                <div className="mb-6">
-                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                    Assigned To
-                  </h4>
-                  <div className="flex items-center">
-                    <Users className="text-gray-400 mr-2" size={16} />
-                    <span className="text-gray-900 dark:text-white">{selectedComplaint.assigned_to_name}</span>
-                  </div>
-                </div>
-              )} */}
+                  {selectedComplaint.status === 'In Progress' && (
+                    <button
+                      onClick={() => handleUpdateStatus(selectedComplaint.id, 'Resolved')}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                    >
+                      Mark as Confirmed
+                    </button>
+                  )}
 
-              {/* Attachment */}
-              {/* {selectedComplaint.attachment_path && (
-                <div className="mb-6">
-                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                    Attachment
-                  </h4>
-                  <button
-                    onClick={() => handleDownloadAttachment(selectedComplaint)}
-                    className="flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                  >
-                    <Download className="mr-2" size={16} />
-                    <span>Download Attachment</span>
-                  </button>
+                  
+                  {/* Reopen complaint if issue persists */}
+                  {selectedComplaint.status === 'Closed' && (
+                    <button
+                      onClick={() => handleUpdateStatus(selectedComplaint.id, 'Pending')}
+                      className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm"
+                    >
+                      Reopen Complaint
+                    </button>
+                  )}
+                  
+                  {/* Mark as not resolved if issue not fixed */}
+                  {selectedComplaint.status === 'Resolved' && (
+                    <button
+                      onClick={() => handleUpdateStatus(selectedComplaint.id, 'In Progress')}
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+                    >
+                      Issue Not Resolved
+                    </button>
+                  )}
                 </div>
-              )} */}
+              </div>
 
               <div className="flex justify-end pt-4">
                 <button

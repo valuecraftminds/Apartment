@@ -53,7 +53,7 @@ export default function ViewComplaint() {
     resolved: 0
   });
   const { auth } = useContext(AuthContext);
-  const [categories, setCategories] = useState(['General', 'Electrical', 'Plumbing', 'Carpentry', 'Painting', 'Cleaning', 'Security', 'Other']);
+  const [categories, setCategories] = useState(['General', 'Water', 'Electricity', 'Gas']);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [loadingApartments, setLoadingApartments] = useState(false);
   const [apartments, setApartments] = useState([]);
@@ -84,7 +84,32 @@ export default function ViewComplaint() {
         loadApartments();
     }, []);
   
-  const fetchComplaints = async () => {
+//   const fetchComplaints = async () => {
+//     try {
+//         setLoading(true);
+//         const res = await api.get('/complaints', {
+//             headers: { 
+//                 Authorization: `Bearer ${auth.accessToken}`
+//             },
+//             params: filters
+//         });
+        
+//         if (res.data.success) {
+//             setComplaints(res.data.data || []);
+//             setFilteredComplaints(res.data.data || []);
+//             calculateStatistics(res.data.data || []);
+//             if (res.data.categories) {
+//                 setCategories(res.data.categories);
+//             }
+//         }
+//     } catch (err) {
+//         console.error('Failed to fetch complaints:', err);
+//     } finally {
+//         setLoading(false);
+//     }
+// };
+
+const fetchComplaints = async () => {
     try {
         setLoading(true);
         const res = await api.get('/complaints', {
@@ -95,11 +120,26 @@ export default function ViewComplaint() {
         });
         
         if (res.data.success) {
-            setComplaints(res.data.data || []);
-            setFilteredComplaints(res.data.data || []);
-            calculateStatistics(res.data.data || []);
-            if (res.data.categories) {
-                setCategories(res.data.categories);
+            const complaintsData = res.data.data || [];
+            setComplaints(complaintsData);
+            setFilteredComplaints(complaintsData);
+            calculateStatistics(complaintsData);
+            
+            // Extract unique categories from complaints data
+            if (complaintsData.length > 0) {
+                const uniqueCategories = [...new Set(
+                    complaintsData
+                        .map(c => c.category)
+                        .filter(category => category && category.trim() !== '')
+                        .sort()
+                )];
+                
+                // Always include 'General' as an option
+                if (!uniqueCategories.includes('General')) {
+                    uniqueCategories.unshift('General');
+                }
+                
+                setCategories(uniqueCategories);
             }
         }
     } catch (err) {
@@ -108,7 +148,6 @@ export default function ViewComplaint() {
         setLoading(false);
     }
 };
-
 
   // Fetch technicians
 const fetchTechnicians = async (category = '') => {
@@ -234,6 +273,28 @@ const fetchTechnicians = async (category = '') => {
     }
   };
 
+  // Add this useEffect to update categories from complaints data
+useEffect(() => {
+    if (complaints.length > 0) {
+        // Extract unique categories from complaints
+        const uniqueCategories = [...new Set(
+            complaints
+                .map(c => c.category)
+                .filter(category => category && category.trim() !== '')
+                .sort()
+        )];
+        
+        // Always include 'General' if not present
+        if (uniqueCategories.length > 0 && !uniqueCategories.includes('General')) {
+            uniqueCategories.unshift('General');
+        }
+        
+        if (uniqueCategories.length > 0) {
+            setCategories(uniqueCategories);
+        }
+    }
+}, [complaints]);
+
   // Update the handleAssignComplaint function
 const handleAssignComplaint = (complaint) => {
     setSelectedComplaint(complaint);
@@ -298,19 +359,14 @@ const handleAssignComplaint = (complaint) => {
   };
 
   const getCategoryColor = (category) => {
-    switch (category.toLowerCase()) {
-        case 'electrical':
-            return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
-        case 'plumbing':
+    switch ((category || '').toLowerCase()) {
+        case 'water':
             return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
-        case 'carpentry':
+        case 'electricity':
+            return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+        case 'gas':
             return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300';
-        case 'painting':
-            return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
-        case 'cleaning':
-            return 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300';
-        case 'security':
-            return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+        case 'general':
         default:
             return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
@@ -474,10 +530,12 @@ const handleAssignComplaint = (complaint) => {
                 onChange={(e) => setFilters(prev => ({ ...prev, apartment_id: e.target.value }))}
                 className="w-full px-3 py-2 text-sm border text-gray-500 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
               >
-                <option value="all">All Apartments</option>
-                {/* Map through apartments here */}
-                <option value="apt1">Apartment 1</option>
-                <option value="apt2">Apartment 2</option>
+                 <option value="all">All Apartments</option>
+                  {apartments.map((apartment) => (
+                      <option key={apartment.id} value={apartment.id}>
+                          {apartment.name}
+                      </option>
+                  ))}
               </select>
             </div>
 
@@ -557,7 +615,7 @@ const handleAssignComplaint = (complaint) => {
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Location
-                    </th>
+                    </th>            
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Status
                     </th>
@@ -582,6 +640,11 @@ const handleAssignComplaint = (complaint) => {
                           </div>
                           <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
                             {complaint.description}
+                          </div>
+                          <div className="flex items-center mt-1">
+                              <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getCategoryColor(complaint.category)}`}>
+                                  {complaint.category || 'General'}
+                              </span>
                           </div>
                           <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             By: {complaint.houseowner_name || 'Unknown'}
@@ -624,22 +687,24 @@ const handleAssignComplaint = (complaint) => {
                           >
                             <Plus size={16} />
                           </button>
-                          
+                          {complaint.status === 'In Progress' && (
                           <button
-                            onClick={() => handleUpdateStatus(complaint.id, 'In Progress')}
+                            onClick={() => handleUpdateStatus(complaint.id, 'Resolved')}
                             className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"
-                            title="Mark as In Progress"
+                            title="Mark as Resolved"
                           >
                             <Clock size={16} />
                           </button>
-                          
+                          )}
+                          {complaint.status === 'Resolved' && (
                           <button
-                            onClick={() => handleUpdateStatus(complaint.id, 'Resolved')}
+                            onClick={() => handleUpdateStatus(complaint.id, 'Closed')}
                             className="p-2 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 transition-colors hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg"
-                            title="Mark as Resolved"
+                            title="Mark as Closed"
                           >
                             <Check size={16} />
-                          </button>                
+                          </button>    
+                          )}            
                         </div>
                       </td>
                     </tr>
@@ -697,13 +762,17 @@ const handleAssignComplaint = (complaint) => {
                                   fetchTechnicians(e.target.value);
                                   setSelectedTechnician(null);
                               }}
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
+                              className="w-full px-3 py-2 border text-gray-500 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
                           >
-                              {categories.map((cat) => (
-                                  <option key={cat} value={cat}>
-                                      {cat}
-                                  </option>
-                              ))}
+                              {/* {categories.map((category) => (
+                                <option key={category} value={category}>
+                                    {category}
+                                </option>
+                            ))} */}
+                            <option value="General">General</option>
+                            <option value="Water">Water</option>
+                            <option value="Electricity">Electricity</option>
+                            <option value="Gas">Gas</option>
                           </select>
                       </div>
 
@@ -766,7 +835,7 @@ const handleAssignComplaint = (complaint) => {
                               value={assignmentNote}
                               onChange={(e) => setAssignmentNote(e.target.value)}
                               rows={3}
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
+                              className="w-full px-3 py-2 border text-gray-500 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
                               placeholder="Add any specific instructions or notes for the technician..."
                           />
                       </div>

@@ -139,25 +139,25 @@ export default function MyComplaints() {
   };
 
   // Handle update status
-  const handleUpdateStatus = async (complaintId, newStatus) => {
-    try {
-      const res = await api.patch(`/complaints/${complaintId}/status`, {
-        status: newStatus
-      }, {
-        headers: { 
-          Authorization: `Bearer ${auth.accessToken}`
-        }
-      });
+  // const handleUpdateStatus = async (complaintId, newStatus) => {
+  //   try {
+  //     const res = await api.patch(`/complaints/${complaintId}/status`, {
+  //       status: newStatus
+  //     }, {
+  //       headers: { 
+  //         Authorization: `Bearer ${auth.accessToken}`
+  //       }
+  //     });
 
-      if (res.data.success) {
-        fetchMyComplaints();
-        alert(`Complaint marked as ${newStatus}!`);
-      }
-    } catch (err) {
-      console.error('Failed to update status:', err);
-      alert(err.response?.data?.message || 'Failed to update status');
-    }
-  };
+  //     if (res.data.success) {
+  //       fetchMyComplaints();
+  //       alert(`Complaint marked as ${newStatus}!`);
+  //     }
+  //   } catch (err) {
+  //     console.error('Failed to update status:', err);
+  //     alert(err.response?.data?.message || 'Failed to update status');
+  //   }
+  // };
 
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
@@ -296,9 +296,6 @@ export default function MyComplaints() {
 
                 {/* Status Filter */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                    Filter by Status
-                  </label>
                   <select
                     value={filters.status}
                     onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
@@ -405,7 +402,7 @@ export default function MyComplaints() {
                           </div>
                           
                           <div className="flex space-x-2">
-                            {complaint.status === 'In Progress' && (
+                            {/* {complaint.status === 'In Progress' && (
                               <button
                                 onClick={() => handleUpdateStatus(complaint.id, 'Resolved')}
                                 className="px-3 py-1 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors"
@@ -420,7 +417,7 @@ export default function MyComplaints() {
                               >
                                 Start Work
                               </button>
-                            )}
+                            )} */}
                             <button
                               onClick={() => handleViewComplaint(complaint.id)}
                               className="px-3 py-1 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 transition-colors flex items-center"
@@ -505,7 +502,7 @@ export default function MyComplaints() {
                             </td>
                             <td className="px-4 py-4">
                               <div className="flex space-x-2">
-                                {complaint.status === 'In Progress' && (
+                                {/* {complaint.status === 'In Progress' && (
                                   <button
                                     onClick={() => handleUpdateStatus(complaint.id, 'Resolved')}
                                     className="px-3 py-1 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors"
@@ -520,7 +517,7 @@ export default function MyComplaints() {
                                   >
                                     Start Work
                                   </button>
-                                )}
+                                )} */}
                                 <button
                                   onClick={() => handleViewComplaint(complaint.id)}
                                   className="px-3 py-1 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 transition-colors flex items-center"

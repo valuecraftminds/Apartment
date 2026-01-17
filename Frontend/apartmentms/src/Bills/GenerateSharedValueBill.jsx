@@ -1,8 +1,20 @@
 // GenerateSharedValueBill.jsx to create bill
 import React, { useState, useEffect } from 'react'
 import api from '../api/axios';
-import { ToastContainer } from 'react-toastify';
-
+import { toast, ToastContainer } from 'react-toastify';
+const roundUpCustom = (number, precision = 2, roundTo = 'standard') => {
+    if (roundTo === 'ten') {
+        // Round up to nearest 10 (5670, 4910, etc.)
+        return Math.ceil(number / 10) * 10;
+    } else if (roundTo === 'hundred') {
+        // Round up to nearest 100
+        return Math.ceil(number / 100) * 100;
+    } else {
+        // Standard round up to specified decimal places
+        const factor = Math.pow(10, precision);
+        return Math.ceil(number * factor) / factor;
+    }
+};
 export default function GenerateSharedValueBill({ onClose, onCreated,apartment_id }) {
     const [loadingBills, setLoadingBills] = useState(false);
     const [generating, setGenerating] = useState(false);
@@ -165,24 +177,7 @@ export default function GenerateSharedValueBill({ onClose, onCreated,apartment_i
         });
     };
 
-    // Handle total amount change and recalculate unit price
-    // const handleTotalAmountChange = (amount) => {
-    //     setTotalAmount(amount);
-        
-    //     let count = assignedHousesCount;
-    //     if (generationMode === 'floor' && selectedFloors.length > 0) {
-    //         count = housesData.filter(house => selectedFloors.includes(house.floor_id)).length;
-    //     } else if (generationMode === 'house' && selectedHouses.length > 0) {
-    //         count = selectedHouses.length;
-    //     }
-        
-    //     if (amount && count > 0) {
-    //         const calculatedUnitPrice = parseFloat(amount) / count;
-    //         setUnitPrice(calculatedUnitPrice);
-    //     } else {
-    //         setUnitPrice(0);
-    //     }
-    // };
+    
     const handleTotalAmountChange = (amount) => {
         setTotalAmount(amount);
         
@@ -197,14 +192,23 @@ export default function GenerateSharedValueBill({ onClose, onCreated,apartment_i
         
         if (amount && houses.length > 0) {
             if (calculationMethod === 'square_footage') {
-                // Need to fetch square footage data for calculation
-                // This would require an API call to get square footage data
-                // For now, we'll show a placeholder
-                setUnitPrice(0); // Will be calculated on the server
+                const estimatedUnitPrice = parseFloat(amount) / houses.length;
+                const roundedUnitPrice = roundUpCustom(estimatedUnitPrice, 2, 'ten');
+                setUnitPrice(roundedUnitPrice); // Will be calculated on the server
+
             } else {
-                // Original house count calculation
+                // // Original house count calculation
+                // const calculatedUnitPrice = parseFloat(amount) / houses.length;
+                // setUnitPrice(calculatedUnitPrice);
                 const calculatedUnitPrice = parseFloat(amount) / houses.length;
-                setUnitPrice(calculatedUnitPrice);
+            
+            // Round UP to nearest 10 (as per client requirement)
+            const roundedUnitPrice = roundUpCustom(calculatedUnitPrice, 2, 'ten');
+            
+            // Or use standard rounding up to 2 decimal places:
+            // const roundedUnitPrice = roundUpToNext(calculatedUnitPrice, 2);
+            
+            setUnitPrice(roundedUnitPrice);
             }
         } else {
             setUnitPrice(0);
@@ -218,134 +222,6 @@ export default function GenerateSharedValueBill({ onClose, onCreated,apartment_i
         setSelectedFloors([]);
         setSelectedHouses([]);
     };
-
-//     const handleGenerateBill = async () => {
-//         if (!selectedBill) {
-//             setError('Please select a bill.');
-//             return;
-//         }
-
-//         if (!selectedApartment) {
-//             setError('Please select an apartment.');
-//             return;
-//         }
-
-//         if (!totalAmount || parseFloat(totalAmount) <= 0) {
-//             setError('Please enter a valid total amount.');
-//             return;
-//         }
-
-//         let count = 0;
-//         if (generationMode === 'apartment') {
-//             count = assignedHousesCount;
-//         } else if (generationMode === 'floor') {
-//             count = selectedFloors.length > 0 ? housesData.filter(house => selectedFloors.includes(house.floor_id)).length : 0;
-//         } else if (generationMode === 'house') {
-//             count = selectedHouses.length;
-//         }
-
-//         if (count === 0) {
-//             setError('No houses selected for bill generation.');
-//             return;
-//         }
-
-//         // try {
-//         //     setGenerating(true);
-//         //     setError(null);
-
-//         //     let response;
-            
-//         //     if (generationMode === 'apartment') {
-//         //         // Original apartment-level generation
-//         //         const billData = {
-//         //             bill_id: selectedBill,
-//         //             year: year,
-//         //             month: month,
-//         //             totalAmount: parseFloat(totalAmount),
-//         //             assignedHouses: assignedHousesCount,
-//         //             unitPrice: unitPrice,
-//         //             apartment_id: selectedApartment,
-//         //             due_date: dueDate || null
-//         //         };
-
-//         //         response = await api.post('/generate-bills', billData);
-//         //     } else {
-//         //         // Floor or house level generation
-//         //         const billData = {
-//         //             bill_id: selectedBill,
-//         //             year: year,
-//         //             month: month,
-//         //             totalAmount: parseFloat(totalAmount),
-//         //             apartment_id: selectedApartment,
-//         //             selected_floors: generationMode === 'floor' ? selectedFloors : [],
-//         //             selected_houses: generationMode === 'house' ? selectedHouses : []
-//         //         };
-
-//         //         response = await api.post('/generate-bills/multiple', billData);
-//         //     }
-            
-//         //     if (response.data.success) {
-//         //         onCreated(response.data.data);
-//         //     } else {
-//         //         setError(response.data.message || 'Failed to generate bill');
-//         //     }
-//         const billData = {
-//         bill_id: selectedBill,
-//         year: year,
-//         month: month,
-//         totalAmount: parseFloat(totalAmount),
-//         apartment_id: selectedApartment,
-//         selected_floors: generationMode === 'floor' ? selectedFloors : [],
-//         selected_houses: generationMode === 'house' ? selectedHouses : [],
-//         calculation_method: calculationMethod, // Add this line
-//         due_date: dueDate || null
-//     };
-
-//      try {
-//         setGenerating(true);
-//         setError(null);
-        
-//         let response;
-        
-//         if (generationMode === 'apartment' && calculationMethod === 'house_count') {
-//             // ... existing code ...
-//         } else {
-//             // Use multiple bills generation for floor/house selection or square footage
-//             response = await api.post('/generate-bills/multiple', billData);
-//         }
-        
-//         if (response.data.success) {
-//             onCreated(response.data.data);
-//             if (response.data.summary && calculationMethod === 'square_footage') {
-//                 // Show square footage summary
-//                 const summary = response.data.summary;
-//                 alert(`Bills generated successfully!\n\n` +
-//                       `Calculation Method: Square Footage\n` +
-//                       `Total Houses: ${summary.totalHouses}\n` +
-//                       `Total Square Feet: ${summary.totalSqrFeet.toFixed(2)}\n` +
-//                       `Price per sq ft: $${summary.pricePerSqrFt.toFixed(4)}\n` +
-//                       `Total Amount: $${summary.totalAmount.toFixed(2)}`);
-//             }
-//         } else {
-//             setError(response.data.message || 'Failed to generate bill');
-//         }
-
-//     } catch (err) {
-//         console.error('Error generating bill:', err);
-//         const errorMsg = err.response?.data?.message || err.message || 'Failed to generate bill. Please try again.';
-        
-//         if (calculationMethod === 'square_footage') {
-//             // Add helpful hints for square footage errors
-//             setError(`${errorMsg}\n\nPlease check:\n1. Houses are assigned to this bill\n2. Houses have house types linked\n3. House types have square footage defined`);
-//         } else {
-//             setError(errorMsg);
-//         }
-//     } finally {
-//         setGenerating(false);
-//     }
-// };
-
-// In GenerateSharedValueBill.jsx - Fix the handleGenerateBill function:
 
 const handleGenerateBill = async () => {
     if (!selectedBill) {
@@ -425,7 +301,7 @@ const handleGenerateBill = async () => {
                 //       `Total Square Feet: ${summary.totalSqrFeet.toFixed(2)}\n` +
                 //       `Price per sq ft: $${summary.pricePerSqrFt.toFixed(4)}\n` +
                 //       `Total Amount: $${summary.totalAmount.toFixed(2)}`);
-                // Toast.success(`Bills generated successfully!`);
+                toast.success(`Bills generated successfully!`);
             }
         } else {
             setError(response.data.message || 'Failed to generate bill');
