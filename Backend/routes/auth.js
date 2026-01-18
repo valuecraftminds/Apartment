@@ -473,7 +473,7 @@ router.post('/login-unified', async (req, res) => {
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error, Refresh the page and try again' });
   }
 });
 

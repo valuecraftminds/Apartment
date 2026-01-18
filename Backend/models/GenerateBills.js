@@ -342,6 +342,10 @@ class GenerateBills{
     const { bill_id, apartment_id, floor_ids, house_ids, totalAmount } = billData;
     
     console.log('Starting square footage calculation:', billData);
+
+    const roundUpToNearestTen = (number) => {
+        return Math.ceil(number / 10) * 10;
+    };
     
     // Get houses with their square footage
     const houses = await this.getHousesWithSquareFootage(apartment_id, bill_id, floor_ids, house_ids);
@@ -394,7 +398,9 @@ class GenerateBills{
     // Calculate amount for each valid house
     const bills = validHouses.map(house => {
         const sqrFeet = parseFloat(house.square_footage);
-        const unitPrice = sqrFeet * pricePerSqrFt;
+        let unitPrice = sqrFeet * pricePerSqrFt;
+        
+        unitPrice = roundUpToNearestTen(unitPrice);
         
         return {
             house_id: house.house_id,

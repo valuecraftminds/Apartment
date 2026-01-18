@@ -694,7 +694,8 @@ const handleGenerateBill = async () => {
                             </p>
                         </div>
                     )} */}
-                    {totalAmount && getCurrentHousesCount() > 0 && (
+
+                    {/* {totalAmount && getCurrentHousesCount() > 0 && (
                         <div className="border-t border-gray-200 dark:border-gray-600 pt-3">
                             {calculationMethod === 'house_count' ? (
                                 <div className="grid grid-cols-2 gap-4 text-sm">
@@ -717,6 +718,44 @@ const handleGenerateBill = async () => {
                             {calculationMethod === 'house_count' && (
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                                     Calculation: ${totalAmount} ÷ {getCurrentHousesCount()} houses = ${unitPrice.toFixed(2)} per house
+                                </p>
+                            )}
+                        </div>
+                    )} */}
+                    {totalAmount && getCurrentHousesCount() > 0 && (
+                        <div className="border-t border-gray-200 dark:border-gray-600 pt-3">
+                            {calculationMethod === 'house_count' ? (
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <span className="text-gray-600 dark:text-gray-400">Total Amount:</span>
+                                        <p className="font-medium text-green-600 dark:text-green-400">
+                                            ${parseFloat(totalAmount).toFixed(2)}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-600 dark:text-gray-400">Unit Price:</span>
+                                        <p className="font-medium text-purple-600 dark:text-purple-400">
+                                            ${unitPrice.toFixed(2)} 
+                                            <span className="text-xs text-gray-500 ml-2">
+                                                (Rounded up to nearest 10)
+                                            </span>
+                                        </p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div>
+                                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                                        Amounts will be calculated proportionally based on each house's square footage 
+                                        and rounded up to the nearest 10
+                                    </div>
+                                </div>
+                            )}
+                            {calculationMethod === 'house_count' && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                    Calculation: ${totalAmount} ÷ {getCurrentHousesCount()} houses = 
+                                    <span className="font-medium"> ${(parseFloat(totalAmount) / getCurrentHousesCount()).toFixed(6)}</span> 
+                                    <span className="mx-2">→</span>
+                                    Rounded up to: <span className="font-medium">${unitPrice.toFixed(2)}</span> per house
                                 </p>
                             )}
                         </div>

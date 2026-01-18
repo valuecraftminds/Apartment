@@ -15,6 +15,15 @@ const generateBillController = {
                 });
             }
 
+            // Round up unit price to nearest 10
+            const roundUpToNearestTen = (number) => {
+                return Math.ceil(number / 10) * 10;
+            };
+
+            let finalUnitPrice = parseFloat(unitPrice);
+            if (unitPrice) {
+                finalUnitPrice = roundUpToNearestTen(finalUnitPrice);
+            }
             // Check for duplicate (now including apartment_id and house_id)
             const isDuplicate = await GenerateBills.checkDuplicate(company_id, bill_id, parseInt(year), month, apartment_id, house_id);
             if (isDuplicate) {
@@ -44,7 +53,7 @@ const generateBillController = {
                 bill_id,
                 totalAmount: parseFloat(totalAmount),
                 assignedHouses: assignedHouses || 0,
-                unitPrice: parseFloat(unitPrice),
+                unitPrice: finalUnitPrice,
                 apartment_id,
                 floor_id: floor_id || null,
                 house_id: house_id || null
