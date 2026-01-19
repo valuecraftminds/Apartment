@@ -1041,6 +1041,170 @@ router.post('/complete-registration', async (req, res) => {
 router.put('/users/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
+    const user_type = req.user.user_type || 'user';
+    
+    if (user_type === 'houseowner') {
+      // Update house owner profile
+      const { name, country, mobile, nic, occupation } = req.body;
+      const requesting_user_id = req.user.id;
+      
+      console.log('Updating house owner profile:', { id, requesting_user_id, name });
+      
+      // Verify that the authenticated house owner is updating their OWN profile
+      if (id !== requesting_user_id) {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'You can only update your own profile' 
+        });
+      }
+      
+      // Check if house owner exists
+      const [owners] = await pool.execute(
+        'SELECT id, email, mobile FROM houseowner WHERE id = ?',
+        [id]
+      );
+      
+      if (!owners.length) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'House owner not found' 
+        });
+      }
+      
+      const existingOwner = owners[0];
+      
+      // Check if mobile is already taken by another house owner
+      if (mobile && mobile !== existingOwner.mobile) {
+        const [existingMobile] = await pool.execute(
+          'SELECT id FROM houseowner WHERE mobile = ? AND id != ?',
+          [mobile, id]
+        );
+        if (existingMobile.length) {
+          return res.status(409).json({ 
+            success: false, 
+            message: 'Mobile number already taken' 
+          });
+        }
+      }
+      
+      // Build update query
+      let updateQuery = 'UPDATE houseowner SET ';
+      const queryParams = [];
+      const updates = [];
+      
+      if (name !== undefined) {
+        updates.push('name = ?');
+        queryParams.push(name);
+      }
+      
+      if (country !== undefined) {
+        updates.push('country = ?');
+        queryParams.push(country);
+      }
+      
+      if (mobile !== undefined) {
+        updates.push('mobile = ?');
+        queryParams.push(mobile);
+      }
+      
+      if (nic !== undefined) {
+        updates.push('nic = ?');
+        queryParams.push(nic);
+      }
+      
+      if (occupation !== undefined) {
+        updates.push('occupation = ?');
+        queryParams.push(occupation);
+      }
+      
+      if (updates.length === 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'No fields to update' 
+        });
+      }
+      
+      updates.push('updated_at = NOW()');
+      
+      updateQuery += updates.join(', ') + ' WHERE id = ?';
+      queryParams.push(id);
+      
+      console.log('Executing query:', updateQuery, 'with params:', queryParams);
+      
+      await pool.execute(updateQuery, queryParams);
+      
+      // Get updated data
+      const [updatedOwner] = await pool.execute(
+        `SELECT 
+          ho.id, 
+          ho.name,
+          ho.email,
+          ho.country,
+          ho.mobile,
+          ho.nic,
+          ho.occupation,
+          'houseowner' as role,
+          ho.is_verified, 
+          ho.is_active,
+          ho.created_at,
+          ho.updated_at,
+          ho.apartment_id,
+          a.name as apartment_name,
+          h.houseowner_id,
+          h.house_id as house_number,
+          f.floor_id as floor_number
+         FROM houseowner ho
+         LEFT JOIN apartments a ON ho.apartment_id = a.id
+         LEFT JOIN houses h ON ho.id = h.houseowner_id
+         LEFT JOIN floors f ON h.floor_id = f.id
+         WHERE ho.id = ?`,
+        [id]
+      );
+      
+      if (updatedOwner.length === 0) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Updated house owner not found' 
+        });
+      }
+      
+      const owner = updatedOwner[0];
+      
+      // Split name for frontend compatibility
+      const nameParts = owner.name ? owner.name.split(' ') : ['', ''];
+      const firstname = nameParts[0] || '';
+      const lastname = nameParts.slice(1).join(' ') || '';
+      
+      const responseData = {
+        id: owner.id,
+        firstname: firstname,
+        lastname: lastname,
+        name: owner.name,
+        email: owner.email,
+        country: owner.country,
+        mobile: owner.mobile,
+        nic: owner.nic,
+        occupation: owner.occupation,
+        role: owner.role,
+        is_verified: owner.is_verified,
+        is_active: owner.is_active,
+        created_at: owner.created_at,
+        updated_at: owner.updated_at,
+        apartment_id: owner.apartment_id,
+        apartment_name: owner.apartment_name,
+        houseowner_id: owner.houseowner_id,
+        house_number: owner.house_number,
+        floor_number: owner.floor_number,
+        user_type: 'houseowner'
+      };
+      
+      return res.json({
+        success: true,
+        message: 'Profile updated successfully',
+        data: responseData
+      });
+    } else {
+      const { id } = req.params;
     const { firstname, lastname, email, country, mobile, role_id, password } = req.body;
     
     // Check if user exists
@@ -1156,6 +1320,7 @@ router.put('/users/:id', authenticateToken, async (req, res) => {
       message: 'User updated successfully',
       data: responseData
     });
+    }
   } catch (err) {
     console.error('Error updating user:', err);
     res.status(500).json({ success: false, message: 'Server error while updating user' });
@@ -1233,54 +1398,179 @@ router.delete('/users/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// router.get('/me', authenticateToken, async (req, res) => {
+//   try {
+//     const user_id = req.user.id;
+    
+//     // if (!company_id) {
+//     //   return res.status(400).json({
+//     //     success: false,
+//     //     message: 'Company ID is required'
+//     //   });
+//     // }
+
+//     const [users] = await pool.execute(
+//        `SELECT 
+//         u.id, 
+//         u.firstname, 
+//         u.lastname, 
+//         u.email,
+//         u.country,
+//         u.mobile,
+//         r.role_name as role,
+//         u.role_id,
+//         u.is_verified, 
+//         u.is_active,
+//         u.created_at
+//        FROM users u
+//        LEFT JOIN roles r ON u.role_id = r.id
+//        WHERE u.id = ?`,
+//       [user_id]
+//     );
+
+//       if (!users.length) {
+//       return res.status(404).json({
+//         success: false,
+//         message: 'User not found'
+//       });
+//     }
+
+//     const user = users[0];
+
+//     res.json({
+//       success: true,
+//       data: users
+//     });
+//   } catch (err) {
+//     console.error('Get user error:', err);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Failed to fetch user'
+//     });
+//   }
+// });
+// Update the /me endpoint in auth.js to handle both user types properly
 router.get('/me', authenticateToken, async (req, res) => {
   try {
     const user_id = req.user.id;
+    const user_type = req.user.user_type || 'user'; // Get user_type from token
     
-    // if (!company_id) {
-    //   return res.status(400).json({
-    //     success: false,
-    //     message: 'Company ID is required'
-    //   });
-    // }
-
-    const [users] = await pool.execute(
-       `SELECT 
-        u.id, 
-        u.firstname, 
-        u.lastname, 
-        u.email,
-        u.country,
-        u.mobile,
-        r.role_name as role,
-        u.role_id,
-        u.is_verified, 
-        u.is_active,
-        u.created_at
-       FROM users u
-       LEFT JOIN roles r ON u.role_id = r.id
-       WHERE u.id = ?`,
-      [user_id]
-    );
-
-      if (!users.length) {
+    console.log('Fetching profile for:', { user_id, user_type, user_data: req.user });
+    
+    let userData = null;
+    
+    if (user_type === 'houseowner') {
+      // Fetch house owner data
+      const [houseOwners] = await pool.execute(
+        `SELECT 
+          ho.id, 
+          ho.name,
+          ho.email,
+          ho.country,
+          ho.mobile,
+          ho.nic,
+          ho.occupation,
+          'houseowner' as role,
+          ho.is_verified, 
+          ho.is_active,
+          ho.created_at,
+          ho.updated_at,
+          ho.apartment_id,
+          a.name as apartment_name,
+          h.houseowner_id,
+          h.house_id as house_number,
+          f.floor_id as floor_number
+         FROM houseowner ho
+         LEFT JOIN apartments a ON ho.apartment_id = a.id
+         LEFT JOIN houses h ON ho.id = h.houseowner_id
+         LEFT JOIN floors f ON h.floor_id = f.id
+         WHERE ho.id = ?`,
+        [user_id]
+      );
+      
+      if (houseOwners.length > 0) {
+        const owner = houseOwners[0];
+        userData = {
+          id: owner.id,
+          firstname: owner.name ? owner.name.split(' ')[0] : '', // For compatibility
+          lastname: owner.name ? owner.name.split(' ').slice(1).join(' ') : '', // For compatibility
+          name: owner.name,
+          email: owner.email,
+          country: owner.country,
+          mobile: owner.mobile,
+          nic: owner.nic,
+          occupation: owner.occupation,
+          role: owner.role,
+          is_verified: owner.is_verified,
+          is_active: owner.is_active,
+          created_at: owner.created_at,
+          updated_at: owner.updated_at,
+          apartment_id: owner.apartment_id,
+          apartment_name: owner.apartment_name,
+          houseowner_id: owner.houseowner_id,
+          house_number: owner.house_number,
+          floor_number: owner.floor_number,
+          user_type: 'houseowner'
+        };
+      }
+    } else {
+      // Fetch regular user data
+      const [users] = await pool.execute(
+        `SELECT 
+          u.id, 
+          u.firstname, 
+          u.lastname, 
+          u.email,
+          u.country,
+          u.mobile,
+          r.role_name as role,
+          u.role_id,
+          u.is_verified, 
+          u.is_active,
+          u.created_at
+         FROM users u
+         LEFT JOIN roles r ON u.role_id = r.id
+         WHERE u.id = ?`,
+        [user_id]
+      );
+      
+      if (users.length > 0) {
+        const user = users[0];
+        userData = {
+          id: user.id,
+          firstname: user.firstname,
+          lastname: user.lastname,
+          name: `${user.firstname || ''} ${user.lastname || ''}`.trim(),
+          email: user.email,
+          country: user.country,
+          mobile: user.mobile,
+          role: user.role,
+          role_id: user.role_id,
+          is_verified: user.is_verified,
+          is_active: user.is_active,
+          created_at: user.created_at,
+          user_type: 'user'
+        };
+      }
+    }
+    
+    if (!userData) {
       return res.status(404).json({
         success: false,
         message: 'User not found'
       });
     }
 
-    const user = users[0];
-
     res.json({
       success: true,
-      data: users
+      data: [userData] // Keep as array for backward compatibility
     });
+    
   } catch (err) {
     console.error('Get user error:', err);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch user'
+      message: 'Failed to fetch user profile'
     });
   }
 });

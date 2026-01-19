@@ -142,6 +142,78 @@ router.get('/debug/my-bills-db-check', authenticateHouseOwner, async (req, res) 
         });
     }
 });
+// Debug route to check database state
+router.get('/debug/database-state', authenticateHouseOwner, async (req, res) => {
+    try {
+        const houseowner_id = req.houseowner.id;
+        
+        const queries = [
+            // 1. Check houses assigned to this owner
+            `SELECT id, house_id, apartment_id, floor_id FROM houses WHERE houseowner_id = ?`,
+            
+            // 2. Check all bill_payments for these houses
+            `SELECT 
+                bp.id, 
+                bp.house_id,
+                bp.payment_status,
+                bp.paidAmount,
+                bp.pendingAmount,
+                b.bill_name,
+                COALESCE(gb.month, gmb.month) as month,
+                COALESCE(gb.year, gmb.year) as year
+             FROM bill_payments bp
+             LEFT JOIN bills b ON bp.bill_id = b.id
+             LEFT JOIN generate_bills gb ON bp.generate_bills_id = gb.id
+             LEFT JOIN generateMeasurable_bills gmb ON bp.generateMeasurable_bills_id = gmb.id
+             WHERE EXISTS (
+                 SELECT 1 FROM houses h 
+                 WHERE h.id = bp.house_id AND h.houseowner_id = ?
+             )`,
+            
+            // 3. Check if there are ANY bill payments at all
+            `SELECT COUNT(*) as total_count FROM bill_payments`,
+            
+            // 4. Check years available in bill payments
+            `SELECT DISTINCT COALESCE(gb.year, gmb.year) as year 
+             FROM bill_payments bp
+             LEFT JOIN generate_bills gb ON bp.generate_bills_id = gb.id
+             LEFT JOIN generateMeasurable_bills gmb ON bp.generateMeasurable_bills_id = gmb.id
+             WHERE COALESCE(gb.year, gmb.year) IS NOT NULL
+             ORDER BY year DESC`
+        ];
+        
+        const results = {};
+        
+        results['houses'] = (await pool.execute(queries[0], [houseowner_id]))[0];
+        results['bill_payments'] = (await pool.execute(queries[1], [houseowner_id]))[0];
+        results['total_bill_payments'] = (await pool.execute(queries[2]))[0];
+        results['available_years'] = (await pool.execute(queries[3]))[0];
+        
+        // Check specific house
+        if (results.houses.length > 0) {
+            const firstHouseId = results.houses[0].id;
+            const [houseBillPayments] = await pool.execute(
+                `SELECT COUNT(*) as count FROM bill_payments WHERE house_id = ?`,
+                [firstHouseId]
+            );
+            results['bill_payments_for_first_house'] = houseBillPayments;
+        }
+        
+        res.json({
+            success: true,
+            data: results,
+            houseowner_id: houseowner_id
+        });
+        
+    } catch (error) {
+        console.error('Database state debug error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Debug error',
+            error: error.message
+        });
+    }
+});
 
 // router.use(authenticateToken);
 

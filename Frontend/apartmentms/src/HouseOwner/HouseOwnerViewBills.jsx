@@ -32,24 +32,25 @@ export default function HouseOwnerViewBills() {
   const [loadingBills, setLoadingBills] = useState(false)
   const [error, setError] = useState(null)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
-    const [summaryStats, setSummaryStats] = useState({
-      totalBills: 0,
-      totalPaid: 0,
-      totalPending: 0,
-      totalAmount: 0
-    });
+  const [summaryStats, setSummaryStats] = useState({
+    totalBills: 0,
+    totalPaid: 0,
+    totalPending: 0,
+    totalAmount: 0
+  })
   const [filters, setFilters] = useState({
     status: 'all',
     month: 'all',
-    year: new Date().getFullYear().toString()
+    year: new Date().getFullYear(), // Changed from current year to 'all'
+    house_id: 'all'
   })
   const { auth } = useContext(AuthContext)
 
   // Fetch house owner data (houses assigned to them)
   const fetchHouseOwnerData = async () => {
     try {
-      setLoading(true);
-      setError(null);
+      setLoading(true)
+      setError(null)
       
       if (auth.accessToken) {
         const res = await api.get(`/houses/owner/me`, {
@@ -57,15 +58,15 @@ export default function HouseOwnerViewBills() {
             Authorization: `Bearer ${auth.accessToken}`,
             'Content-Type': 'application/json'
           }
-        });
+        })
         
         if (res.data.success) {
-          const housesData = res.data.data || [];
-          setHouses(housesData);
+          const housesData = res.data.data || []
+          setHouses(housesData)
           
-          const apartmentMap = {};
-          const floorMap = {};
-          const houseTypeMap = {};
+          const apartmentMap = {}
+          const floorMap = {}
+          const houseTypeMap = {}
           
           housesData.forEach(house => {
             if (house.apartment_id) {
@@ -74,7 +75,7 @@ export default function HouseOwnerViewBills() {
                 name: house.apartment_name,
                 address: house.apartment_address,
                 city: house.apartment_city,
-              };
+              }
             }
             
             if (house.floor_id) {
@@ -82,7 +83,7 @@ export default function HouseOwnerViewBills() {
                 id: house.floor_id,
                 floor_id: house.floor_id,
                 floor_number: house.floor_number 
-              };
+              }
             }
             
             if (house.housetype_id) {
@@ -92,294 +93,275 @@ export default function HouseOwnerViewBills() {
                 sqrfeet: house.house_type_sqrfeet,
                 rooms: house.house_type_rooms,
                 bathrooms: house.house_type_bathrooms,
-              };
+              }
             }
-          });
+          })
           
-          setApartments(apartmentMap);
-          setFloors(floorMap);
-          setHouseTypes(Object.values(houseTypeMap));
+          setApartments(apartmentMap)
+          setFloors(floorMap)
+          setHouseTypes(Object.values(houseTypeMap))
           
           if (housesData.length > 0) {
-            setSelectedHouse(housesData[0]);
-            // Try to fetch bills if house data includes bill info
-            fetchMyBillPayments();
+            setSelectedHouse(housesData[0])
+            fetchMyBillPayments()
           } else {
-            setSelectedHouse(null);
+            setSelectedHouse(null)
           }
         } else {
-          setError(res.data.message || 'Failed to fetch houses');
+          setError(res.data.message || 'Failed to fetch houses')
         }
       } else {
-        setError('No authentication token found. Please log in.');
+        setError('No authentication token found. Please log in.')
       }
     } catch (err) {
-      console.error('Failed to fetch house data:', err);
+      console.error('Failed to fetch house data:', err)
       
       if (err.response?.status === 401) {
-        setError('Session expired. Please log in again.');
+        setError('Session expired. Please log in again.')
       } else if (err.response?.status === 403) {
-        setError('Access denied. Please contact administrator.');
+        setError('Access denied. Please contact administrator.')
       } else if (err.response?.status === 404) {
-        setError('No houses found for your account.');
+        setError('No houses found for your account.')
       } else if (err.request) {
-        setError('Network error. Please check your internet connection.');
+        setError('Network error. Please check your internet connection.')
       } else {
-        setError('An unexpected error occurred.');
+        setError('An unexpected error occurred.')
       }
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const fetchMyBillPayments = async () => {
-  try {
-    setLoadingBills(true);
-    setError(null);
-    
-    console.log('🔍 [Frontend] Fetching bill payments...');
-    console.log('🔍 [Frontend] Auth token exists:', !!auth.accessToken);
-    
-    // Build query params
-    const params = {};
-    if (filters.status !== 'all') params.payment_status = filters.status;
-    if (filters.month !== 'all') params.month = filters.month;
-    if (filters.year !== 'all') params.year = filters.year;
-    
-    console.log('🔍 [Frontend] Query params:', params);
-    
-    const res = await api.get('/bill-payments/house-owner/me', {
-      headers: { 
-        Authorization: `Bearer ${auth.accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      params: params
-    });
-    
-    console.log('✅ [Frontend] Response received:', res.data);
-    
-    if (res.data.success) {
-      const billsData = res.data.data || [];
-      console.log(`✅ [Frontend] Found ${billsData.length} bills`);
+    try {
+      setLoadingBills(true)
+      setError(null)
       
-      setBills(billsData);
-      setFilteredBills(billsData);
+      console.log('🔍 [Frontend] Fetching bill payments...')
       
-      // Update summary from API response
-      if (res.data.summary) {
-        setSummaryStats(res.data.summary);
-      }
+      // Build query params
+      const params = {}
+      // if (filters.status !== 'all') params.payment_status = filters.status
+      // if (filters.month !== 'all') params.month = filters.month
+      // if (filters.year !== 'all') params.year = filters.year
+      // if (filters.house_id !== 'all') params.house_id = filters.house_id
       
-      // If no bills found, show appropriate message
-      if (billsData.length === 0) {
-        console.log('ℹ️ [Frontend] No bills found');
-      }
-    } else {
-      console.error('❌ [Frontend] API error:', res.data.message);
-      setError(res.data.message || 'Failed to fetch bills');
-    }
-  } catch (err) {
-    console.error('❌ [Frontend] Failed to fetch bill payments:', err);
-    
-    if (err.response) {
-      console.error('❌ [Frontend] Error response:', {
-        status: err.response.status,
-        data: err.response.data,
-        headers: err.response.headers
-      });
+      console.log('🔍 [Frontend] Query params:', params)
       
-      if (err.response.status === 401) {
-        setError('Session expired. Please log in again.');
-      } else if (err.response.status === 403) {
-        setError('Access denied. Please contact administrator.');
-      } else if (err.response.status === 404) {
-        setError('No bill payments found for your account.');
-        setBills([]);
-        setFilteredBills([]);
-      } else if (err.response.data?.message) {
-        setError(err.response.data.message);
+      const res = await api.get('/bill-payments/house-owner/me', {
+        headers: { 
+          Authorization: `Bearer ${auth.accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        params: params
+      })
+      
+      console.log('✅ [Frontend] Response received:', res.data)
+      
+      if (res.data.success) {
+        const billsData = res.data.data || []
+        const housesData = res.data.houses || houses // Use existing houses if not returned
+        
+        console.log(`✅ [Frontend] Found ${billsData.length} bills for ${housesData.length} houses`)
+        
+        setBills(billsData)
+        setFilteredBills(billsData)
+        
+        // Only update houses if we got new data
+        if (res.data.houses) {
+          setHouses(housesData)
+        }
+        
+        // Update summary from API response
+        if (res.data.summary) {
+          setSummaryStats(res.data.summary)
+        }
+        
+        // Set selected house if not set
+        if (housesData.length > 0 && !selectedHouse) {
+          setSelectedHouse(housesData[0])
+        }
       } else {
-        setError(`Server error: ${err.response.status}`);
+        console.error('❌ [Frontend] API error:', res.data.message)
+        setError(res.data.message || 'Failed to fetch bills')
+        setBills([])
+        setFilteredBills([])
       }
-    } else if (err.request) {
-      console.error('❌ [Frontend] No response received:', err.request);
-      setError('Network error. Please check your internet connection.');
-    } else {
-      console.error('❌ [Frontend] Request setup error:', err.message);
-      setError('An unexpected error occurred: ' + err.message);
-    }
-  } finally {
-    setLoadingBills(false);
-  }
-};
+    } catch (err) {
+      console.error('❌ [Frontend] Failed to fetch bill payments:', err)
 
-  // Temporary mock data generator for demonstration
-  const generateMockBills = (house) => {
-    const months = ['January', 'February', 'March', 'April', 'May', 'June', 
-                   'July', 'August', 'September', 'October', 'November', 'December'];
-    const billTypes = ['Maintenance', 'Water', 'Electricity', 'Parking', 'Common Area'];
-    const statuses = ['Pending', 'Paid', 'Partial'];
-    
-    const currentYear = new Date().getFullYear();
-    const mockBills = [];
-    
-    // Generate bills for last 3 months
-    for (let i = 0; i < 3; i++) {
-      const monthIndex = (new Date().getMonth() - i + 12) % 12;
-      const status = statuses[i % statuses.length];
-      
-      mockBills.push({
-        id: `mock-${i}`,
-        bill_name: `${billTypes[i % billTypes.length]} Bill`,
-        billtype: billTypes[i % billTypes.length],
-        month: months[monthIndex],
-        year: currentYear,
-        totalAmount: 150 + (i * 50),
-        paidAmount: status === 'Paid' ? 150 + (i * 50) : status === 'Partial' ? 100 : 0,
-        pendingAmount: status === 'Pending' ? 150 + (i * 50) : status === 'Partial' ? 50 : 0,
-        payment_status: status,
-        due_date: new Date(currentYear, monthIndex, 15).toISOString(),
-        description: `${billTypes[i % billTypes.length]} charges for ${months[monthIndex]} ${currentYear}`,
-        isMock: true // Flag to indicate this is mock data
+       try {
+      const debugRes = await api.get('/bill-payments/debug/database-state', {
+        headers: { 
+          Authorization: `Bearer ${auth.accessToken}`,
+          'Content-Type': 'application/json'
+        }
       });
+      console.log('🔍 [Frontend] Debug database state:', debugRes.data);
+    } catch (debugErr) {
+      console.error('❌ [Frontend] Debug endpoint failed:', debugErr);
     }
-    
-    return mockBills;
-  };
+      
+      if (err.response) {
+        console.error('❌ [Frontend] Error response:', {
+          status: err.response.status,
+          data: err.response.data,
+          headers: err.response.headers
+        })
+        
+        if (err.response.status === 401) {
+          setError('Session expired. Please log in again.')
+        } else if (err.response.status === 403) {
+          setError('Access denied. Please contact administrator.')
+        } else if (err.response.status === 404) {
+          setError('No bill payments found for your account.')
+          setBills([])
+          setFilteredBills([])
+        } else if (err.response.data?.message) {
+          setError(err.response.data.message)
+        } else {
+          setError(`Server error: ${err.response.status}`)
+        }
+      } else if (err.request) {
+        console.error('❌ [Frontend] No response received:', err.request)
+        setError('Network error. Please check your internet connection.')
+      } else {
+        console.error('❌ [Frontend] Request setup error:', err.message)
+        setError('An unexpected error occurred: ' + err.message)
+      }
+    } finally {
+      setLoadingBills(false)
+    }
+  }
 
   useEffect(() => {
-    fetchHouseOwnerData();
-  }, [auth.accessToken]);
+    fetchHouseOwnerData()
+  }, [auth.accessToken])
 
   useEffect(() => {
     if (selectedHouse) {
-      fetchMyBillPayments();
+      fetchMyBillPayments()
     }
-  }, [selectedHouse]);
+  }, [selectedHouse, filters]) // Added filters to dependency
 
-  // Apply filters
+  // Apply filters locally (in addition to API filtering)
   useEffect(() => {
     if (!bills.length) {
-      setFilteredBills([]);
-      return;
+      setFilteredBills([])
+      return
     }
 
-    let filtered = [...bills];
+    let filtered = [...bills]
 
-    // Filter by status
+    // Filter by status (if not already filtered by API)
     if (filters.status !== 'all') {
-      filtered = filtered.filter(bill => bill.payment_status === filters.status);
+      filtered = filtered.filter(bill => bill.payment_status === filters.status)
     }
 
-    // Filter by month
+    // Filter by month (if not already filtered by API)
     if (filters.month !== 'all') {
-      filtered = filtered.filter(bill => bill.month === filters.month);
+      filtered = filtered.filter(bill => bill.month === filters.month)
     }
 
-    // Filter by year
+    // Filter by year (if not already filtered by API)
     if (filters.year !== 'all') {
-      filtered = filtered.filter(bill => bill.year.toString() === filters.year);
+      filtered = filtered.filter(bill => bill.year.toString() === filters.year.toString())
     }
 
-    setFilteredBills(filtered);
-  }, [bills, filters]);
+    // Filter by house (if not already filtered by API)
+    if (filters.house_id !== 'all') {
+      filtered = filtered.filter(bill => bill.house_id === filters.house_id)
+    }
+
+    setFilteredBills(filtered)
+  }, [bills, filters])
 
   const handleHouseSelect = (house) => {
-    setSelectedHouse(house);
+    setSelectedHouse(house)
     setFilters({
       status: 'all',
       month: 'all',
-      year: new Date().getFullYear().toString()
-    });
-  };
+      year: 'all', // Changed to 'all'
+      house_id: house.id // Auto-select the chosen house
+    })
+  }
 
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({
       ...prev,
       [key]: value
-    }));
-  };
+    }))
+  }
 
   const clearFilters = () => {
     setFilters({
       status: 'all',
       month: 'all',
-      year: new Date().getFullYear().toString()
-    });
-  };
+      year: 'all',
+      house_id: selectedHouse?.id || 'all'
+    })
+  }
 
   const getStatusColor = (status) => {
     switch (status) {
       case 'Paid':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100';
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
       case 'Partial':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100';
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100'
       case 'Pending':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100';
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100'
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100'
     }
-  };
+  }
 
   const getStatusIcon = (status) => {
     switch (status) {
       case 'Paid':
-        return <CheckCircle size={16} className="text-green-600 dark:text-green-400" />;
+        return <CheckCircle size={16} className="text-green-600 dark:text-green-400" />
       case 'Partial':
-        return <DollarSign size={16} className="text-blue-600 dark:text-blue-400" />;
+        return <DollarSign size={16} className="text-blue-600 dark:text-blue-400" />
       case 'Pending':
-        return <Clock size={16} className="text-yellow-600 dark:text-yellow-400" />;
+        return <Clock size={16} className="text-yellow-600 dark:text-yellow-400" />
       default:
-        return <Clock size={16} className="text-gray-600 dark:text-gray-400" />;
+        return <Clock size={16} className="text-gray-600 dark:text-gray-400" />
     }
-  };
+  }
 
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
-  ];
+  ]
 
   // Get unique years from bills
-  const years = [...new Set(bills.map(bill => bill.year))].filter(Boolean).sort((a, b) => b - a);
+  const years = [...new Set(bills.map(bill => bill.year))].filter(Boolean).sort((a, b) => b - a)
 
-  // Calculate summary statistics
+  // Calculate summary statistics from filtered bills
   const calculateSummary = () => {
-    const totalBills = filteredBills.length;
-    const totalAmount = filteredBills.reduce((sum, bill) => sum + (bill.totalAmount || 0), 0);
-    const paidAmount = filteredBills.reduce((sum, bill) => sum + (bill.paidAmount || 0), 0);
-    const pendingAmount = filteredBills.reduce((sum, bill) => sum + (bill.pendingAmount || 0), 0);
+    const totalBills = filteredBills.length
+    const totalAmount = filteredBills.reduce((sum, bill) => sum + (parseFloat(bill.totalAmount) || 0), 0)
+    const paidAmount = filteredBills.reduce((sum, bill) => sum + (parseFloat(bill.paidAmount) || 0), 0)
+    const pendingAmount = filteredBills.reduce((sum, bill) => sum + (parseFloat(bill.pendingAmount) || 0), 0)
     
     return {
       totalBills,
       totalAmount,
       paidAmount,
       pendingAmount
-    };
-  };
+    }
+  }
 
-  const summary = calculateSummary();
+  const summary = calculateSummary()
 
   const handleDownloadBill = (bill) => {
-    // For mock data, show alert
-    if (bill.isMock) {
-      alert('Download feature will be available when real bill data is connected.');
-      return;
-    }
-    
     // Real implementation would go here
-    alert('Download functionality coming soon!');
-  };
+    alert('Download functionality coming soon!')
+  }
 
   const handlePayBill = (bill) => {
-    // For mock data, show alert
-    if (bill.isMock) {
-      alert('Payment feature will be available when real bill data is connected.');
-      return;
-    }
-    
     // Real implementation would go here
-    alert('Payment functionality coming soon!');
-  };
+    alert('Payment functionality coming soon!')
+  }
 
   if (loading) {
     return (
@@ -395,7 +377,7 @@ export default function HouseOwnerViewBills() {
           </div>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -421,16 +403,6 @@ export default function HouseOwnerViewBills() {
                   </h1>
                   <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 truncate">
                     View and manage your bills
-                  </p>
-                </div>
-              </div>
-              
-              {/* Demo Mode Banner */}
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
-                <div className="flex items-center">
-                  <Info size={18} className="text-yellow-600 dark:text-yellow-400 mr-2 flex-shrink-0" />
-                  <p className="text-sm text-yellow-800 dark:text-yellow-300">
-                    <span className="font-semibold">Demo Mode:</span> Using sample bill data
                   </p>
                 </div>
               </div>
@@ -462,7 +434,7 @@ export default function HouseOwnerViewBills() {
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                     >
-                      House {index + 1}
+                      House {house.house_id || index + 1}
                     </button>
                   ))}
                 </div>
@@ -486,26 +458,6 @@ export default function HouseOwnerViewBills() {
                       <span className="text-sm text-gray-600 dark:text-gray-400">
                         House {selectedHouse.house_id}, Floor {selectedHouse.floor_number}
                       </span>
-                    </div>
-                  </div>
-                  
-                  {/* API Development Note */}
-                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mt-4">
-                    <div className="flex items-start">
-                      <FileText size={18} className="text-blue-600 dark:text-blue-400 mr-3 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <h4 className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-1">
-                          API Endpoint Required
-                        </h4>
-                        <p className="text-sm text-blue-700 dark:text-blue-400">
-                          To enable real bill viewing, your backend needs to provide an endpoint like:
-                          <code className="block bg-blue-100 dark:bg-blue-900/40 p-2 rounded mt-2 text-xs">
-                            GET /api/house-owner/bills/me <br/>
-                            or <br/>
-                            GET /api/bills/house/{selectedHouse.id}/owner
-                          </code>
-                        </p>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -583,7 +535,7 @@ export default function HouseOwnerViewBills() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     {/* Status Filter */}
                     <div>
                       <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
@@ -592,7 +544,7 @@ export default function HouseOwnerViewBills() {
                       <select
                         value={filters.status}
                         onChange={(e) => handleFilterChange('status', e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
+                        className="w-full px-3 text-gray-600 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
                       >
                         <option value="all">All Status</option>
                         <option value="Pending">Pending</option>
@@ -609,7 +561,7 @@ export default function HouseOwnerViewBills() {
                       <select
                         value={filters.month}
                         onChange={(e) => handleFilterChange('month', e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
+                        className="w-full px-3 py-2 text-gray-600 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
                       >
                         <option value="all">All Months</option>
                         {months.map(month => (
@@ -623,14 +575,45 @@ export default function HouseOwnerViewBills() {
                       <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                         Year
                       </label>
-                      <select
+                      {/* <select
                         value={filters.year}
                         onChange={(e) => handleFilterChange('year', e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
+                        className="w-full px-3 py-2 text-gray-600 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
                       >
-                        <option value="all">All Years</option>
+                        
                         {years.map(year => (
                           <option key={year} value={year}>{year}</option>
+                        ))}
+                      </select> */}
+                      <div>
+                        <input
+                          type="number"
+                          value={filters.year}
+                          onChange={(e) => handleFilterChange('year', e.target.value)}
+                          min="2025"
+                          max="2100"
+                          className="w-full px-3 py-2 text-gray-600 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
+                          placeholder="Enter year"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* House Filter */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                        House
+                      </label>
+                      <select
+                        value={filters.house_id}
+                        onChange={(e) => handleFilterChange('house_id', e.target.value)}
+                        className="w-full px-3 py-2 text-gray-600 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
+                      >
+                        <option value="all">All Houses</option>
+                        {houses.map((house) => (
+                          <option key={house.id} value={house.id}>
+                            House {house.house_id} - Floor {house.floor_number}
+                          </option>
                         ))}
                       </select>
                     </div>
@@ -660,7 +643,9 @@ export default function HouseOwnerViewBills() {
                         No bills found
                       </h3>
                       <p className="text-gray-500 dark:text-gray-400">
-                        {bills.length === 0 ? 'No bills have been generated for this house yet.' : 'No bills match your filter criteria.'}
+                        {bills.length === 0 
+                          ? 'No bills have been generated for your houses yet.' 
+                          : 'No bills match your filter criteria.'}
                       </p>
                     </div>
                   ) : (
@@ -680,9 +665,6 @@ export default function HouseOwnerViewBills() {
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                               Status
                             </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                              Actions
-                            </th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -692,11 +674,6 @@ export default function HouseOwnerViewBills() {
                                 <div>
                                   <div className="text-sm font-medium text-gray-900 dark:text-white">
                                     {bill.bill_name}
-                                    {bill.isMock && (
-                                      <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 px-2 py-0.5 rounded-full">
-                                        Sample
-                                      </span>
-                                    )}
                                   </div>
                                   <div className="text-xs text-gray-500 dark:text-gray-400">
                                     Type: {bill.billtype}
@@ -713,19 +690,19 @@ export default function HouseOwnerViewBills() {
                                   {bill.month} {bill.year}
                                 </div>
                                 <div className="text-xs text-gray-500 dark:text-gray-400">
-                                  Due: {new Date(bill.due_date).toLocaleDateString()}
+                                  Due: {bill.due_date ? new Date(bill.due_date).toLocaleDateString() : 'Not set'}
                                 </div>
                               </td>
                               <td className="px-4 py-4">
                                 <div className="text-sm">
                                   <div className="text-gray-900 dark:text-white">
-                                    Total: ${bill.totalAmount?.toFixed(2) || '0.00'}
+                                    Total: ${(parseFloat(bill.totalAmount) || 0).toFixed(2)}
                                   </div>
                                   <div className="text-green-600 dark:text-green-400">
-                                    Paid: ${bill.paidAmount?.toFixed(2) || '0.00'}
+                                    Paid: ${(parseFloat(bill.paidAmount) || 0).toFixed(2)}
                                   </div>
                                   <div className="text-red-600 dark:text-red-400">
-                                    Pending: ${bill.pendingAmount?.toFixed(2) || '0.00'}
+                                    Pending: ${(parseFloat(bill.pendingAmount) || 0).toFixed(2)}
                                   </div>
                                 </div>
                               </td>
@@ -737,7 +714,7 @@ export default function HouseOwnerViewBills() {
                                   </span>
                                 </div>
                               </td>
-                              <td className="px-4 py-4">
+                              {/* <td className="px-4 py-4">
                                 <div className="flex space-x-2">
                                   <button
                                     onClick={() => handleDownloadBill(bill)}
@@ -756,7 +733,7 @@ export default function HouseOwnerViewBills() {
                                     </button>
                                   )}
                                 </div>
-                              </td>
+                              </td> */}
                             </tr>
                           ))}
                         </tbody>
@@ -786,5 +763,5 @@ export default function HouseOwnerViewBills() {
         </div>
       </div>
     </div>
-  );
+  )
 }

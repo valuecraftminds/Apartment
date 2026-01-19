@@ -104,18 +104,6 @@ export default function Navbar() {
             >
               {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
-
-            {/* Search bar */}
-            <div className="hidden md:block relative ml-4">
-              {/* <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search size={18} className="text-gray-800 dark:text-gray-500" />
-              </div>
-              <input
-                type="text"
-                placeholder="Search..."
-                className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white text-gray-800 text-sm w-64 transition-colors duration-200"
-              /> */}
-            </div>
           </div>
 
           {/* Right side - Notifications and user info */}
@@ -130,12 +118,12 @@ export default function Navbar() {
             </button>
             
             {/* Notifications */}
-            <button className="p-2 rounded-full text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 relative">
+            {/* <button className="p-2 rounded-full text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 relative">
               <Bell size={20} />
               <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
                 3
               </span>
-            </button>
+            </button> */}
 
             {/* User info */}
             <div className="flex items-center space-x-2">

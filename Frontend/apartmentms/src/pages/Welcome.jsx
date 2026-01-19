@@ -1,3 +1,4 @@
+//Welcome.jsx
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -10,16 +11,6 @@ export default function Welcome() {
 
   return (
     <div className="welcomePage">
-      {/* Header Section with responsive adjustments */}
-      {/* <div className="absolute top-4 left-4 sm:left-6 flex items-center gap-2 mt-5">
-        <img
-          src="/apartment.png"
-          alt="Apartment Logo"
-          className="w-8 h-8 sm:w-10 sm:h-10 md:w-12"
-        />
-        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">AptSync</h2>
-      </div> */}
-
       {/* Buttons with responsive sizing and positioning */}
       <div className="absolute top-4 right-2 sm:right-6 flex gap-2 sm:gap-4 md:gap-6 mt-5">
         <button 

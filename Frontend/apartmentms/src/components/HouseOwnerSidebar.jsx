@@ -307,22 +307,8 @@ export default function HouseOwnerSidebar({ onCollapse }) {
     {
       title: 'Profile',
       icon: <User size={20} />,
-      path: '/houseowner/profile',
+      path: '/houseowner/houseowner-profile',
       exact: false,
-      subItems: [
-        {
-          title: 'Personal Info',
-          path: '/houseowner/profile/personal'
-        },
-        {
-          title: 'Documents',
-          path: '/houseowner/profile/documents'
-        },
-        {
-          title: 'Change Password',
-          path: '/houseowner/profile/change-password'
-        }
-      ]
     }
   ];
 
