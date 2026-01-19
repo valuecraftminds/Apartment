@@ -582,10 +582,83 @@ const complaintController = {
     },
 
     // Assign complaint to technician
+    // async assignComplaint(req, res) {
+    //     try {
+    //         const { id } = req.params;
+    //         const { technician_id, assignment_note } = req.body;
+    //         const assigned_by = req.user?.id;
+    //         const company_id = req.user?.company_id;
+
+    //         if (!technician_id) {
+    //             return res.status(400).json({
+    //                 success: false,
+    //                 message: 'Technician ID is required'
+    //             });
+    //         }
+
+    //         // Get the complaint first
+    //         const complaint = await Complaint.findById(id);
+            
+    //         if (!complaint) {
+    //             return res.status(404).json({
+    //                 success: false,
+    //                 message: 'Complaint not found'
+    //             });
+    //         }
+
+    //         // Verify complaint belongs to company
+    //         if (complaint.company_id !== company_id) {
+    //             return res.status(403).json({
+    //                 success: false,
+    //                 message: 'You are not authorized to assign this complaint'
+    //             });
+    //         }
+
+    //         // Check if already assigned
+    //         if (complaint.assigned_to) {
+    //             return res.status(400).json({
+    //                 success: false,
+    //                 message: 'Complaint is already assigned to a technician'
+    //             });
+    //         }
+
+    //         // Assign technician
+    //         const assignmentData = {
+    //             technician_id,
+    //             assigned_by,
+    //             assignment_note
+    //         };
+
+    //         const assigned = await Complaint.assignTechnician(id, assignmentData);
+
+    //         if (assigned) {
+    //             const updatedComplaint = await Complaint.findById(id);
+                
+    //             res.json({
+    //                 success: true,
+    //                 message: 'Complaint assigned successfully',
+    //                 data: updatedComplaint
+    //             });
+    //         } else {
+    //             res.status(400).json({
+    //                 success: false,
+    //                 message: 'Failed to assign complaint'
+    //             });
+    //         }
+
+    //     } catch (err) {
+    //         console.error('Assign complaint error:', err);
+    //         res.status(500).json({
+    //             success: false,
+    //             message: 'Server error while assigning complaint'
+    //         });
+    //     }
+    // },
+    // controllers/complaintController.js - Update assignComplaint method
     async assignComplaint(req, res) {
         try {
             const { id } = req.params;
-            const { technician_id, assignment_note } = req.body;
+            const { technician_id, assignment_note, category } = req.body; // Add category here
             const assigned_by = req.user?.id;
             const company_id = req.user?.company_id;
 
@@ -622,11 +695,12 @@ const complaintController = {
                 });
             }
 
-            // Assign technician
+            // Assign technician WITH category
             const assignmentData = {
                 technician_id,
                 assigned_by,
-                assignment_note
+                assignment_note: assignment_note || '',
+                category: category || complaint.category // Use new category or keep existing
             };
 
             const assigned = await Complaint.assignTechnician(id, assignmentData);
@@ -656,9 +730,38 @@ const complaintController = {
     },
 
     // Get technicians by category
+    // async getTechniciansByCategory(req, res) {
+    //     try {
+    //         const company_id = req.user?.company_id;
+            
+    //         if (!company_id) {
+    //             return res.status(400).json({
+    //                 success: false,
+    //                 message: 'Company ID is required'
+    //             });
+    //         }
+
+    //         const technicians = await Complaint.getTechniciansByCategory(company_id);
+
+    //         res.json({
+    //             success: true,
+    //             data: technicians || [],
+    //             count: (technicians || []).length
+    //         });
+
+    //     } catch (err) {
+    //         console.error('Get technicians error:', err);
+    //         res.status(500).json({
+    //             success: false,
+    //             message: 'Server error while fetching technicians'
+    //         });
+    //     }
+    // },
+
     async getTechniciansByCategory(req, res) {
         try {
             const company_id = req.user?.company_id;
+            const { category } = req.query; // Get category from query params
             
             if (!company_id) {
                 return res.status(400).json({
@@ -667,7 +770,7 @@ const complaintController = {
                 });
             }
 
-            const technicians = await Complaint.getTechniciansByCategory(company_id);
+            const technicians = await Complaint.getTechniciansByCategory(company_id, category);
 
             res.json({
                 success: true,

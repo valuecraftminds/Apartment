@@ -24,6 +24,7 @@ import {
   Settings,
   Check
 } from 'lucide-react';
+import { toast, ToastContainer } from 'react-toastify';
 
 export default function HouseOwnerComplaints() {
   const [complaints, setComplaints] = useState([]);
@@ -172,7 +173,7 @@ const handleCreateComplaint = async (e) => {
     }
   } catch (err) {
     console.error('Failed to create complaint:', err);
-    alert(err.response?.data?.message || 'Failed to create complaint');
+    toast.error(err.response?.data?.message || 'Failed to create complaint');
   }
 };
 
@@ -189,12 +190,12 @@ const handleUpdateStatus = async (complaintId, newStatus) => {
 
     if (res.data.success) {
       fetchComplaints();
-      alert(`Complaint marked as ${newStatus}!`);
+      toast.success(`Complaint marked as ${newStatus}!`);
       setShowViewModal(false); // Close the view modal if open
     }
   } catch (err) {
     console.error('Failed to update status:', err);
-    alert(err.response?.data?.message || 'Failed to update status');
+    toast.error(err.response?.data?.message || 'Failed to update status');
   }
 };
 
@@ -208,27 +209,6 @@ const handleUpdateStatus = async (complaintId, newStatus) => {
     });
     setErrors({});
   };
-
-  // const handleFileChange = (e) => {
-  //   const file = e.target.files[0];
-  //   if (file) {
-  //     // Validate file size (5MB)
-  //     if (file.size > 5 * 1024 * 1024) {
-  //       alert('File size must be less than 5MB');
-  //       return;
-  //     }
-      
-  //     // Validate file type
-  //     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf', 
-  //                          'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-  //     if (!allowedTypes.includes(file.type)) {
-  //       alert('Only images, PDF and Word documents are allowed');
-  //       return;
-  //     }
-      
-  //     setFormData(prev => ({ ...prev, attachment: file }));
-  //   }
-  // };
 
   const handleHouseSelect = (house) => {
     setSelectedHouse(house);
@@ -257,79 +237,10 @@ const handleUpdateStatus = async (complaintId, newStatus) => {
     }
   };
 
-  // const getPriorityColor = (priority) => {
-  //   switch (priority) {
-  //     case 'Emergency':
-  //       return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
-  //     case 'High':
-  //       return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300';
-  //     case 'Medium':
-  //       return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
-  //     case 'Low':
-  //       return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
-  //     default:
-  //       return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-  //   }
-  // };
-
-  // const getCategoryIcon = (category) => {
-  //   switch (category) {
-  //     case 'Plumbing':
-  //       return <Wrench className="text-blue-500" size={16} />;
-  //     case 'Electrical':
-  //       return <Zap className="text-yellow-500" size={16} />;
-  //     case 'Security':
-  //       return <Shield className="text-green-500" size={16} />;
-  //     case 'Common Area':
-  //       return <Users className="text-purple-500" size={16} />;
-  //     default:
-  //       return <Tool className="text-gray-500" size={16} />;
-  //   }
-  // };
-
   const handleViewComplaint = (complaint) => {
     setSelectedComplaint(complaint);
     setShowViewModal(true);
   };
-
-  // const handleDownloadAttachment = async (complaint) => {
-  //   try {
-  //     const response = await api.get(`/complaints/${complaint.id}/download`, {
-  //       headers: { 
-  //         Authorization: `Bearer ${auth.accessToken}`
-  //       },
-  //       responseType: 'blob'
-  //     });
-      
-  //     const url = window.URL.createObjectURL(new Blob([response.data]));
-  //     const link = document.createElement('a');
-  //     link.href = url;
-  //     link.setAttribute('download', `complaint-${complaint.complaint_number}.${complaint.attachment_path.split('.').pop()}`);
-  //     document.body.appendChild(link);
-  //     link.click();
-  //     link.remove();
-  //   } catch (err) {
-  //     console.error('Failed to download attachment:', err);
-  //     alert('Failed to download attachment');
-  //   }
-  // };
-
-  // const categories = [
-  //   { value: 'Plumbing', label: 'Plumbing', icon: <Wrench size={16} /> },
-  //   { value: 'Electrical', label: 'Electrical', icon: <Zap size={16} /> },
-  //   { value: 'Structural', label: 'Structural', icon: <Building2 size={16} /> },
-  //   { value: 'Common Area', label: 'Common Area', icon: <Users size={16} /> },
-  //   { value: 'Security', label: 'Security', icon: <Shield size={16} /> },
-  //   { value: 'Maintenance', label: 'Maintenance', icon: <Settings size={16} /> },
-  //   { value: 'Other', label: 'Other', icon: <AlertCircle size={16} /> }
-  // ];
-
-  // const priorities = [
-  //   { value: 'Low', label: 'Low', color: 'text-green-600' },
-  //   { value: 'Medium', label: 'Medium', color: 'text-yellow-600' },
-  //   { value: 'High', label: 'High', color: 'text-orange-600' },
-  //   { value: 'Emergency', label: 'Emergency', color: 'text-red-600' }
-  // ];
 
   if (loading && !complaints.length) {
     return (
@@ -1042,6 +953,12 @@ const handleUpdateStatus = async (complaintId, newStatus) => {
           </div>
         </div>
       )}
+      <ToastContainer
+        position="top-center" 
+        autoClose={3000}
+        className="mt-14 md:mt-0"
+        toastClassName="text-sm md:text-base"
+      />
     </div>
   );
 }

@@ -221,7 +221,7 @@ export default function MyComplaints() {
                   </p>
                 </div>
               </div>
-              <div className="flex space-x-6 text-right">
+              {/* <div className="flex space-x-6 text-right">
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Total Complaints</p>
                   <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
@@ -240,7 +240,7 @@ export default function MyComplaints() {
                     {statistics.pending}
                   </p>
                 </div>
-              </div>
+              </div> */}
             </div>
 
             {/* Statistics Cards - Mobile */}
@@ -299,7 +299,7 @@ export default function MyComplaints() {
                   <select
                     value={filters.status}
                     onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
+                    className="w-full px-3 py-2 text-gray-600 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
                   >
                     <option value="all">All Status</option>
                     <option value="Pending">Pending</option>
@@ -400,32 +400,6 @@ export default function MyComplaints() {
                               </p>
                             )}
                           </div>
-                          
-                          <div className="flex space-x-2">
-                            {/* {complaint.status === 'In Progress' && (
-                              <button
-                                onClick={() => handleUpdateStatus(complaint.id, 'Resolved')}
-                                className="px-3 py-1 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors"
-                              >
-                                Mark Resolved
-                              </button>
-                            )}
-                            {complaint.status === 'Pending' && (
-                              <button
-                                onClick={() => handleUpdateStatus(complaint.id, 'In Progress')}
-                                className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors"
-                              >
-                                Start Work
-                              </button>
-                            )} */}
-                            <button
-                              onClick={() => handleViewComplaint(complaint.id)}
-                              className="px-3 py-1 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 transition-colors flex items-center"
-                            >
-                              View
-                              <ChevronRight size={12} className="ml-1" />
-                            </button>
-                          </div>
                         </div>
                       </div>
                     ))}
@@ -447,9 +421,6 @@ export default function MyComplaints() {
                           </th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             Created Date
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            Actions
                           </th>
                         </tr>
                       </thead>
@@ -499,33 +470,6 @@ export default function MyComplaints() {
                                   Assigned: {formatDate(complaint.assigned_at)}
                                 </div>
                               )}
-                            </td>
-                            <td className="px-4 py-4">
-                              <div className="flex space-x-2">
-                                {/* {complaint.status === 'In Progress' && (
-                                  <button
-                                    onClick={() => handleUpdateStatus(complaint.id, 'Resolved')}
-                                    className="px-3 py-1 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors"
-                                  >
-                                    Mark Resolved
-                                  </button>
-                                )}
-                                {complaint.status === 'Pending' && (
-                                  <button
-                                    onClick={() => handleUpdateStatus(complaint.id, 'In Progress')}
-                                    className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors"
-                                  >
-                                    Start Work
-                                  </button>
-                                )} */}
-                                <button
-                                  onClick={() => handleViewComplaint(complaint.id)}
-                                  className="px-3 py-1 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 transition-colors flex items-center"
-                                >
-                                  View Details
-                                  <ChevronRight size={12} className="ml-1" />
-                                </button>
-                              </div>
                             </td>
                           </tr>
                         ))}

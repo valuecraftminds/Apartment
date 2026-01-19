@@ -1,5 +1,6 @@
 //ViewComplaint.jsx
 import React, { useState, useEffect, useContext } from 'react';
+import { toast, ToastContainer } from 'react-toastify';
 
 import { 
   AlertCircle, 
@@ -83,31 +84,6 @@ export default function ViewComplaint() {
     useEffect(() => {
         loadApartments();
     }, []);
-  
-//   const fetchComplaints = async () => {
-//     try {
-//         setLoading(true);
-//         const res = await api.get('/complaints', {
-//             headers: { 
-//                 Authorization: `Bearer ${auth.accessToken}`
-//             },
-//             params: filters
-//         });
-        
-//         if (res.data.success) {
-//             setComplaints(res.data.data || []);
-//             setFilteredComplaints(res.data.data || []);
-//             calculateStatistics(res.data.data || []);
-//             if (res.data.categories) {
-//                 setCategories(res.data.categories);
-//             }
-//         }
-//     } catch (err) {
-//         console.error('Failed to fetch complaints:', err);
-//     } finally {
-//         setLoading(false);
-//     }
-// };
 
 const fetchComplaints = async () => {
     try {
@@ -149,26 +125,17 @@ const fetchComplaints = async () => {
     }
 };
 
-  // Fetch technicians
 const fetchTechnicians = async (category = '') => {
     try {
-        const params = {};
-        if (category) {
-            params.category = category;
-        }
-        
         const res = await api.get('/complaints/technicians/category', {
             headers: { 
                 Authorization: `Bearer ${auth.accessToken}`
-            },
-            params: params
+            }
         });
         
         if (res.data.success) {
-            // Map the data to include proper name field
             const techs = res.data.data.map(tech => ({
                 ...tech,
-                // Use the 'name' field from database or combine firstname/lastname
                 name: tech.name || `${tech.firstname || ''} ${tech.lastname || ''}`.trim()
             }));
             setTechnicians(techs);
@@ -295,48 +262,54 @@ useEffect(() => {
     }
 }, [complaints]);
 
-  // Update the handleAssignComplaint function
 const handleAssignComplaint = (complaint) => {
     setSelectedComplaint(complaint);
     setSelectedTechnician(null);
     setAssignmentNote('');
     
-    // Set category from complaint or default
+    // Get the category from the complaint object
     const complaintCategory = complaint.category || 'General';
     setSelectedCategory(complaintCategory);
     
-    // Fetch technicians for this category
+    // Fetch technicians - use the complaint's category
     fetchTechnicians(complaintCategory);
     
     setShowAssignModal(true);
 };
 
-  const handleSubmitAssignment = async () => {
+// ViewComplaint.jsx - Update handleSubmitAssignment
+const handleSubmitAssignment = async () => {
     if (!selectedTechnician) {
-      alert('Please select a technician');
-      return;
+        toast.error('Please select a technician');
+        return;
     }
 
     try {
-      const res = await api.patch(`/complaints/${selectedComplaint.id}/assign`, {
-        technician_id: selectedTechnician.id,
-        assignment_note: assignmentNote
-      }, {
-        headers: { 
-          Authorization: `Bearer ${auth.accessToken}`
-        }
-      });
+        const assignmentData = {
+            technician_id: selectedTechnician.id,
+            assignment_note: assignmentNote,
+            category: selectedCategory // Send the category
+        };
 
-      if (res.data.success) {
-        setShowAssignModal(false);
-        fetchComplaints();
-        alert('Complaint assigned successfully!');
-      }
+        const res = await api.patch(`/complaints/${selectedComplaint.id}/assign`, 
+            assignmentData, 
+            {
+                headers: { 
+                    Authorization: `Bearer ${auth.accessToken}`
+                }
+            }
+        );
+
+        if (res.data.success) {
+            setShowAssignModal(false);
+            fetchComplaints(); // Refresh the complaints list
+            toast.success('Complaint assigned successfully!');
+        }
     } catch (err) {
-      console.error('Failed to assign complaint:', err);
-      alert(err.response?.data?.message || 'Failed to assign complaint');
+        console.error('Failed to assign complaint:', err);
+        toast.error(err.response?.data?.message || 'Failed to assign complaint');
     }
-  };
+};
 
   const handleUpdateStatus = async (complaintId, newStatus) => {
     try {
@@ -350,11 +323,11 @@ const handleAssignComplaint = (complaint) => {
 
       if (res.data.success) {
         fetchComplaints();
-        alert('Status updated successfully!');
+        toast.success('Status updated successfully!');
       }
     } catch (err) {
       console.error('Failed to update status:', err);
-      alert(err.response?.data?.message || 'Failed to update status');
+      toast.error(err.response?.data?.message || 'Failed to update status');
     }
   };
 
@@ -751,7 +724,7 @@ const handleAssignComplaint = (complaint) => {
                       </div>
 
                       {/* Category Selection */}
-                      <div className="mb-4">
+                      {/* <div className="mb-4">
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                               Complaint Category
                           </label>
@@ -764,16 +737,38 @@ const handleAssignComplaint = (complaint) => {
                               }}
                               className="w-full px-3 py-2 border text-gray-500 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
                           >
-                              {/* {categories.map((category) => (
-                                <option key={category} value={category}>
-                                    {category}
-                                </option>
-                            ))} */}
+                              
                             <option value="General">General</option>
                             <option value="Water">Water</option>
                             <option value="Electricity">Electricity</option>
                             <option value="Gas">Gas</option>
                           </select>
+                      </div> */}
+                      {/* Category Selection - Editable version */}
+                      <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                              Complaint Category
+                          </label>
+                          <select
+                              value={selectedCategory}
+                              onChange={(e) => {
+                                  const newCategory = e.target.value;
+                                  setSelectedCategory(newCategory);
+                                  // Fetch technicians based on the selected category
+                                  fetchTechnicians(newCategory);
+                                  setSelectedTechnician(null); // Reset selected technician
+                              }}
+                              className="w-full px-3 py-2 border text-gray-500 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
+                          >
+                              {categories.map((category) => (
+                                  <option key={category} value={category}>
+                                      {category}
+                                  </option>
+                              ))}
+                          </select>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              Changing the category will filter available technicians
+                          </p>
                       </div>
 
                       {/* Technician Selection */}
@@ -863,6 +858,12 @@ const handleAssignComplaint = (complaint) => {
       )}
         </div>
       </div>
+      <ToastContainer
+        position="top-center" 
+        autoClose={3000}
+        className="mt-14 md:mt-0"
+        toastClassName="text-sm md:text-base"
+      />
     </div>
   );
 }

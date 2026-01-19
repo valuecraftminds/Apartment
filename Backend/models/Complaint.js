@@ -121,10 +121,30 @@ class Complaint {
         return rows;
     }
 
-    // Get technicians by specialization/category
-    // models/Complaint.js - Updated getTechniciansByCategory method
-static async getTechniciansByCategory(company_id) {
-    const query = `
+// static async getTechniciansByCategory(company_id) {
+//     const query = `
+//         SELECT 
+//             u.id,
+//             u.firstname,
+//             u.lastname,
+//             u.email,
+//             u.mobile,
+//             r.role_name,
+//             CONCAT(u.firstname, ' ', u.lastname) as name
+//         FROM users u
+//         LEFT JOIN roles r ON u.role_id = r.id
+//         WHERE u.company_id = ? 
+//         AND r.role_name IN ('Technician', 'Maintenance Staff', 'Maintenance', 'technician', 'Apartment Technician', 'Apartment_Technician')
+//         AND u.is_active = 1
+//         ORDER BY u.firstname, u.lastname ASC
+//     `;
+    
+//     const [rows] = await pool.execute(query, [company_id]);
+//     return rows;
+// }
+
+static async getTechniciansByCategory(company_id, category = null) {
+    let query = `
         SELECT 
             u.id,
             u.firstname,
@@ -138,10 +158,19 @@ static async getTechniciansByCategory(company_id) {
         WHERE u.company_id = ? 
         AND r.role_name IN ('Technician', 'Maintenance Staff', 'Maintenance', 'technician', 'Apartment Technician', 'Apartment_Technician')
         AND u.is_active = 1
-        ORDER BY u.firstname, u.lastname ASC
     `;
     
-    const [rows] = await pool.execute(query, [company_id]);
+    const params = [company_id];
+    
+    // Optional: Add category filtering if needed
+    // if (category) {
+    //     query += ' AND u.specialization LIKE ?';
+    //     params.push(`%${category}%`);
+    // }
+    
+    query += ' ORDER BY u.firstname, u.lastname ASC';
+    
+    const [rows] = await pool.execute(query, params);
     return rows;
 }
 
@@ -160,23 +189,61 @@ static async getTechniciansByCategory(company_id) {
     }
 
     // Assign technician to complaint
+    // static async assignTechnician(complaintId, assignmentData) {
+    //     const {
+    //         technician_id,
+    //         assigned_by,
+    //         assignment_note
+    //     } = assignmentData;
+
+    //     const [result] = await pool.execute(
+    //         `UPDATE complaints 
+    //          SET assigned_to = ?,
+    //              assigned_by = ?,
+    //              assigned_at = CURRENT_TIMESTAMP,
+    //              assignment_note = ?,
+    //              status = 'In Progress',
+    //              updated_at = CURRENT_TIMESTAMP
+    //          WHERE id = ?`,
+    //         [technician_id, assigned_by, assignment_note, complaintId]
+    //     );
+
+    //     return result.affectedRows > 0;
+    // }
+    
     static async assignTechnician(complaintId, assignmentData) {
         const {
             technician_id,
             assigned_by,
-            assignment_note
+            assignment_note,
+            category // Add this parameter
         } = assignmentData;
 
+        // Build the update query dynamically
+        const updates = [
+            'assigned_to = ?',
+            'assigned_by = ?',
+            'assigned_at = CURRENT_TIMESTAMP',
+            'assignment_note = ?', 
+            'status = "In Progress"',
+            'updated_at = CURRENT_TIMESTAMP'
+        ];
+        
+        const params = [technician_id, assigned_by, assignment_note];
+        
+        // Add category update if provided
+        if (category) {
+            updates.push('category = ?');
+            params.push(category);
+        }
+        
+        params.push(complaintId);
+        
         const [result] = await pool.execute(
             `UPDATE complaints 
-             SET assigned_to = ?,
-                 assigned_by = ?,
-                 assigned_at = CURRENT_TIMESTAMP,
-                 assignment_note = ?,
-                 status = 'In Progress',
-                 updated_at = CURRENT_TIMESTAMP
-             WHERE id = ?`,
-            [technician_id, assigned_by, assignment_note, complaintId]
+            SET ${updates.join(', ')}
+            WHERE id = ?`,
+            params
         );
 
         return result.affectedRows > 0;
