@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useContext } from 'react';
+// MyComplaints.jsx
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { 
   AlertCircle, 
   CheckCircle, 
@@ -12,7 +13,13 @@ import {
   User,
   Wrench,
   Calendar,
-  ChevronRight
+  ChevronRight,
+  Play,
+  Pause,
+  StopCircle,
+  RefreshCw,
+  Timer,
+  Plus
 } from 'lucide-react';
 import { AuthContext } from '../contexts/AuthContext';
 import api from '../api/axios';
@@ -35,10 +42,21 @@ export default function MyComplaints() {
     in_progress: 0,
     resolved: 0
   });
+  const [activeTimers, setActiveTimers] = useState({});
+  const intervalRefs = useRef({});
   const { auth } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  // Fetch technician's assigned complaints
+  // Format seconds to HH:MM:SS
+  const formatTime = (seconds) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Fetch technician's assigned complaints with timer status
   const fetchMyComplaints = async () => {
     try {
       setLoading(true);
@@ -50,10 +68,18 @@ export default function MyComplaints() {
       });
       
       if (response.data.success) {
-        setComplaints(response.data.data || []);
+        const complaintsData = response.data.data || [];
+        setComplaints(complaintsData);
         if (response.data.statistics) {
           setStatistics(response.data.statistics);
         }
+        
+        // Initialize timers for complaints that are running
+        complaintsData.forEach(complaint => {
+          if (complaint.is_timer_running && complaint.work_started_at) {
+            startLocalTimer(complaint.id, complaint.total_work_time, complaint.work_started_at);
+          }
+        });
       } else {
         console.error('Failed to load complaints:', response.data.message);
         setComplaints([]);
@@ -66,6 +92,231 @@ export default function MyComplaints() {
     }
   };
 
+  // Start local timer for UI
+  const startLocalTimer = (complaintId, baseSeconds, startTime) => {
+    // Clear existing interval if any
+    if (intervalRefs.current[complaintId]) {
+      clearInterval(intervalRefs.current[complaintId]);
+    }
+    
+    const start = startTime ? new Date(startTime) : new Date();
+    const baseTime = baseSeconds || 0;
+    
+    // Update immediately
+    setActiveTimers(prev => ({
+      ...prev,
+      [complaintId]: {
+        baseSeconds: baseTime,
+        startTime: start,
+        elapsed: baseTime,
+        formatted: formatTime(baseTime)
+      }
+    }));
+    
+    // Set up interval to update every second
+    intervalRefs.current[complaintId] = setInterval(() => {
+      const now = new Date();
+      const elapsedSeconds = Math.floor((now - start) / 1000) + baseTime;
+      
+      setActiveTimers(prev => ({
+        ...prev,
+        [complaintId]: {
+          ...prev[complaintId],
+          elapsed: elapsedSeconds,
+          formatted: formatTime(elapsedSeconds)
+        }
+      }));
+    }, 1000);
+  };
+
+  // Stop local timer
+  const stopLocalTimer = (complaintId) => {
+    if (intervalRefs.current[complaintId]) {
+      clearInterval(intervalRefs.current[complaintId]);
+      delete intervalRefs.current[complaintId];
+    }
+    
+    setActiveTimers(prev => {
+      const newTimers = { ...prev };
+      delete newTimers[complaintId];
+      return newTimers;
+    });
+  };
+
+  // Handle start timer
+  const handleStartTimer = async (complaintId) => {
+    try {
+      const response = await api.post(`/complaints/${complaintId}/timer/start`, {}, {
+        headers: { 
+          Authorization: `Bearer ${auth.accessToken}`
+        }
+      });
+      
+      if (response.data.success) {
+        // Start local timer
+        startLocalTimer(complaintId, 0, new Date());
+        
+        // Update complaint status
+        setComplaints(prev => prev.map(complaint => 
+          complaint.id === complaintId 
+            ? { 
+                ...complaint, 
+                is_timer_running: true,
+                work_started_at: new Date().toISOString(),
+                status: 'In Progress'
+              }
+            : complaint
+        ));
+        
+        // Update statistics
+        setStatistics(prev => ({
+          ...prev,
+          in_progress: prev.in_progress + 1,
+          pending: complaints.status === 'Pending' ? prev.pending - 1 : prev.pending
+        }));
+        
+        alert('Timer started! Work in progress.');
+      } else {
+        alert(response.data.message || 'Failed to start timer');
+      }
+    } catch (error) {
+      console.error('Error starting timer:', error);
+      alert(error.response?.data?.message || 'Failed to start timer');
+    }
+  };
+
+  // Handle pause timer
+  const handlePauseTimer = async (complaintId) => {
+    try {
+      const response = await api.post(`/complaints/${complaintId}/timer/pause`, {}, {
+        headers: { 
+          Authorization: `Bearer ${auth.accessToken}`
+        }
+      });
+      
+      if (response.data.success) {
+        // Stop local timer
+        stopLocalTimer(complaintId);
+        
+        // Update complaint status
+        setComplaints(prev => prev.map(complaint => 
+          complaint.id === complaintId 
+            ? { 
+                ...complaint, 
+                is_timer_running: false,
+                work_paused_at: new Date().toISOString(),
+                total_work_time: response.data.data?.currentElapsedTime || complaint.total_work_time
+              }
+            : complaint
+        ));
+        
+        alert('Timer paused.');
+      } else {
+        alert(response.data.message || 'Failed to pause timer');
+      }
+    } catch (error) {
+      console.error('Error pausing timer:', error);
+      alert(error.response?.data?.message || 'Failed to pause timer');
+    }
+  };
+
+  // Handle resume timer
+  const handleResumeTimer = async (complaintId) => {
+    try {
+      const response = await api.post(`/complaints/${complaintId}/timer/resume`, {}, {
+        headers: { 
+          Authorization: `Bearer ${auth.accessToken}`
+        }
+      });
+      
+      if (response.data.success) {
+        // Get current total work time and start local timer
+        const complaint = complaints.find(c => c.id === complaintId);
+        const baseTime = complaint?.total_work_time || 0;
+        startLocalTimer(complaintId, baseTime, new Date());
+        
+        // Update complaint status
+        setComplaints(prev => prev.map(complaint => 
+          complaint.id === complaintId 
+            ? { 
+                ...complaint, 
+                is_timer_running: true,
+                work_started_at: new Date().toISOString(),
+                work_paused_at: null
+              }
+            : complaint
+        ));
+        
+        alert('Timer resumed.');
+      } else {
+        alert(response.data.message || 'Failed to resume timer');
+      }
+    } catch (error) {
+      console.error('Error resuming timer:', error);
+      alert(error.response?.data?.message || 'Failed to resume timer');
+    }
+  };
+
+  // Handle stop/complete timer
+  const handleStopTimer = async (complaintId) => {
+    if (!window.confirm('Are you sure you want to stop the timer and mark this work as completed?')) {
+      return;
+    }
+    
+    try {
+      const response = await api.post(`/complaints/${complaintId}/timer/stop`, {}, {
+        headers: { 
+          Authorization: `Bearer ${auth.accessToken}`
+        }
+      });
+      
+      if (response.data.success) {
+        // Stop local timer
+        stopLocalTimer(complaintId);
+        
+        // Update complaint status and statistics
+        setComplaints(prev => prev.map(complaint => {
+          if (complaint.id === complaintId) {
+            const totalTime = response.data.data?.currentElapsedTime || complaint.total_work_time;
+            return { 
+              ...complaint, 
+              is_timer_running: false,
+              work_started_at: null,
+              work_paused_at: null,
+              status: 'Resolved',
+              resolved_at: new Date().toISOString(),
+              total_work_time: totalTime
+            };
+          }
+          return complaint;
+        }));
+        
+        setStatistics(prev => ({
+          ...prev,
+          resolved: prev.resolved + 1,
+          in_progress: prev.in_progress - 1
+        }));
+        
+        alert('Work completed! Total time tracked: ' + formatTime(response.data.data?.currentElapsedTime || 0));
+      } else {
+        alert(response.data.message || 'Failed to stop timer');
+      }
+    } catch (error) {
+      console.error('Error stopping timer:', error);
+      alert(error.response?.data?.message || 'Failed to stop timer');
+    }
+  };
+
+  // Clean up intervals on component unmount
+  useEffect(() => {
+    return () => {
+      Object.values(intervalRefs.current).forEach(interval => {
+        clearInterval(interval);
+      });
+    };
+  }, []);
+
+  // Fetch complaints on mount and auth change
   useEffect(() => {
     if (auth?.accessToken) {
       fetchMyComplaints();
@@ -116,21 +367,107 @@ export default function MyComplaints() {
   // Get category color
   const getCategoryColor = (category) => {
     switch (category?.toLowerCase()) {
-      case 'electrical':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
-      case 'plumbing':
+      case 'water':
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
-      case 'carpentry':
+      case 'electricity':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+      case 'gas':
         return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300';
-      case 'painting':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
-      case 'cleaning':
-        return 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300';
-      case 'security':
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+      case 'general':
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
+  };
+
+  // Render timer display
+  const renderTimerDisplay = (complaint) => {
+    const timerData = activeTimers[complaint.id];
+    const isTimerRunning = complaint.is_timer_running;
+    
+    if (isTimerRunning || timerData) {
+      const displayTime = timerData?.formatted || formatTime(complaint.total_work_time || 0);
+      return (
+        <div className="flex items-center bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded-lg">
+          <Timer size={14} className="text-blue-600 dark:text-blue-400 mr-2 animate-pulse" />
+          <span className="font-mono text-sm font-bold text-blue-700 dark:text-blue-300">
+            {displayTime}
+          </span>
+        </div>
+      );
+    }
+    
+    if (complaint.total_work_time > 0) {
+      return (
+        <div className="flex items-center bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-lg">
+          <Clock size={14} className="text-gray-600 dark:text-gray-400 mr-2" />
+          <span className="font-mono text-sm text-gray-700 dark:text-gray-300">
+            {formatTime(complaint.total_work_time)}
+          </span>
+        </div>
+      );
+    }
+    
+    return null;
+  };
+
+  // Render timer controls
+  const renderTimerControls = (complaint) => {
+    const isTimerRunning = complaint.is_timer_running;
+    const hasWorkStarted = complaint.work_started_at;
+    const hasWorkPaused = complaint.work_paused_at;
+    
+    if (complaint.status === 'Resolved' || complaint.status === 'Closed') {
+      return (
+        <div className="text-center py-2">
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            Completed
+          </span>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="flex flex-col sm:flex-row gap-2">
+        {!hasWorkStarted && !isTimerRunning ? (
+          <button
+            onClick={() => handleStartTimer(complaint.id)}
+            className="flex items-center justify-center gap-1 px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors"
+            title="Start Work Timer"
+          >
+            <Play size={14} />
+            <span>Start Work</span>
+          </button>
+        ) : isTimerRunning ? (
+          <>
+            <button
+              onClick={() => handlePauseTimer(complaint.id)}
+              className="flex items-center justify-center gap-1 px-3 py-1.5 bg-yellow-600 text-white text-xs rounded-lg hover:bg-yellow-700 transition-colors"
+              title="Pause Timer"
+            >
+              <Pause size={14} />
+              <span>Pause</span>
+            </button>
+            <button
+              onClick={() => handleStopTimer(complaint.id)}
+              className="flex items-center justify-center gap-1 px-3 py-1.5 bg-red-600 text-white text-xs rounded-lg hover:bg-red-700 transition-colors"
+              title="Complete Work"
+            >
+              <StopCircle size={14} />
+              <span>Complete</span>
+            </button>
+          </>
+        ) : hasWorkPaused ? (
+          <button
+            onClick={() => handleResumeTimer(complaint.id)}
+            className="flex items-center justify-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors"
+            title="Resume Work"
+          >
+            <RefreshCw size={14} />
+            <span>Resume</span>
+          </button>
+        ) : null}
+      </div>
+    );
   };
 
   // Handle view complaint details
@@ -138,26 +475,21 @@ export default function MyComplaints() {
     navigate(`/complaints/${complaintId}`);
   };
 
-  // Handle update status
-  // const handleUpdateStatus = async (complaintId, newStatus) => {
-  //   try {
-  //     const res = await api.patch(`/complaints/${complaintId}/status`, {
-  //       status: newStatus
-  //     }, {
-  //       headers: { 
-  //         Authorization: `Bearer ${auth.accessToken}`
-  //       }
-  //     });
+  // Handle filter change
+  const handleFilterChange = (filterName, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [filterName]: value
+    }));
+  };
 
-  //     if (res.data.success) {
-  //       fetchMyComplaints();
-  //       alert(`Complaint marked as ${newStatus}!`);
-  //     }
-  //   } catch (err) {
-  //     console.error('Failed to update status:', err);
-  //     alert(err.response?.data?.message || 'Failed to update status');
-  //   }
-  // };
+  // Clear all filters
+  const clearFilters = () => {
+    setFilters({
+      status: 'all'
+    });
+    setSearchTerm('');
+  };
 
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
@@ -185,7 +517,7 @@ export default function MyComplaints() {
 
       <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
         {/* Navbar */}
-        <Navbar />
+        <Navbar onMobileMenuClick={() => setIsMobileSidebarOpen(true)} />
         
         {/* Mobile Header */}
         <div className="lg:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4">
@@ -221,7 +553,7 @@ export default function MyComplaints() {
                   </p>
                 </div>
               </div>
-              {/* <div className="flex space-x-6 text-right">
+              <div className="flex space-x-6 text-right">
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Total Complaints</p>
                   <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
@@ -240,7 +572,7 @@ export default function MyComplaints() {
                     {statistics.pending}
                   </p>
                 </div>
-              </div> */}
+              </div>
             </div>
 
             {/* Statistics Cards - Mobile */}
@@ -298,7 +630,7 @@ export default function MyComplaints() {
                 <div>
                   <select
                     value={filters.status}
-                    onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                    onChange={(e) => handleFilterChange('status', e.target.value)}
                     className="w-full px-3 py-2 text-gray-600 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
                   >
                     <option value="all">All Status</option>
@@ -308,6 +640,21 @@ export default function MyComplaints() {
                     <option value="Closed">Closed</option>
                   </select>
                 </div>
+              </div>
+              
+              {/* Filter Info */}
+              <div className="flex justify-between items-center mt-4">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Showing {filteredComplaints.length} of {complaints.length} complaints
+                </div>
+                {(filters.status !== 'all' || searchTerm) && (
+                  <button
+                    onClick={clearFilters}
+                    className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300"
+                  >
+                    Clear filters
+                  </button>
+                )}
               </div>
             </div>
 
@@ -367,6 +714,11 @@ export default function MyComplaints() {
                           </div>
                         </div>
 
+                        {/* Timer Display */}
+                        <div className="mb-3">
+                          {renderTimerDisplay(complaint)}
+                        </div>
+
                         {/* Location Info */}
                         <div className="mb-3">
                           <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
@@ -388,6 +740,11 @@ export default function MyComplaints() {
                           </p>
                         </div>
 
+                        {/* Timer Controls */}
+                        <div className="mb-4">
+                          {renderTimerControls(complaint)}
+                        </div>
+
                         {/* Dates and Actions */}
                         <div className="flex justify-between items-center border-t border-gray-200 dark:border-gray-600 pt-3">
                           <div>
@@ -400,6 +757,12 @@ export default function MyComplaints() {
                               </p>
                             )}
                           </div>
+                          <button
+                            onClick={() => handleViewComplaint(complaint.id)}
+                            className="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300"
+                          >
+                            <ChevronRight size={18} />
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -420,7 +783,13 @@ export default function MyComplaints() {
                             Status
                           </th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            Created Date
+                            Timer
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Actions
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Created
                           </th>
                         </tr>
                       </thead>
@@ -462,12 +831,31 @@ export default function MyComplaints() {
                               </span>
                             </td>
                             <td className="px-4 py-4">
+                              {renderTimerDisplay(complaint)}
+                            </td>
+                            <td className="px-4 py-4">
+                              <div className="flex flex-col space-y-2">
+                                {renderTimerControls(complaint)}
+                                {/* <button
+                                  onClick={() => handleViewComplaint(complaint.id)}
+                                  className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300"
+                                >
+                                  View Details →
+                                </button> */}
+                              </div>
+                            </td>
+                            <td className="px-4 py-4">
                               <div className="text-sm text-gray-900 dark:text-white">
                                 {formatDate(complaint.created_at)}
                               </div>
                               {complaint.assigned_at && (
                                 <div className="text-xs text-gray-500 dark:text-gray-400">
                                   Assigned: {formatDate(complaint.assigned_at)}
+                                </div>
+                              )}
+                              {complaint.work_started_at && (
+                                <div className="text-xs text-blue-500 dark:text-blue-400">
+                                  Work Started: {formatDate(complaint.work_started_at)}
                                 </div>
                               )}
                             </td>

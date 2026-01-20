@@ -4,6 +4,7 @@ import { X, Building2, Check, Search, Loader, MapPin, Home } from 'lucide-react'
 import { toast } from 'react-toastify';
 import api from '../api/axios';
 import UserBillModal from './UserBillModal';
+import TechnicianCategoryModal from './TechnicianCategoryModel';
 
 export default function UserApartmentModal({ user, onClose, onAssignSuccess }) {
   const [allApartments, setAllApartments] = useState([]);
@@ -170,6 +171,15 @@ export default function UserApartmentModal({ user, onClose, onAssignSuccess }) {
           >
             Assign Bills
           </button>
+          <button
+            onClick={() => setActiveTab("complaint_categories")}
+            className={`px-4 py-2 font-semibold 
+                ${activeTab === "complaint_categories"
+                    ? "text-purple-600 border-b-2 border-purple-600"
+                    : "text-gray-600 dark:text-gray-300 hover:text-purple-600"}`}
+          >
+            Assign Categories
+          </button>
         </div>
 
         {activeTab === "apartments" ? (
@@ -318,10 +328,16 @@ export default function UserApartmentModal({ user, onClose, onAssignSuccess }) {
               </div>
             </div>
           </>
-        ) : (
+        ) : activeTab === "bills" ? (
           <UserBillModal 
             user={user} 
             onClose={onClose} 
+            onAssignSuccess={onAssignSuccess}
+          />
+        ):(
+          <TechnicianCategoryModal
+            user={user}
+            onClose={onClose}
             onAssignSuccess={onAssignSuccess}
           />
         )}        

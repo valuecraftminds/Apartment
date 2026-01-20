@@ -285,12 +285,12 @@ export default function Sidebar() {
             <img className="h-8 w-8" src="/favicon.ico" alt="Logo" />
           </div>
         )}
-        <button
+        {/* <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 text-purple-700 dark:text-purple-400"
         >
           {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
-        </button>
+        </button> */}
       </div>
 
       {/* Navigation */}

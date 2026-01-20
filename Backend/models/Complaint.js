@@ -474,6 +474,158 @@ static async getTechniciansByCategory(company_id, category = null) {
             by_status: rows
         };
     }
+
+    // models/Complaint.js - Add these methods
+
+// Start timer for complaint
+static async startTimer(complaintId, technicianId) {
+    const [result] = await pool.execute(
+        `UPDATE complaints 
+         SET work_started_at = CURRENT_TIMESTAMP,
+             work_paused_at = NULL,
+             is_timer_running = TRUE,
+             last_timer_action = 'start',
+             status = 'In Progress',
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = ? AND assigned_to = ? AND is_timer_running = FALSE`,
+        [complaintId, technicianId]
+    );
+    
+    return result.affectedRows > 0;
+}
+
+// Pause timer for complaint
+static async pauseTimer(complaintId, technicianId) {
+    // First get current work time
+    const [current] = await pool.execute(
+        `SELECT work_started_at, total_work_time 
+         FROM complaints 
+         WHERE id = ? AND assigned_to = ? AND is_timer_running = TRUE`,
+        [complaintId, technicianId]
+    );
+    
+    if (current.length === 0) return false;
+    
+    const complaint = current[0];
+    let additionalTime = 0;
+    
+    // Calculate time elapsed since work started
+    if (complaint.work_started_at) {
+        const startTime = new Date(complaint.work_started_at);
+        const now = new Date();
+        additionalTime = Math.floor((now - startTime) / 1000); // Convert to seconds
+    }
+    
+    const [result] = await pool.execute(
+        `UPDATE complaints 
+         SET work_paused_at = CURRENT_TIMESTAMP,
+             is_timer_running = FALSE,
+             total_work_time = total_work_time + ?,
+             last_timer_action = 'pause',
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = ? AND assigned_to = ?`,
+        [additionalTime, complaintId, technicianId]
+    );
+    
+    return result.affectedRows > 0;
+}
+
+// Stop/Complete timer for complaint
+static async stopTimer(complaintId, technicianId) {
+    // First get current work time and started time
+    const [current] = await pool.execute(
+        `SELECT work_started_at, total_work_time 
+         FROM complaints 
+         WHERE id = ? AND assigned_to = ?`,
+        [complaintId, technicianId]
+    );
+    
+    if (current.length === 0) return false;
+    
+    const complaint = current[0];
+    let additionalTime = 0;
+    
+    // Calculate time elapsed if timer was running
+    if (complaint.work_started_at && !complaint.work_paused_at) {
+        const startTime = new Date(complaint.work_started_at);
+        const now = new Date();
+        additionalTime = Math.floor((now - startTime) / 1000);
+    }
+    
+    const [result] = await pool.execute(
+        `UPDATE complaints 
+         SET work_paused_at = NULL,
+             work_started_at = NULL,
+             is_timer_running = FALSE,
+             total_work_time = total_work_time + ?,
+             last_timer_action = 'stop',
+             status = 'Resolved',
+             resolved_at = CURRENT_TIMESTAMP,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = ? AND assigned_to = ?`,
+        [additionalTime, complaintId, technicianId]
+    );
+    
+    return result.affectedRows > 0;
+}
+
+// Resume timer for complaint
+static async resumeTimer(complaintId, technicianId) {
+    const [result] = await pool.execute(
+        `UPDATE complaints 
+         SET work_started_at = CURRENT_TIMESTAMP,
+             work_paused_at = NULL,
+             is_timer_running = TRUE,
+             last_timer_action = 'start',
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = ? AND assigned_to = ? AND is_timer_running = FALSE`,
+        [complaintId, technicianId]
+    );
+    
+    return result.affectedRows > 0;
+}
+
+// Get timer status for a complaint
+static async getTimerStatus(complaintId) {
+    const [rows] = await pool.execute(
+        `SELECT 
+            work_started_at,
+            work_paused_at,
+            total_work_time,
+            is_timer_running,
+            last_timer_action
+         FROM complaints 
+         WHERE id = ?`,
+        [complaintId]
+    );
+    
+    if (rows.length === 0) return null;
+    
+    const complaint = rows[0];
+    
+    // Calculate current elapsed time if timer is running
+    let currentElapsed = complaint.total_work_time;
+    if (complaint.is_timer_running && complaint.work_started_at) {
+        const startTime = new Date(complaint.work_started_at);
+        const now = new Date();
+        currentElapsed += Math.floor((now - startTime) / 1000);
+    }
+    
+    return {
+        ...complaint,
+        currentElapsedTime: currentElapsed,
+        formattedTime: Complaint.formatTime(currentElapsed)
+    };
+}
+
+// Helper function to format time
+static formatTime(seconds) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
 }
 
 module.exports = Complaint;

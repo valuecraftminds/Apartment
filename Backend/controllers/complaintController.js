@@ -884,6 +884,187 @@ const complaintController = {
                 message: 'Server error while fetching complaints'
             });
         }
+    },
+
+    //Timer Functionality for Technicians
+    // Start timer
+    async startTimer(req, res) {
+        try {
+            const { id } = req.params;
+            const technician_id = req.user?.id;
+
+            if (!technician_id) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Authentication required'
+                });
+            }
+
+            const started = await Complaint.startTimer(id, technician_id);
+
+            if (started) {
+                const timerStatus = await Complaint.getTimerStatus(id);
+                res.json({
+                    success: true,
+                    message: 'Timer started successfully',
+                    data: timerStatus
+                });
+            } else {
+                res.status(400).json({
+                    success: false,
+                    message: 'Failed to start timer. Timer might already be running or complaint not assigned to you.'
+                });
+            }
+
+        } catch (err) {
+            console.error('Start timer error:', err);
+            res.status(500).json({
+                success: false,
+                message: 'Server error while starting timer'
+            });
+        }
+    },
+
+    // Pause timer
+    async pauseTimer(req, res) {
+        try {
+            const { id } = req.params;
+            const technician_id = req.user?.id;
+
+            if (!technician_id) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Authentication required'
+                });
+            }
+
+            const paused = await Complaint.pauseTimer(id, technician_id);
+
+            if (paused) {
+                const timerStatus = await Complaint.getTimerStatus(id);
+                res.json({
+                    success: true,
+                    message: 'Timer paused successfully',
+                    data: timerStatus
+                });
+            } else {
+                res.status(400).json({
+                    success: false,
+                    message: 'Failed to pause timer. Timer might not be running or complaint not assigned to you.'
+                });
+            }
+
+        } catch (err) {
+            console.error('Pause timer error:', err);
+            res.status(500).json({
+                success: false,
+                message: 'Server error while pausing timer'
+            });
+        }
+    },
+
+    // Resume timer
+    async resumeTimer(req, res) {
+        try {
+            const { id } = req.params;
+            const technician_id = req.user?.id;
+
+            if (!technician_id) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Authentication required'
+                });
+            }
+
+            const resumed = await Complaint.resumeTimer(id, technician_id);
+
+            if (resumed) {
+                const timerStatus = await Complaint.getTimerStatus(id);
+                res.json({
+                    success: true,
+                    message: 'Timer resumed successfully',
+                    data: timerStatus
+                });
+            } else {
+                res.status(400).json({
+                    success: false,
+                    message: 'Failed to resume timer. Timer might already be running or complaint not assigned to you.'
+                });
+            }
+
+        } catch (err) {
+            console.error('Resume timer error:', err);
+            res.status(500).json({
+                success: false,
+                message: 'Server error while resuming timer'
+            });
+        }
+    },
+
+    // Stop/Complete timer
+    async stopTimer(req, res) {
+        try {
+            const { id } = req.params;
+            const technician_id = req.user?.id;
+
+            if (!technician_id) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Authentication required'
+                });
+            }
+
+            const stopped = await Complaint.stopTimer(id, technician_id);
+
+            if (stopped) {
+                const timerStatus = await Complaint.getTimerStatus(id);
+                res.json({
+                    success: true,
+                    message: 'Timer stopped and work marked as completed',
+                    data: timerStatus
+                });
+            } else {
+                res.status(400).json({
+                    success: false,
+                    message: 'Failed to stop timer. Complaint not assigned to you.'
+                });
+            }
+
+        } catch (err) {
+            console.error('Stop timer error:', err);
+            res.status(500).json({
+                success: false,
+                message: 'Server error while stopping timer'
+            });
+        }
+    },
+
+    // Get timer status
+    async getTimerStatus(req, res) {
+        try {
+            const { id } = req.params;
+            
+            const timerStatus = await Complaint.getTimerStatus(id);
+
+            if (timerStatus) {
+                res.json({
+                    success: true,
+                    data: timerStatus
+                });
+            } else {
+                res.status(404).json({
+                    success: false,
+                    message: 'Complaint not found'
+                });
+            }
+
+        } catch (err) {
+            console.error('Get timer status error:', err);
+            res.status(500).json({
+                success: false,
+                message: 'Server error while getting timer status'
+            });
+        }
     }
 };
 

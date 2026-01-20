@@ -39,4 +39,12 @@ router.patch('/:id/assign', authenticateToken, complaintController.assignComplai
 router.get('/technicians/category', authenticateToken, complaintController.getTechniciansByCategory);
 router.get('/categories', authenticateToken, complaintController.getCategories);
 router.get('/my-complaints/technician', authenticateToken, complaintController.getTechnicianComplaints);
+
+// Timer routes for technicians
+router.post('/:id/timer/start', authenticateToken, complaintController.startTimer);
+router.post('/:id/timer/pause', authenticateToken, complaintController.pauseTimer);
+router.post('/:id/timer/resume', authenticateToken, complaintController.resumeTimer);
+router.post('/:id/timer/stop', authenticateToken, complaintController.stopTimer);
+router.get('/:id/timer/status', authenticateToken, complaintController.getTimerStatus);
+
 module.exports = router;
