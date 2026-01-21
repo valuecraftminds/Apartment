@@ -35,7 +35,6 @@ router.put('/:id', authenticateHouseOwner, complaintController.updateMyComplaint
 // Admin/Staff routes
 router.get('/', authenticateToken, complaintController.getAllComplaints);
 router.patch('/:id/status', authenticateToken, complaintController.updateComplaintStatus);
-router.patch('/:id/assign', authenticateToken, complaintController.assignComplaint);
 router.get('/technicians/category', authenticateToken, complaintController.getTechniciansByCategory);
 router.get('/categories', authenticateToken, complaintController.getCategories);
 router.get('/my-complaints/technician', authenticateToken, complaintController.getTechnicianComplaints);
@@ -46,5 +45,11 @@ router.post('/:id/timer/pause', authenticateToken, complaintController.pauseTime
 router.post('/:id/timer/resume', authenticateToken, complaintController.resumeTimer);
 router.post('/:id/timer/stop', authenticateToken, complaintController.stopTimer);
 router.get('/:id/timer/status', authenticateToken, complaintController.getTimerStatus);
+
+//Hold complaint
+router.post('/:id/hold', authenticateToken, complaintController.holdComplaint);
+router.post('/:id/resume', authenticateToken, complaintController.resumeComplaint);
+router.get('/:id/hold-history', authenticateToken, complaintController.getHoldHistory);
+router.get('/:id/hold-status', authenticateToken, complaintController.getCurrentHoldStatus);
 
 module.exports = router;

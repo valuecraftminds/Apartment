@@ -1,5 +1,5 @@
 // MyComplaints.jsx
-import React, { useState, useEffect, useContext, useRef } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { 
   AlertCircle, 
   CheckCircle, 
@@ -19,16 +19,19 @@ import {
   StopCircle,
   RefreshCw,
   Timer,
-  Plus
+  Plus,
+  Tag
 } from 'lucide-react';
 import { AuthContext } from '../contexts/AuthContext';
 import api from '../api/axios';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 export default function MyComplaints() {
   const [complaints, setComplaints] = useState([]);
+  const [filteredComplaints, setFilteredComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -43,9 +46,14 @@ export default function MyComplaints() {
     resolved: 0
   });
   const [activeTimers, setActiveTimers] = useState({});
-  const intervalRefs = useRef({});
   const { auth } = useContext(AuthContext);
   const navigate = useNavigate();
+  
+  // New state for filtering
+  const [apartments, setApartments] = useState([]);
+  const [assignedCategories, setAssignedCategories] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  const [activeTab, setActiveTab] = useState("pending");
 
   // Format seconds to HH:MM:SS
   const formatTime = (seconds) => {
@@ -56,280 +64,187 @@ export default function MyComplaints() {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Fetch technician's assigned complaints with timer status
-  const fetchMyComplaints = async () => {
+  // Fetch technician's assigned apartments
+  const fetchUserApartments = async () => {
     try {
-      setLoading(true);
-      const response = await api.get('/complaints/my-complaints/technician', {
+      const response = await api.get(`/user-apartments/users/${auth.user.id}/apartments`);
+      
+      if (response.data.success) {
+        setApartments(response.data.data || []);
+      } else {
+        toast.error('Failed to load apartments');
+        setApartments([]);
+      }
+    } catch (error) {
+      console.error('Error fetching apartments:', error);
+      toast.error('Error loading your apartments');
+      setApartments([]);
+    }
+  };
+
+  // Fetch technician's assigned complaint categories
+  const fetchAssignedCategories = async () => {
+    try {
+      setLoadingCategories(true);
+      const response = await api.get(`/technician-categories/technicians/${auth.user.id}/categories`, {
         headers: { 
           Authorization: `Bearer ${auth.accessToken}`
-        },
-        params: filters
+        }
       });
       
       if (response.data.success) {
-        const complaintsData = response.data.data || [];
-        setComplaints(complaintsData);
-        if (response.data.statistics) {
-          setStatistics(response.data.statistics);
-        }
-        
-        // Initialize timers for complaints that are running
-        complaintsData.forEach(complaint => {
-          if (complaint.is_timer_running && complaint.work_started_at) {
-            startLocalTimer(complaint.id, complaint.total_work_time, complaint.work_started_at);
-          }
-        });
+        setAssignedCategories(response.data.data || []);
       } else {
-        console.error('Failed to load complaints:', response.data.message);
-        setComplaints([]);
+        console.error('Failed to load assigned categories:', response.data.message);
+        setAssignedCategories([]);
       }
     } catch (error) {
-      console.error('Error fetching complaints:', error);
-      setComplaints([]);
+      console.error('Error fetching assigned categories:', error);
+      setAssignedCategories([]);
     } finally {
-      setLoading(false);
+      setLoadingCategories(false);
     }
   };
 
-  // Start local timer for UI
-  const startLocalTimer = (complaintId, baseSeconds, startTime) => {
-    // Clear existing interval if any
-    if (intervalRefs.current[complaintId]) {
-      clearInterval(intervalRefs.current[complaintId]);
-    }
-    
-    const start = startTime ? new Date(startTime) : new Date();
-    const baseTime = baseSeconds || 0;
-    
-    // Update immediately
-    setActiveTimers(prev => ({
-      ...prev,
-      [complaintId]: {
-        baseSeconds: baseTime,
-        startTime: start,
-        elapsed: baseTime,
-        formatted: formatTime(baseTime)
-      }
-    }));
-    
-    // Set up interval to update every second
-    intervalRefs.current[complaintId] = setInterval(() => {
-      const now = new Date();
-      const elapsedSeconds = Math.floor((now - start) / 1000) + baseTime;
+  // Get assigned apartment IDs
+  const getAssignedApartmentIds = () => {
+    return apartments.map(apartment => apartment.apartment_id);
+  };
+
+  // Get assigned category IDs
+  const getAssignedCategoryIds = () => {
+    return assignedCategories.map(category => category.category_id);
+  };
+
+  // Update the isComplaintAccessible function
+  const isComplaintAccessible = (complaint) => {
+      // Get IDs
+      const assignedApartmentIds = getAssignedApartmentIds();
+      const assignedCategoryIds = getAssignedCategoryIds();
       
-      setActiveTimers(prev => ({
-        ...prev,
-        [complaintId]: {
-          ...prev[complaintId],
-          elapsed: elapsedSeconds,
-          formatted: formatTime(elapsedSeconds)
-        }
-      }));
-    }, 1000);
+      // 1. Check apartment access
+      if (!assignedApartmentIds.includes(complaint.apartment_id)) {
+          return false;
+      }
+      
+      // 2. Get category ID
+      const complaintCategoryId = complaint.category_id;
+      
+      // 3. Handle category matching
+      if (assignedCategoryIds.length === 0) {
+          // If no categories assigned, don't show any complaints
+          return false;
+      }
+      
+      // If complaint has no category AND we have categories assigned, don't show it
+      if (!complaintCategoryId) {
+          return false;
+      }
+      
+      // Check if complaint category matches any assigned category
+      return assignedCategoryIds.includes(complaintCategoryId);
   };
 
-  // Stop local timer
-  const stopLocalTimer = (complaintId) => {
-    if (intervalRefs.current[complaintId]) {
-      clearInterval(intervalRefs.current[complaintId]);
-      delete intervalRefs.current[complaintId];
-    }
-    
-    setActiveTimers(prev => {
-      const newTimers = { ...prev };
-      delete newTimers[complaintId];
-      return newTimers;
-    });
-  };
-
-  // Handle start timer
-  const handleStartTimer = async (complaintId) => {
+  // In fetchMyComplaints function
+const fetchMyComplaints = async () => {
     try {
-      const response = await api.post(`/complaints/${complaintId}/timer/start`, {}, {
-        headers: { 
-          Authorization: `Bearer ${auth.accessToken}`
+        setLoading(true);
+        const response = await api.get('/complaints/my-complaints/technician', {
+            headers: { 
+                Authorization: `Bearer ${auth.accessToken}`
+            },
+            params: filters
+        });
+        
+        console.log('API Response:', response.data);
+        
+        if (response.data.success) {
+            const accessibleComplaints = response.data.data || [];
+            
+            console.log('Accessible complaints:', accessibleComplaints);
+            
+            setComplaints(accessibleComplaints);
+            setFilteredComplaints(accessibleComplaints);
+            
+            if (response.data.statistics) {
+                setStatistics(response.data.statistics);
+            }
+        } else {
+            console.error('Failed to load complaints:', response.data.message);
+            setComplaints([]);
+            setFilteredComplaints([]);
         }
-      });
-      
-      if (response.data.success) {
-        // Start local timer
-        startLocalTimer(complaintId, 0, new Date());
-        
-        // Update complaint status
-        setComplaints(prev => prev.map(complaint => 
-          complaint.id === complaintId 
-            ? { 
-                ...complaint, 
-                is_timer_running: true,
-                work_started_at: new Date().toISOString(),
-                status: 'In Progress'
-              }
-            : complaint
-        ));
-        
-        // Update statistics
-        setStatistics(prev => ({
-          ...prev,
-          in_progress: prev.in_progress + 1,
-          pending: complaints.status === 'Pending' ? prev.pending - 1 : prev.pending
-        }));
-        
-        alert('Timer started! Work in progress.');
-      } else {
-        alert(response.data.message || 'Failed to start timer');
-      }
     } catch (error) {
-      console.error('Error starting timer:', error);
-      alert(error.response?.data?.message || 'Failed to start timer');
+        console.error('Error fetching complaints:', error);
+        setComplaints([]);
+        setFilteredComplaints([]);
+    } finally {
+        setLoading(false);
     }
-  };
+};
 
-  // Handle pause timer
-  const handlePauseTimer = async (complaintId) => {
-    try {
-      const response = await api.post(`/complaints/${complaintId}/timer/pause`, {}, {
-        headers: { 
-          Authorization: `Bearer ${auth.accessToken}`
-        }
-      });
-      
-      if (response.data.success) {
-        // Stop local timer
-        stopLocalTimer(complaintId);
-        
-        // Update complaint status
-        setComplaints(prev => prev.map(complaint => 
-          complaint.id === complaintId 
-            ? { 
-                ...complaint, 
-                is_timer_running: false,
-                work_paused_at: new Date().toISOString(),
-                total_work_time: response.data.data?.currentElapsedTime || complaint.total_work_time
-              }
-            : complaint
-        ));
-        
-        alert('Timer paused.');
-      } else {
-        alert(response.data.message || 'Failed to pause timer');
-      }
-    } catch (error) {
-      console.error('Error pausing timer:', error);
-      alert(error.response?.data?.message || 'Failed to pause timer');
-    }
-  };
-
-  // Handle resume timer
-  const handleResumeTimer = async (complaintId) => {
-    try {
-      const response = await api.post(`/complaints/${complaintId}/timer/resume`, {}, {
-        headers: { 
-          Authorization: `Bearer ${auth.accessToken}`
-        }
-      });
-      
-      if (response.data.success) {
-        // Get current total work time and start local timer
-        const complaint = complaints.find(c => c.id === complaintId);
-        const baseTime = complaint?.total_work_time || 0;
-        startLocalTimer(complaintId, baseTime, new Date());
-        
-        // Update complaint status
-        setComplaints(prev => prev.map(complaint => 
-          complaint.id === complaintId 
-            ? { 
-                ...complaint, 
-                is_timer_running: true,
-                work_started_at: new Date().toISOString(),
-                work_paused_at: null
-              }
-            : complaint
-        ));
-        
-        alert('Timer resumed.');
-      } else {
-        alert(response.data.message || 'Failed to resume timer');
-      }
-    } catch (error) {
-      console.error('Error resuming timer:', error);
-      alert(error.response?.data?.message || 'Failed to resume timer');
-    }
-  };
-
-  // Handle stop/complete timer
-  const handleStopTimer = async (complaintId) => {
-    if (!window.confirm('Are you sure you want to stop the timer and mark this work as completed?')) {
-      return;
-    }
-    
-    try {
-      const response = await api.post(`/complaints/${complaintId}/timer/stop`, {}, {
-        headers: { 
-          Authorization: `Bearer ${auth.accessToken}`
-        }
-      });
-      
-      if (response.data.success) {
-        // Stop local timer
-        stopLocalTimer(complaintId);
-        
-        // Update complaint status and statistics
-        setComplaints(prev => prev.map(complaint => {
-          if (complaint.id === complaintId) {
-            const totalTime = response.data.data?.currentElapsedTime || complaint.total_work_time;
-            return { 
-              ...complaint, 
-              is_timer_running: false,
-              work_started_at: null,
-              work_paused_at: null,
-              status: 'Resolved',
-              resolved_at: new Date().toISOString(),
-              total_work_time: totalTime
-            };
-          }
-          return complaint;
-        }));
-        
-        setStatistics(prev => ({
-          ...prev,
-          resolved: prev.resolved + 1,
-          in_progress: prev.in_progress - 1
-        }));
-        
-        alert('Work completed! Total time tracked: ' + formatTime(response.data.data?.currentElapsedTime || 0));
-      } else {
-        alert(response.data.message || 'Failed to stop timer');
-      }
-    } catch (error) {
-      console.error('Error stopping timer:', error);
-      alert(error.response?.data?.message || 'Failed to stop timer');
-    }
-  };
-
-  // Clean up intervals on component unmount
   useEffect(() => {
-    return () => {
-      Object.values(intervalRefs.current).forEach(interval => {
-        clearInterval(interval);
-      });
-    };
-  }, []);
+      if (auth?.user?.id) {
+          const fetchData = async () => {
+              await Promise.all([
+                  fetchUserApartments(),
+                  fetchAssignedCategories()
+              ]);
+              // Now fetch complaints with updated assignments
+              if (auth?.accessToken) {
+                  fetchMyComplaints();
+              }
+          };
+          fetchData();
+      }
+  }, [auth?.user?.id]);
 
-  // Fetch complaints on mount and auth change
+  const handleStartWork = async (complaint) => {
+    try {
+        // Navigate to StartWork page with complaint data
+        navigate(`/start-work/${complaint.id}`, {
+            state: { 
+                complaint: complaint 
+            }
+        });
+    } catch (error) {
+        console.error('Error navigating to start work:', error);
+        toast.error('Failed to start work');
+    }
+};
+
+  // // Fetch data on mount
+  // useEffect(() => {
+  //   if (auth?.user?.id) {
+  //     fetchUserApartments();
+  //     fetchAssignedCategories();
+  //   }
+  // }, [auth?.user?.id]);
+
+  // Fetch complaints when apartments, categories, or filters change
   useEffect(() => {
-    if (auth?.accessToken) {
+    if (auth?.accessToken && apartments.length > 0) {
       fetchMyComplaints();
     }
-  }, [auth?.accessToken, filters]);
+  }, [auth?.accessToken, apartments, filters]);
 
   // Filter complaints based on search
-  const filteredComplaints = complaints.filter(complaint =>
-    complaint.complaint_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    complaint.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    complaint.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    complaint.houseowner_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  useEffect(() => {
+    if (!complaints.length) {
+      setFilteredComplaints([]);
+      return;
+    }
+
+    let filtered = complaints.filter(complaint =>
+      complaint.complaint_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      complaint.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      complaint.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      complaint.houseowner_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      complaint.apartment_name?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    setFilteredComplaints(filtered);
+  }, [complaints, searchTerm]);
 
   // Format date
   const formatDate = (dateString) => {
@@ -364,109 +279,47 @@ export default function MyComplaints() {
     }
   };
 
-  // Get category color
-  const getCategoryColor = (category) => {
-    switch (category?.toLowerCase()) {
-      case 'water':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
-      case 'electricity':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
-      case 'gas':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300';
-      case 'general':
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+  const getNoComplaintsMessage = () => {
+    if (apartments.length === 0) {
+        return 'You are not assigned to any apartments';
     }
-  };
+    if (assignedCategories.length === 0) {
+        return 'You are not assigned to any complaint categories';
+    }
+    if (searchTerm) {
+        return 'No matching complaints found';
+    }
+    return 'No complaints available for your assigned apartments and categories';
+};
 
-  // Render timer display
-  const renderTimerDisplay = (complaint) => {
-    const timerData = activeTimers[complaint.id];
-    const isTimerRunning = complaint.is_timer_running;
-    
-    if (isTimerRunning || timerData) {
-      const displayTime = timerData?.formatted || formatTime(complaint.total_work_time || 0);
-      return (
-        <div className="flex items-center bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded-lg">
-          <Timer size={14} className="text-blue-600 dark:text-blue-400 mr-2 animate-pulse" />
-          <span className="font-mono text-sm font-bold text-blue-700 dark:text-blue-300">
-            {displayTime}
-          </span>
-        </div>
-      );
+  // Get category badge style
+  const getCategoryBadge = (complaint) => {
+    if (!complaint.category_name && !complaint.category_id) {
+      return null;
     }
-    
-    if (complaint.total_work_time > 0) {
-      return (
-        <div className="flex items-center bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-lg">
-          <Clock size={14} className="text-gray-600 dark:text-gray-400 mr-2" />
-          <span className="font-mono text-sm text-gray-700 dark:text-gray-300">
-            {formatTime(complaint.total_work_time)}
-          </span>
-        </div>
-      );
-    }
-    
-    return null;
-  };
 
-  // Render timer controls
-  const renderTimerControls = (complaint) => {
-    const isTimerRunning = complaint.is_timer_running;
-    const hasWorkStarted = complaint.work_started_at;
-    const hasWorkPaused = complaint.work_paused_at;
-    
-    if (complaint.status === 'Resolved' || complaint.status === 'Closed') {
+    const assignedCategory = assignedCategories.find(
+      cat => cat.category_id === complaint.category_id
+    );
+
+    if (assignedCategory) {
       return (
-        <div className="text-center py-2">
-          <span className="text-xs text-gray-500 dark:text-gray-400">
-            Completed
-          </span>
-        </div>
+        <span 
+          className="px-2 py-1 text-xs font-medium rounded-full"
+          style={{ 
+            backgroundColor: `${assignedCategory.category_color}20`,
+            color: assignedCategory.category_color
+          }}
+        >
+          {complaint.category_name || 'Uncategorized'}
+        </span>
       );
     }
-    
+
     return (
-      <div className="flex flex-col sm:flex-row gap-2">
-        {!hasWorkStarted && !isTimerRunning ? (
-          <button
-            onClick={() => handleStartTimer(complaint.id)}
-            className="flex items-center justify-center gap-1 px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors"
-            title="Start Work Timer"
-          >
-            <Play size={14} />
-            <span>Start Work</span>
-          </button>
-        ) : isTimerRunning ? (
-          <>
-            <button
-              onClick={() => handlePauseTimer(complaint.id)}
-              className="flex items-center justify-center gap-1 px-3 py-1.5 bg-yellow-600 text-white text-xs rounded-lg hover:bg-yellow-700 transition-colors"
-              title="Pause Timer"
-            >
-              <Pause size={14} />
-              <span>Pause</span>
-            </button>
-            <button
-              onClick={() => handleStopTimer(complaint.id)}
-              className="flex items-center justify-center gap-1 px-3 py-1.5 bg-red-600 text-white text-xs rounded-lg hover:bg-red-700 transition-colors"
-              title="Complete Work"
-            >
-              <StopCircle size={14} />
-              <span>Complete</span>
-            </button>
-          </>
-        ) : hasWorkPaused ? (
-          <button
-            onClick={() => handleResumeTimer(complaint.id)}
-            className="flex items-center justify-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors"
-            title="Resume Work"
-          >
-            <RefreshCw size={14} />
-            <span>Resume</span>
-          </button>
-        ) : null}
-      </div>
+      <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+        {complaint.category_name || 'Uncategorized'}
+      </span>
     );
   };
 
@@ -489,6 +342,102 @@ export default function MyComplaints() {
       status: 'all'
     });
     setSearchTerm('');
+  };
+
+  // Render Start Work button based on complaint status
+  const renderStartWorkButton = (complaint) => {
+    if (complaint.status === 'Resolved' || complaint.status === 'Closed') {
+        return (
+            <div className="text-center py-2">
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                    Completed
+                </span>
+            </div>
+        );
+    }
+
+    if (complaint.status === 'Pending' || complaint.status === 'In Progress') {
+        return (
+            <button
+                onClick={() => handleStartWork(complaint)}
+                className="flex items-center justify-center gap-1 px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors w-full"
+                title="Start Work"
+                disabled={complaint.status === 'In Progress'}
+            >
+                <Play size={16} />
+                <span>Start Work</span>
+            </button>
+        );
+    }
+
+    return null;
+};
+
+  // Render access information
+  const renderAccessInfo = () => {
+    if (loadingCategories) {
+      return (
+        <div className="text-center py-4">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+            Loading your assigned categories...
+          </p>
+        </div>
+      );
+    }
+
+    if (apartments.length === 0 && assignedCategories.length === 0) {
+      return (
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-4">
+          <div className="flex items-center">
+            <AlertCircle className="text-yellow-600 dark:text-yellow-400 mr-3" size={20} />
+            <div>
+              <p className="text-sm font-medium text-yellow-800 dark:text-yellow-300">
+                No assignments found
+              </p>
+              <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-1">
+                You need to be assigned to apartments and categories to see complaints.
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="mb-4">
+        <div className="flex flex-wrap gap-2 mb-2">
+          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+            Assigned Apartments: {apartments.length}
+          </span>
+          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+            Assigned Categories: {assignedCategories.length}
+          </span>
+        </div>
+        
+        {assignedCategories.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-2">
+            {assignedCategories.slice(0, 3).map(category => (
+              <span 
+                key={category.category_id}
+                className="px-2 py-1 text-xs rounded-full"
+                style={{ 
+                  backgroundColor: `${category.category_color}20`,
+                  color: category.category_color
+                }}
+              >
+                {category.category_name}
+              </span>
+            ))}
+            {assignedCategories.length > 3 && (
+              <span className="px-2 py-1 text-xs text-gray-600 dark:text-gray-400">
+                +{assignedCategories.length - 3} more
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -549,62 +498,16 @@ export default function MyComplaints() {
                 <div>
                   <h1 className="text-2xl font-bold text-gray-800 dark:text-white">My Complaints</h1>
                   <p className="text-gray-600 dark:text-gray-300">
-                    View all complaints assigned to you
-                  </p>
-                </div>
-              </div>
-              <div className="flex space-x-6 text-right">
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Total Complaints</p>
-                  <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                    {statistics.total}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">In Progress</p>
-                  <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                    {statistics.in_progress}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Pending</p>
-                  <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-                    {statistics.pending}
+                    View complaints from your assigned apartments and categories
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Statistics Cards - Mobile */}
-            <div className="lg:hidden grid grid-cols-2 gap-4 mb-6">
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Total</p>
-                    <p className="text-xl font-bold text-purple-600 dark:text-purple-400">
-                      {statistics.total}
-                    </p>
-                  </div>
-                  <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
-                    <AlertCircle size={20} className="text-purple-600 dark:text-purple-400" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">In Progress</p>
-                    <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
-                      {statistics.in_progress}
-                    </p>
-                  </div>
-                  <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                    <Wrench size={20} className="text-blue-600 dark:text-blue-400" />
-                  </div>
-                </div>
-              </div>
-            </div>
+            {/* Access Information */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-6">
+              {renderAccessInfo()}
+            </div>        
 
             {/* Search and Filter Bar */}
             <div className="bg-white dark:bg-gray-800 rounded-xl lg:rounded-2xl p-4 mb-6">
@@ -658,6 +561,37 @@ export default function MyComplaints() {
               </div>
             </div>
 
+              {/* Tabs */}
+            {/* <div className="flex space-x-4 border-b border-gray-300 dark:border-gray-700 mb-4">
+              <button
+                  onClick={() => setActiveTab("pending")}
+                  className={`px-4 py-2 font-semibold 
+                      ${activeTab === "pending"
+                          ? "text-purple-600 border-b-2 border-purple-600"
+                          : "text-gray-600 dark:text-gray-300 hover:text-purple-600"}`}
+              >
+                  Pending
+              </button>
+              <button
+                  onClick={() => setActiveTab("In Progress")}
+                  className={`px-4 py-2 font-semibold 
+                      ${activeTab === "In Progress"
+                          ? "text-purple-600 border-b-2 border-purple-600"
+                          : "text-gray-600 dark:text-gray-300 hover:text-purple-600"}`}
+              >
+                  In Progress
+              </button>
+              <button
+                  onClick={() => setActiveTab("Resolved")}
+                  className={`px-4 py-2 font-semibold 
+                      ${activeTab === "Resolved"
+                          ? "text-purple-600 border-b-2 border-purple-600"
+                          : "text-gray-600 dark:text-gray-300 hover:text-purple-600"}`}
+              >
+                  Resolved
+              </button>
+          </div> */}
+
             {/* Complaints Content */}
             <div className="bg-white dark:bg-gray-800 rounded-xl lg:rounded-2xl p-4 lg:p-6">
               {loading ? (
@@ -669,12 +603,16 @@ export default function MyComplaints() {
                 <div className="text-center py-12">
                   <AlertCircle size={48} className="mx-auto mb-4 text-gray-400 dark:text-gray-500" />
                   <h3 className="text-lg font-semibold text-gray-600 dark:text-gray-300 mb-2">
-                    {searchTerm ? 'No matching complaints found' : 'No complaints assigned'}
+                    {searchTerm ? 'No matching complaints found' : 'No complaints available'}
                   </h3>
                   <p className="text-gray-500 dark:text-gray-400 text-sm lg:text-base">
                     {searchTerm 
                       ? 'Try adjusting your search terms' 
-                      : 'You have not been assigned to any complaints yet'
+                      : apartments.length === 0 
+                        ? 'You are not assigned to any apartments' 
+                        : assignedCategories.length === 0
+                          ? 'You are not assigned to any complaint categories'
+                          : 'No complaints match your assigned apartments and categories'
                     }
                   </p>
                 </div>
@@ -704,32 +642,29 @@ export default function MyComplaints() {
                                 <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(complaint.status)}`}>
                                   {complaint.status}
                                 </span>
-                                {complaint.category && (
-                                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getCategoryColor(complaint.category)}`}>
-                                    {complaint.category}
-                                  </span>
-                                )}
+                                {getCategoryBadge(complaint)}
                               </div>
                             </div>
                           </div>
                         </div>
 
-                        {/* Timer Display */}
-                        <div className="mb-3">
-                          {renderTimerDisplay(complaint)}
-                        </div>
-
                         {/* Location Info */}
                         <div className="mb-3">
                           <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                            <Building2 size={14} className="mr-2" />
+                            <span className="truncate">
+                              {complaint.apartment_name || 'Unknown'}
+                            </span>
+                          </div>
+                          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mt-1">
                             <MapPin size={14} className="mr-2" />
                             <span>
-                              {complaint.apartment_name || 'Unknown'} • Floor {complaint.floor_number} • House {complaint.house_number}
+                              Floor {complaint.floor_number} • House {complaint.house_number}
                             </span>
                           </div>
                           <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mt-1">
                             <User size={14} className="mr-2" />
-                            <span>House Owner: {complaint.houseowner_name || 'Unknown'}</span>
+                            <span className="truncate">House Owner: {complaint.houseowner_name || 'Unknown'}</span>
                           </div>
                         </div>
 
@@ -740,9 +675,9 @@ export default function MyComplaints() {
                           </p>
                         </div>
 
-                        {/* Timer Controls */}
+                        {/* Start Work Button */}
                         <div className="mb-4">
-                          {renderTimerControls(complaint)}
+                          {renderStartWorkButton(complaint)}
                         </div>
 
                         {/* Dates and Actions */}
@@ -780,13 +715,13 @@ export default function MyComplaints() {
                             Location
                           </th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Category
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             Status
                           </th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            Timer
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            Actions
+                            Action
                           </th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             Created
@@ -810,11 +745,6 @@ export default function MyComplaints() {
                                 <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                   House Owner: {complaint.houseowner_name || 'Unknown'}
                                 </div>
-                                {complaint.category && (
-                                  <span className={`mt-2 inline-block px-2 py-1 text-xs font-medium rounded-full ${getCategoryColor(complaint.category)}`}>
-                                    {complaint.category}
-                                  </span>
-                                )}
                               </div>
                             </td>
                             <td className="px-4 py-4">
@@ -826,23 +756,15 @@ export default function MyComplaints() {
                               </div>
                             </td>
                             <td className="px-4 py-4">
+                              {getCategoryBadge(complaint)}
+                            </td>
+                            <td className="px-4 py-4">
                               <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(complaint.status)}`}>
                                 {complaint.status}
                               </span>
                             </td>
                             <td className="px-4 py-4">
-                              {renderTimerDisplay(complaint)}
-                            </td>
-                            <td className="px-4 py-4">
-                              <div className="flex flex-col space-y-2">
-                                {renderTimerControls(complaint)}
-                                {/* <button
-                                  onClick={() => handleViewComplaint(complaint.id)}
-                                  className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300"
-                                >
-                                  View Details →
-                                </button> */}
-                              </div>
+                              {renderStartWorkButton(complaint)}
                             </td>
                             <td className="px-4 py-4">
                               <div className="text-sm text-gray-900 dark:text-white">
@@ -851,11 +773,6 @@ export default function MyComplaints() {
                               {complaint.assigned_at && (
                                 <div className="text-xs text-gray-500 dark:text-gray-400">
                                   Assigned: {formatDate(complaint.assigned_at)}
-                                </div>
-                              )}
-                              {complaint.work_started_at && (
-                                <div className="text-xs text-blue-500 dark:text-blue-400">
-                                  Work Started: {formatDate(complaint.work_started_at)}
                                 </div>
                               )}
                             </td>

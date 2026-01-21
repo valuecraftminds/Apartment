@@ -1,5 +1,6 @@
+// TechnicianCategoryModel.jsx
 import React, { useState, useEffect } from 'react';
-import { X, Tag, Check, Search, Loader, Layers, Award, Users, Clock } from 'lucide-react';
+import { X, Tag, Check, Search, Loader, Layers, Award, Users, Clock, Layers2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import api from '../api/axios';
 
@@ -138,51 +139,6 @@ export default function TechnicianCategoryModal({ user, onClose, onAssignSuccess
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center space-x-3">
-            <Tag className="text-blue-600 dark:text-blue-400" size={24} />
-            <div>
-              <h2 className="text-xl font-bold text-gray-800 dark:text-white">
-                Assign Service Categories
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                Technician: {user.firstname} {user.lastname}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          >
-            <X size={20} className="text-gray-500 dark:text-gray-400" />
-          </button>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex space-x-4 border-b border-gray-300 dark:border-gray-700 mb-6 px-6">
-          <button
-            onClick={() => setActiveTab("categories")}
-            className={`px-4 py-2 font-semibold transition-colors duration-200 
-                ${activeTab === "categories"
-                    ? "text-blue-600 border-b-2 border-blue-600 dark:text-blue-400"
-                    : "text-gray-600 dark:text-gray-300 hover:text-blue-600"}`}>
-            Service Categories
-          </button>
-          <button
-            onClick={() => setActiveTab("assignments")}
-            className={`px-4 py-2 font-semibold 
-                ${activeTab === "assignments"
-                    ? "text-blue-600 border-b-2 border-blue-600"
-                    : "text-gray-600 dark:text-gray-300 hover:text-blue-600"}`}
-          >
-            Current Assignments
-          </button>
-        </div>
-
-        {activeTab === "categories" ? (
           <>
             {/* Search and Controls */}
             <div className="p-4 border-b border-gray-200 dark:border-gray-700">
@@ -221,7 +177,7 @@ export default function TechnicianCategoryModal({ user, onClose, onAssignSuccess
             <div className="flex-1 overflow-y-auto">
               {loading ? (
                 <div className="flex flex-col items-center justify-center py-12">
-                  <Loader size={32} className="animate-spin text-blue-600 mb-4" />
+                  <Loader size={32} className="animate-spin text-purple-600 mb-4" />
                   <p className="text-gray-600 dark:text-gray-300">Loading categories...</p>
                 </div>
               ) : filteredCategories.length === 0 ? (
@@ -245,8 +201,8 @@ export default function TechnicianCategoryModal({ user, onClose, onAssignSuccess
                         key={category.id}
                         className={`border rounded-lg p-4 transition-all duration-200 cursor-pointer ${
                           isSelected
-                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-500/20'
-                            : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:border-blue-300 dark:hover:border-blue-400'
+                            ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 ring-2 ring-purple-500/20'
+                            : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:border-purple-300 dark:hover:border-purple-400'
                         }`}
                         onClick={() => toggleCategorySelection(category.id)}
                       >
@@ -258,7 +214,7 @@ export default function TechnicianCategoryModal({ user, onClose, onAssignSuccess
                                   {category.icon}
                                 </span>
                               ) : (
-                                <Layers size={16} className="text-gray-400" />
+                                <Layers2 size={16} className="text-gray-400" />
                               )}
                               <h3 className="font-semibold text-gray-900 dark:text-white">
                                 {category.name}
@@ -303,7 +259,7 @@ export default function TechnicianCategoryModal({ user, onClose, onAssignSuccess
                           
                           <div className="flex items-center ml-4">
                             {isSelected ? (
-                              <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                              <div className="w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center">
                                 <Check size={14} className="text-white" />
                               </div>
                             ) : (
@@ -338,111 +294,13 @@ export default function TechnicianCategoryModal({ user, onClose, onAssignSuccess
                 <button
                   onClick={saveAssignments}
                   disabled={saving}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                 >
                   {saving && <Loader size={16} className="animate-spin" />}
                   <span>{saving ? 'Saving...' : 'Save Assignments'}</span>
                 </button>
               </div>
             </div>
-          </>
-        ) : (
-          /* Current Assignments Tab */
-          <div className="flex-1 overflow-y-auto p-4">
-            {loading ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <Loader size={32} className="animate-spin text-blue-600 mb-4" />
-                <p className="text-gray-600 dark:text-gray-300">Loading assignments...</p>
-              </div>
-            ) : assignedCategories.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400">
-                <Tag size={48} className="mb-4 opacity-50" />
-                <p className="text-lg">No category assignments</p>
-                <p className="text-sm">This technician is not assigned to any categories yet</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                  <div className="flex items-center space-x-2 text-blue-700 dark:text-blue-300">
-                    <Award size={16} />
-                    <p className="font-medium">Current Category Assignments</p>
-                  </div>
-                  <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
-                    {assignedCategories.length} category(ies) assigned to {user.firstname}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {assignedCategories.map((assignment) => {
-                    const category = allCategories.find(cat => cat.id === assignment.category_id) || {};
-                    
-                    return (
-                      <div
-                        key={assignment.id}
-                        className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-700"
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2 mb-2">
-                              {category.icon ? (
-                                <span className="text-xl">{category.icon}</span>
-                              ) : (
-                                <Layers size={16} className="text-gray-400" />
-                              )}
-                              <h3 className="font-semibold text-gray-900 dark:text-white">
-                                {category.name || assignment.category_name || 'Unknown Category'}
-                              </h3>
-                              <span className="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full">
-                                Active
-                              </span>
-                            </div>
-                            
-                            {category.description && (
-                              <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
-                                {category.description}
-                              </p>
-                            )}
-                            
-                            <div className="space-y-2 text-sm text-gray-500 dark:text-gray-400">
-                              <div className="flex items-center space-x-2">
-                                <Clock size={14} />
-                                <span>Assigned: {formatDate(assignment.assigned_at)}</span>
-                              </div>
-                              {assignment.assigned_by_name && (
-                                <div className="flex items-center space-x-2">
-                                  <Users size={14} />
-                                  <span>By: {assignment.assigned_by_name}</span>
-                                </div>
-                              )}
-                              <div className="flex items-center space-x-2">
-                                <Award size={14} />
-                                <span>Category ID: {assignment.category_id}</span>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <button
-                            onClick={() => {
-                              setSelectedCategories(prev => {
-                                const newSet = new Set(prev);
-                                newSet.delete(assignment.category_id);
-                                return newSet;
-                              });
-                            }}
-                            className="ml-4 p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                          >
-                            <X size={16} />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
+          </>        
   );
 }

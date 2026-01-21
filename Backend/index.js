@@ -202,8 +202,8 @@ mountRoute('/api/user-bills', './routes/userBills', [authenticateToken]);
 mountRoute('/api/family', './routes/family', [authenticateToken]);
 mountRoute('/api/houseowner-auth', './routes/houseOwnerAuth' );
 mountRoute('/api/complaints', './routes/complaints');
-mountRoute('/api/categories', './routes/categories', [authenticateToken]);
-mountRoute('/api/technician-categories', './routes/technicianCategories', [authenticateToken]);
+mountRoute('/api/categories', './routes/categories');
+mountRoute('/api/technician-categories', './routes/technicianCategories');
 
 /* =====================================================
    HEALTH CHECK

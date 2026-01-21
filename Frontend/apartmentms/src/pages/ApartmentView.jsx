@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { Building2, Plus, Edit, Trash2, Eye, Image, Loader, ToggleRight, ToggleLeft, Upload, FileText } from 'lucide-react';
-import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import { AuthContext } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -10,6 +9,7 @@ import EditApartment from '../Apartments/EditApartment';
 import { toast, ToastContainer } from 'react-toastify';
 import BulkImportModal from '../Apartments/BulkImportModal';
 import DocumentModal from '../Apartments/DocumentModal';
+import Sidebar from '../components/sidebar';
 // import ViewApartment from '../Apartments/ViewApartment';
 
 export default function ApartmentView() {

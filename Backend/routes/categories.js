@@ -6,27 +6,31 @@ const categoryController = require('../controllers/categoryController');
 // Apply authentication to all routes
 router.use(authenticateToken);
 
-// Public routes (read-only)
+// Get all categories for company
 router.get('/', categoryController.getAllCategories);
+
+// Search categories within company
 router.get('/search', categoryController.searchCategories);
+
+// Get categories with statistics
 router.get('/with-stats', categoryController.getCategoriesWithStats);
+
+// Get category options for dropdowns
+router.get('/options', categoryController.getCategoryOptions);
+
+// Get categories with pagination
+router.get('/paginated', categoryController.getCategoriesPaginated);
+
+// Get single category
 router.get('/:id', categoryController.getCategoryById);
 
-// Protected routes (admin only - add admin middleware if needed)
-const { authorizeAdmin } = require('../middleware/auth'); // If you have admin middleware
-
 // Create new category
-router.post('/', categoryController.createCategory); // Add authorizeAdmin middleware if needed
+router.post('/', categoryController.createCategory);
 
 // Update category
-router.put('/:id', categoryController.updateCategory); // Add authorizeAdmin middleware if needed
+router.put('/:id', categoryController.updateCategory);
 
-// Delete category (soft delete)
-router.delete('/:id', categoryController.deleteCategory); // Add authorizeAdmin middleware if needed
-
-// Batch operations (optional)
-router.post('/batch', async (req, res) => {
-  // Implement batch operations if needed
-});
+// Delete category
+router.delete('/:id', categoryController.deleteCategory);
 
 module.exports = router;

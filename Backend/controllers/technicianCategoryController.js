@@ -1,4 +1,5 @@
 const TechnicianCategory = require('../models/TechnicianCategory');
+const pool = require('../db');
 
 const technicianCategoryController = {
   // Get technician's assigned categories
@@ -8,9 +9,8 @@ const technicianCategoryController = {
       const companyId = req.user.company_id;
 
       // Validate technician belongs to the same company
-      const pool = require('../db');
       const [userRows] = await pool.execute(
-        'SELECT id FROM users WHERE id = ? AND company_id = ? AND role IN ("technician", "admin")',
+        'SELECT id FROM users WHERE id = ? AND company_id = ?',
         [technicianId, companyId]
       );
 
@@ -21,7 +21,8 @@ const technicianCategoryController = {
         });
       }
 
-      const categories = await TechnicianCategory.findByTechnicianId(technicianId);
+      // Pass companyId parameter
+      const categories = await TechnicianCategory.findByTechnicianId(technicianId, companyId);
 
       res.json({
         success: true,
@@ -45,9 +46,8 @@ const technicianCategoryController = {
       const companyId = req.user.company_id;
 
       // Validate technician exists and belongs to same company
-      const pool = require('../db');
       const [userRows] = await pool.execute(
-        'SELECT id FROM users WHERE id = ? AND company_id = ? AND role IN ("technician", "admin")',
+        'SELECT id FROM users WHERE id = ? AND company_id = ?',
         [technicianId, companyId]
       );
 
@@ -62,7 +62,7 @@ const technicianCategoryController = {
       if (category_ids && category_ids.length > 0) {
         const placeholders = category_ids.map(() => '?').join(', ');
         const [categoryRows] = await pool.execute(
-          `SELECT id FROM categories WHERE id IN (${placeholders}) AND company_id = ?`,
+          `SELECT id FROM complaint_categories WHERE id IN (${placeholders}) AND company_id = ?`,
           [...category_ids, companyId]
         );
 
@@ -76,8 +76,8 @@ const technicianCategoryController = {
 
       await TechnicianCategory.assignCategories(technicianId, category_ids, assignedBy, companyId);
 
-      // Get updated assignments
-      const updatedCategories = await TechnicianCategory.findByTechnicianId(technicianId);
+      // Get updated assignments with companyId
+      const updatedCategories = await TechnicianCategory.findByTechnicianId(technicianId, companyId);
 
       res.json({
         success: true,
@@ -100,9 +100,8 @@ const technicianCategoryController = {
       const companyId = req.user.company_id;
 
       // Validate category belongs to the same company
-      const pool = require('../db');
       const [categoryRows] = await pool.execute(
-        'SELECT id FROM categories WHERE id = ? AND company_id = ?',
+        'SELECT id FROM complaint_categories WHERE id = ? AND company_id = ?',
         [categoryId, companyId]
       );
 
@@ -113,7 +112,7 @@ const technicianCategoryController = {
         });
       }
 
-      const technicians = await TechnicianCategory.findByCategoryId(categoryId);
+      const technicians = await TechnicianCategory.findByCategoryId(categoryId, companyId);
 
       res.json({
         success: true,
@@ -135,14 +134,13 @@ const technicianCategoryController = {
       const companyId = req.user.company_id;
 
       // Validate both technician and category belong to same company
-      const pool = require('../db');
       const [userRows] = await pool.execute(
         'SELECT id FROM users WHERE id = ? AND company_id = ?',
         [technicianId, companyId]
       );
 
       const [categoryRows] = await pool.execute(
-        'SELECT id FROM categories WHERE id = ? AND company_id = ?',
+        'SELECT id FROM complaint_categories WHERE id = ? AND company_id = ?',
         [categoryId, companyId]
       );
 
@@ -153,7 +151,7 @@ const technicianCategoryController = {
         });
       }
 
-      const hasCategory = await TechnicianCategory.hasCategory(technicianId, categoryId);
+      const hasCategory = await TechnicianCategory.hasCategory(technicianId, categoryId, companyId);
 
       res.json({
         success: true,
@@ -175,14 +173,13 @@ const technicianCategoryController = {
       const companyId = req.user.company_id;
 
       // Validate both technician and category belong to same company
-      const pool = require('../db');
       const [userRows] = await pool.execute(
         'SELECT id FROM users WHERE id = ? AND company_id = ?',
         [technicianId, companyId]
       );
 
       const [categoryRows] = await pool.execute(
-        'SELECT id FROM categories WHERE id = ? AND company_id = ?',
+        'SELECT id FROM complaint_categories WHERE id = ? AND company_id = ?',
         [categoryId, companyId]
       );
 
@@ -193,7 +190,7 @@ const technicianCategoryController = {
         });
       }
 
-      const removed = await TechnicianCategory.removeAssignment(technicianId, categoryId);
+      const removed = await TechnicianCategory.removeAssignment(technicianId, categoryId, companyId);
 
       if (!removed) {
         return res.status(404).json({
@@ -252,7 +249,7 @@ const technicianCategoryController = {
       if (category_ids.length > 0) {
         const placeholders = category_ids.map(() => '?').join(', ');
         const [categoryRows] = await pool.execute(
-          `SELECT id FROM categories WHERE id IN (${placeholders}) AND company_id = ?`,
+          `SELECT id FROM complaint_categories WHERE id IN (${placeholders}) AND company_id = ?`,
           [...category_ids, companyId]
         );
 

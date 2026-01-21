@@ -121,9 +121,12 @@ export default function Sidebar() {
     complaint_management: { 
       id: 'complaint_management', 
       name: 'Complaints',
-      path: '/view-complaints',
       icon: ClipboardList,
-      isConstant: false 
+      isConstant: false,
+      children: [
+        { name: 'Complaint Categories', path: '/complaint-categories' },
+        { name: 'All Complaints', path:'/view-complaints'},
+      ]
     },
     tenant_management: { 
       id: 'tenant_management', 

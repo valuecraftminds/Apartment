@@ -20,25 +20,38 @@ class Complaint {
             houseowner_id,
             title,
             description,
-            category = 'General',
+            category_id = null,  
             priority = 'Medium'
         } = complaintData;
 
         const id = uuidv4();
         const complaint_number = this.generateComplaintNumber();
 
+        // Updated query to match the new table structure
         const [result] = await pool.execute(
             `INSERT INTO complaints 
-            (id, company_id, apartment_id, floor_id, house_id, houseowner_id, 
-             complaint_number, title, description, category, priority) 
+            (id, company_id, apartment_id, floor_id, house_id, houseowner_id,
+            complaint_number, title, description, category_id, priority) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 id, company_id, apartment_id, floor_id, house_id, houseowner_id,
-                complaint_number, title, description, category, priority
+                complaint_number, title, description, category_id, priority
             ]
         );
 
         return { id, complaint_number, ...complaintData };
+    }
+
+    static async getComplaintCategories(company_id) {
+        const [rows] = await pool.execute(
+            `SELECT id, name, description, icon, color 
+            FROM complaint_categories 
+            WHERE company_id = ? 
+            AND is_active = 1
+            ORDER BY name ASC`,
+            [company_id]
+        );
+        return rows;
     }
 
     // Find complaint by ID (updated with technician info)
@@ -55,16 +68,20 @@ class Complaint {
                     u.mobile as assigned_to_mobile,
                     u.email as assigned_to_email,
                     r.role_name as assigned_to_role,
-                    CONCAT(au.firstname, ' ', au.lastname) as assigned_by_name
-             FROM complaints c
-             LEFT JOIN apartments a ON c.apartment_id = a.id
-             LEFT JOIN floors f ON c.floor_id = f.id
-             LEFT JOIN houses h ON c.house_id = h.id
-             LEFT JOIN houseowner ho ON c.houseowner_id = ho.id
-             LEFT JOIN users u ON c.assigned_to = u.id
-             LEFT JOIN roles r ON u.role_id = r.id
-             LEFT JOIN users au ON c.assigned_by = au.id
-             WHERE c.id = ?`,
+                    CONCAT(au.firstname, ' ', au.lastname) as assigned_by_name,
+                    cc.name as category_name,  -- Add this
+                    cc.icon as category_icon,  -- Add this
+                    cc.color as category_color -- Add this
+            FROM complaints c
+            LEFT JOIN apartments a ON c.apartment_id = a.id
+            LEFT JOIN floors f ON c.floor_id = f.id
+            LEFT JOIN houses h ON c.house_id = h.id
+            LEFT JOIN houseowner ho ON c.houseowner_id = ho.id
+            LEFT JOIN users u ON c.assigned_to = u.id
+            LEFT JOIN roles r ON u.role_id = r.id
+            LEFT JOIN users au ON c.assigned_by = au.id
+            LEFT JOIN complaint_categories cc ON c.category_id = cc.id  -- Add this join
+            WHERE c.id = ?`,
             [id]
         );
         return rows[0];
@@ -74,13 +91,14 @@ class Complaint {
     static async findByCompany(company_id, filters = {}) {
         let query = `
             SELECT c.*, 
-                   a.name as apartment_name,
-                   f.floor_id as floor_number,
-                   h.house_id as house_number,
-                   ho.name as houseowner_name,
-                   ho.mobile as houseowner_mobile,
-                   CONCAT(u.firstname, ' ', u.lastname) as assigned_to_name,
-                   r.role_name as assigned_to_role
+                a.name as apartment_name,
+                f.floor_id as floor_number,
+                h.house_id as house_number,
+                ho.name as houseowner_name,
+                ho.mobile as houseowner_mobile,
+                CONCAT(u.firstname, ' ', u.lastname) as assigned_to_name,
+                r.role_name as assigned_to_role,
+                cc.name as category_name
             FROM complaints c
             LEFT JOIN apartments a ON c.apartment_id = a.id
             LEFT JOIN floors f ON c.floor_id = f.id
@@ -88,6 +106,7 @@ class Complaint {
             LEFT JOIN houseowner ho ON c.houseowner_id = ho.id
             LEFT JOIN users u ON c.assigned_to = u.id
             LEFT JOIN roles r ON u.role_id = r.id
+            LEFT JOIN complaint_categories cc ON c.category_id = cc.id  -- Add this join
             WHERE c.company_id = ?
         `;
         
@@ -104,9 +123,9 @@ class Complaint {
             params.push(filters.apartment_id);
         }
         
-        if (filters.category && filters.category !== 'all') {
-            query += ' AND c.category = ?';
-            params.push(filters.category);
+        if (filters.category_id && filters.category_id !== 'all') {
+            query += ' AND c.category_id = ?';  // Fix: use category_id, not category
+            params.push(filters.category_id);
         }
         
         if (filters.assigned === 'assigned') {
@@ -121,132 +140,49 @@ class Complaint {
         return rows;
     }
 
-// static async getTechniciansByCategory(company_id) {
-//     const query = `
-//         SELECT 
-//             u.id,
-//             u.firstname,
-//             u.lastname,
-//             u.email,
-//             u.mobile,
-//             r.role_name,
-//             CONCAT(u.firstname, ' ', u.lastname) as name
-//         FROM users u
-//         LEFT JOIN roles r ON u.role_id = r.id
-//         WHERE u.company_id = ? 
-//         AND r.role_name IN ('Technician', 'Maintenance Staff', 'Maintenance', 'technician', 'Apartment Technician', 'Apartment_Technician')
-//         AND u.is_active = 1
-//         ORDER BY u.firstname, u.lastname ASC
-//     `;
-    
-//     const [rows] = await pool.execute(query, [company_id]);
-//     return rows;
-// }
-
-static async getTechniciansByCategory(company_id, category = null) {
-    let query = `
-        SELECT 
-            u.id,
-            u.firstname,
-            u.lastname,
-            u.email,
-            u.mobile,
-            r.role_name,
-            CONCAT(u.firstname, ' ', u.lastname) as name
-        FROM users u
-        LEFT JOIN roles r ON u.role_id = r.id
-        WHERE u.company_id = ? 
-        AND r.role_name IN ('Technician', 'Maintenance Staff', 'Maintenance', 'technician', 'Apartment Technician', 'Apartment_Technician')
-        AND u.is_active = 1
-    `;
-    
-    const params = [company_id];
-    
-    // Optional: Add category filtering if needed
-    // if (category) {
-    //     query += ' AND u.specialization LIKE ?';
-    //     params.push(`%${category}%`);
-    // }
-    
-    query += ' ORDER BY u.firstname, u.lastname ASC';
-    
-    const [rows] = await pool.execute(query, params);
-    return rows;
-}
+    static async getTechniciansByCategory(company_id, category = null) {
+        let query = `
+            SELECT 
+                u.id,
+                u.firstname,
+                u.lastname,
+                u.email,
+                u.mobile,
+                r.role_name,
+                CONCAT(u.firstname, ' ', u.lastname) as name
+            FROM users u
+            LEFT JOIN roles r ON u.role_id = r.id
+            WHERE u.company_id = ? 
+            AND r.role_name IN ('Technician', 'Maintenance Staff', 'Maintenance', 'technician', 'Apartment Technician', 'Apartment_Technician')
+            AND u.is_active = 1
+        `;
+        
+        const params = [company_id];
+        
+        // Optional: Add category filtering if needed
+        // if (category) {
+        //     query += ' AND u.specialization LIKE ?';
+        //     params.push(`%${category}%`);
+        // }
+        
+        query += ' ORDER BY u.firstname, u.lastname ASC';
+        
+        const [rows] = await pool.execute(query, params);
+        return rows;
+    }
 
     // Get complaint categories
     static async getCategories(company_id) {
         const [rows] = await pool.execute(
-            `SELECT DISTINCT category 
-             FROM complaints 
-             WHERE company_id = ? 
-             AND category IS NOT NULL 
-             AND category != ''
-             ORDER BY category ASC`,
+            `SELECT DISTINCT cc.name as category_name, cc.id as category_id
+            FROM complaints c
+            LEFT JOIN complaint_categories cc ON c.category_id = cc.id
+            WHERE c.company_id = ? 
+            AND c.category_id IS NOT NULL 
+            ORDER BY cc.name ASC`,
             [company_id]
         );
-        return rows.map(row => row.category);
-    }
-
-    // Assign technician to complaint
-    // static async assignTechnician(complaintId, assignmentData) {
-    //     const {
-    //         technician_id,
-    //         assigned_by,
-    //         assignment_note
-    //     } = assignmentData;
-
-    //     const [result] = await pool.execute(
-    //         `UPDATE complaints 
-    //          SET assigned_to = ?,
-    //              assigned_by = ?,
-    //              assigned_at = CURRENT_TIMESTAMP,
-    //              assignment_note = ?,
-    //              status = 'In Progress',
-    //              updated_at = CURRENT_TIMESTAMP
-    //          WHERE id = ?`,
-    //         [technician_id, assigned_by, assignment_note, complaintId]
-    //     );
-
-    //     return result.affectedRows > 0;
-    // }
-    
-    static async assignTechnician(complaintId, assignmentData) {
-        const {
-            technician_id,
-            assigned_by,
-            assignment_note,
-            category // Add this parameter
-        } = assignmentData;
-
-        // Build the update query dynamically
-        const updates = [
-            'assigned_to = ?',
-            'assigned_by = ?',
-            'assigned_at = CURRENT_TIMESTAMP',
-            'assignment_note = ?', 
-            'status = "In Progress"',
-            'updated_at = CURRENT_TIMESTAMP'
-        ];
-        
-        const params = [technician_id, assigned_by, assignment_note];
-        
-        // Add category update if provided
-        if (category) {
-            updates.push('category = ?');
-            params.push(category);
-        }
-        
-        params.push(complaintId);
-        
-        const [result] = await pool.execute(
-            `UPDATE complaints 
-            SET ${updates.join(', ')}
-            WHERE id = ?`,
-            params
-        );
-
-        return result.affectedRows > 0;
+        return rows;
     }
 
     // Update complaint (extended with category and priority)
@@ -255,7 +191,7 @@ static async getTechniciansByCategory(company_id, category = null) {
             title,
             description,
             status,
-            category,
+            category_id,  // This should be category_id if you're updating category
             priority
         } = updateData;
         
@@ -286,7 +222,7 @@ static async getTechniciansByCategory(company_id, category = null) {
         }
         
         if (category !== undefined) {
-            updates.push('category = ?');
+            updates.push('category_id = ?');  // Change from 'category' to 'category_id'
             params.push(category);
         }
         
@@ -409,19 +345,24 @@ static async getTechniciansByCategory(company_id, category = null) {
     static async findByTechnician(technician_id, filters = {}) {
         let query = `
             SELECT c.*, 
-                a.name as apartment_name,
-                f.floor_id as floor_number,
-                h.house_id as house_number,
-                ho.name as houseowner_name,
-                ho.mobile as houseowner_mobile,
-                ho.email as houseowner_email,
-                CONCAT(u.firstname, ' ', u.lastname) as assigned_by_name
+            a.name as apartment_name,
+            f.floor_id as floor_number,
+            h.house_id as house_number,
+            ho.name as houseowner_name,
+            ho.mobile as houseowner_mobile,
+            ho.email as houseowner_email,
+            CONCAT(u.firstname, ' ', u.lastname) as assigned_by_name,
+            cc.name as category_name,           
+            cc.id as category_id,               
+            cc.icon as category_icon,           
+            cc.color as category_color          
             FROM complaints c
             LEFT JOIN apartments a ON c.apartment_id = a.id
             LEFT JOIN floors f ON c.floor_id = f.id
             LEFT JOIN houses h ON c.house_id = h.id
             LEFT JOIN houseowner ho ON c.houseowner_id = ho.id
             LEFT JOIN users u ON c.assigned_by = u.id
+            LEFT JOIN complaint_categories cc ON c.category_id = cc.id            
             WHERE c.assigned_to = ?
         `;
         
@@ -475,115 +416,179 @@ static async getTechniciansByCategory(company_id, category = null) {
         };
     }
 
-    // models/Complaint.js - Add these methods
-
-// Start timer for complaint
-static async startTimer(complaintId, technicianId) {
-    const [result] = await pool.execute(
-        `UPDATE complaints 
-         SET work_started_at = CURRENT_TIMESTAMP,
-             work_paused_at = NULL,
-             is_timer_running = TRUE,
-             last_timer_action = 'start',
-             status = 'In Progress',
-             updated_at = CURRENT_TIMESTAMP
-         WHERE id = ? AND assigned_to = ? AND is_timer_running = FALSE`,
-        [complaintId, technicianId]
-    );
-    
-    return result.affectedRows > 0;
-}
-
-// Pause timer for complaint
-static async pauseTimer(complaintId, technicianId) {
-    // First get current work time
-    const [current] = await pool.execute(
-        `SELECT work_started_at, total_work_time 
-         FROM complaints 
-         WHERE id = ? AND assigned_to = ? AND is_timer_running = TRUE`,
-        [complaintId, technicianId]
-    );
-    
-    if (current.length === 0) return false;
-    
-    const complaint = current[0];
-    let additionalTime = 0;
-    
-    // Calculate time elapsed since work started
-    if (complaint.work_started_at) {
-        const startTime = new Date(complaint.work_started_at);
-        const now = new Date();
-        additionalTime = Math.floor((now - startTime) / 1000); // Convert to seconds
+    // Start timer for complaint
+    static async startTimer(complaintId, technicianId) {
+        try {
+            // First check if technician can access this complaint
+            const accessCheck = await Complaint.canTechnicianStartWork(complaintId, technicianId, null);
+            
+            if (!accessCheck.canStart) {
+                throw new Error(accessCheck.reason || 'You do not have access to this complaint');
+            }
+            
+            // Check if complaint exists and timer isn't already running
+            const [check] = await pool.execute(
+                `SELECT id, status, is_timer_running FROM complaints WHERE id = ?`,
+                [complaintId]
+            );
+            
+            if (check.length === 0) {
+                throw new Error('Complaint not found');
+            }
+            
+            const complaint = check[0];
+            
+            // Check if timer is already running
+            if (complaint.is_timer_running) {
+                throw new Error('Timer is already running');
+            }
+            
+            // FIXED: Correct parameter order
+            const [result] = await pool.execute(
+                `UPDATE complaints 
+                SET work_started_at = CURRENT_TIMESTAMP,
+                    work_paused_at = NULL,
+                    is_timer_running = TRUE,
+                    last_timer_action = 'start',
+                    status = 'In Progress',
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = ? AND is_timer_running = FALSE`,
+                [complaintId]  // FIXED: Only complaintId
+            );
+            
+            return result.affectedRows > 0;
+            
+        } catch (error) {
+            console.error('Error in startTimer:', error);
+            throw error;
+        }
     }
-    
-    const [result] = await pool.execute(
-        `UPDATE complaints 
-         SET work_paused_at = CURRENT_TIMESTAMP,
-             is_timer_running = FALSE,
-             total_work_time = total_work_time + ?,
-             last_timer_action = 'pause',
-             updated_at = CURRENT_TIMESTAMP
-         WHERE id = ? AND assigned_to = ?`,
-        [additionalTime, complaintId, technicianId]
-    );
-    
-    return result.affectedRows > 0;
-}
 
-// Stop/Complete timer for complaint
-static async stopTimer(complaintId, technicianId) {
-    // First get current work time and started time
-    const [current] = await pool.execute(
-        `SELECT work_started_at, total_work_time 
-         FROM complaints 
-         WHERE id = ? AND assigned_to = ?`,
-        [complaintId, technicianId]
-    );
-    
-    if (current.length === 0) return false;
-    
-    const complaint = current[0];
-    let additionalTime = 0;
-    
-    // Calculate time elapsed if timer was running
-    if (complaint.work_started_at && !complaint.work_paused_at) {
-        const startTime = new Date(complaint.work_started_at);
-        const now = new Date();
-        additionalTime = Math.floor((now - startTime) / 1000);
+    static async pauseTimer(complaintId, technicianId) {
+        try{
+            // Check access first
+            const accessCheck = await Complaint.canTechnicianStartWork(complaintId, technicianId, null);
+            if (!accessCheck.canStart) {
+                throw new Error(accessCheck.reason);
+            }
+
+            const [current] = await pool.execute(
+            `SELECT work_started_at, total_work_time 
+            FROM complaints 
+            WHERE id = ? AND is_timer_running = TRUE`,  // Removed assigned_to check
+            [complaintId]
+        );
+        
+        if (current.length === 0) return false;
+        
+        const complaint = current[0];
+        let additionalTime = 0;
+        
+        // Calculate time elapsed since work started
+        if (complaint.work_started_at) {
+            const startTime = new Date(complaint.work_started_at);
+            const now = new Date();
+            additionalTime = Math.floor((now - startTime) / 1000);
+        }
+        
+        const [result] = await pool.execute(
+            `UPDATE complaints 
+            SET work_paused_at = CURRENT_TIMESTAMP,
+                is_timer_running = FALSE,
+                total_work_time = total_work_time + ?,
+                last_timer_action = 'pause',
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?`,  // Removed assigned_to check
+            [additionalTime, complaintId]
+        );
+        
+        return result.affectedRows > 0;
+
+        }catch (error) {
+            console.error('Error in pauseTimer:', error);
+            throw error;
+        }
     }
-    
-    const [result] = await pool.execute(
-        `UPDATE complaints 
-         SET work_paused_at = NULL,
-             work_started_at = NULL,
-             is_timer_running = FALSE,
-             total_work_time = total_work_time + ?,
-             last_timer_action = 'stop',
-             status = 'Resolved',
-             resolved_at = CURRENT_TIMESTAMP,
-             updated_at = CURRENT_TIMESTAMP
-         WHERE id = ? AND assigned_to = ?`,
-        [additionalTime, complaintId, technicianId]
-    );
-    
-    return result.affectedRows > 0;
-}
 
-// Resume timer for complaint
-static async resumeTimer(complaintId, technicianId) {
-    const [result] = await pool.execute(
-        `UPDATE complaints 
-         SET work_started_at = CURRENT_TIMESTAMP,
-             work_paused_at = NULL,
-             is_timer_running = TRUE,
-             last_timer_action = 'start',
-             updated_at = CURRENT_TIMESTAMP
-         WHERE id = ? AND assigned_to = ? AND is_timer_running = FALSE`,
-        [complaintId, technicianId]
-    );
-    
-    return result.affectedRows > 0;
-}
+
+    // Stop/Complete timer for complaint
+    static async stopTimer(complaintId, technicianId) {
+        try {
+            // Check access first
+            const accessCheck = await Complaint.canTechnicianStartWork(complaintId, technicianId, null);
+            if (!accessCheck.canStart) {
+                throw new Error(accessCheck.reason);
+            }
+
+            // Check if complaint is on hold
+            const [check] = await pool.execute(
+                `SELECT is_on_hold FROM complaints WHERE id = ?`,
+                [complaintId]
+            );
+            
+            if (check.length === 0) return false;
+            
+            complaint = check[0];
+            
+            if (complaint.is_on_hold) {
+                throw new Error('Cannot complete complaint while it is on hold. Please resume the complaint first.');
+            }
+            
+            // Get current work time and started time
+            const [current] = await pool.execute(
+                `SELECT work_started_at, total_work_time, is_timer_running
+                FROM complaints WHERE id = ?`,
+                [complaintId]
+            );
+            
+            if (current.length === 0) return false;
+            
+            const complaint = current[0];
+            let additionalTime = 0;
+            
+            // Calculate time elapsed if timer was running
+            if (complaint.work_started_at && complaint.is_timer_running) {
+                const startTime = new Date(complaint.work_started_at);
+                const now = new Date();
+                additionalTime = Math.floor((now - startTime) / 1000);
+            }
+            
+            const [result] = await pool.execute(
+                `UPDATE complaints 
+                SET work_paused_at = NULL,
+                    work_started_at = NULL,
+                    is_timer_running = FALSE,
+                    total_work_time = total_work_time + ?,
+                    last_timer_action = 'stop',
+                    status = 'Resolved',  
+                    resolved_at = CURRENT_TIMESTAMP,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?`,
+                [additionalTime, complaintId]
+            );
+            
+            return result.affectedRows > 0;
+        } catch (error) {
+            console.error('Error in stopTimer:', error);
+            throw error;
+        }
+    }
+
+    static async resumeTimer(complaintId, technicianId) {
+        const [result] = await pool.execute(
+            `UPDATE complaints 
+            SET work_started_at = CURRENT_TIMESTAMP,
+                work_paused_at = NULL,
+                is_timer_running = TRUE,
+                last_timer_action = 'start',
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ? AND is_timer_running = FALSE`,  // Removed assigned_to check
+            [complaintId]
+        );
+        
+        return result.affectedRows > 0;
+    }
+
 
 // Get timer status for a complaint
 static async getTimerStatus(complaintId) {
@@ -618,14 +623,305 @@ static async getTimerStatus(complaintId) {
     };
 }
 
-// Helper function to format time
-static formatTime(seconds) {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
+    // Helper function to format time
+    static formatTime(seconds) {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+
+    static async findByTechnicianWithFilters(company_id, assignedApartmentIds, assignedCategoryIds, filters = {}) {
+    if (assignedApartmentIds.length === 0) {
+        return [];
+    }
     
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    let query = `
+        SELECT c.*, 
+        a.name as apartment_name,
+        f.floor_id as floor_number,
+        h.house_id as house_number,
+        ho.name as houseowner_name,
+        ho.mobile as houseowner_mobile,
+        ho.email as houseowner_email,
+        cc.name as category_name,           
+        cc.id as category_id,               
+        cc.icon as category_icon,           
+        cc.color as category_color          
+        FROM complaints c
+        LEFT JOIN apartments a ON c.apartment_id = a.id
+        LEFT JOIN floors f ON c.floor_id = f.id
+        LEFT JOIN houses h ON c.house_id = h.id
+        LEFT JOIN houseowner ho ON c.houseowner_id = ho.id
+        LEFT JOIN complaint_categories cc ON c.category_id = cc.id            
+        WHERE c.company_id = ?
+        AND c.apartment_id IN (${assignedApartmentIds.map(() => '?').join(', ')})
+        AND c.status IN ('Pending', 'In Progress', 'Resolved') 
+    `;
+    
+    const params = [company_id, ...assignedApartmentIds];
+    
+    // Add category filter if there are assigned categories
+    if (assignedCategoryIds.length > 0) {
+        // Show complaints that match assigned categories OR have no category (if needed)
+        query += ` AND (c.category_id IS NULL OR c.category_id IN (${assignedCategoryIds.map(() => '?').join(', ')}))`;
+        params.push(...assignedCategoryIds);
+    }
+    
+    // Apply other filters
+    if (filters.status && filters.status !== 'all') {
+        query += ' AND c.status = ?';
+        params.push(filters.status);
+    }
+    
+    query += ' ORDER BY c.created_at DESC';
+    
+    const [rows] = await pool.execute(query, params);
+    return rows;
 }
+
+    static async canTechnicianStartWork(complaintId, technicianId, companyId) {
+        try {
+            const [rows] = await pool.execute(
+                `SELECT c.*, 
+                        ua.apartment_id as assigned_apartment_id,
+                        tc.category_id as assigned_category_id
+                FROM complaints c
+                LEFT JOIN user_apartments ua ON c.apartment_id = ua.apartment_id AND ua.user_id = ?
+                LEFT JOIN technician_categories tc ON c.category_id = tc.category_id AND tc.technician_id = ?
+                WHERE c.id = ? AND c.status IN ('Pending', 'In Progress')`,
+                [technicianId, technicianId, complaintId]
+            );
+            
+            if (rows.length === 0) {
+                return { canStart: false, reason: 'Complaint not found or not active' };
+            }
+            
+            const complaint = rows[0];
+            
+            // Check if technician is assigned to this apartment
+            if (!complaint.assigned_apartment_id) {
+                return { canStart: false, reason: 'You are not assigned to this apartment' };
+            }
+            
+            // Check if technician is assigned to this category (if category exists)
+            if (complaint.category_id && !complaint.assigned_category_id) {
+                return { canStart: false, reason: 'You are not assigned to this complaint category' };
+            }
+            
+            // Verify company matches if provided
+            if (companyId && complaint.company_id !== companyId) {
+                return { canStart: false, reason: 'Complaint does not belong to your company' };
+            }
+            
+            return { canStart: true, complaint: complaint };
+        } catch (error) {
+            console.error('Error in canTechnicianStartWork:', error);
+            return { canStart: false, reason: 'Error checking access' };
+        }
+    }
+
+    // Hold a complaint
+    static async holdComplaint(complaintId, technicianId, reason, expectedResolutionDate = null) {
+        try {
+            const accessCheck = await Complaint.canTechnicianStartWork(complaintId, technicianId, null);
+            if (!accessCheck.canStart) {
+                throw new Error(accessCheck.reason);
+            }
+            
+            // Check if complaint is in progress
+            const [check] = await pool.execute(
+                `SELECT id, status, is_on_hold FROM complaints WHERE id = ?`,
+                [complaintId]
+            );
+            
+            if (check.length === 0) {
+                throw new Error('Complaint not found');
+            }
+            
+            const complaint = check[0];
+            
+            if (complaint.is_on_hold) {
+                throw new Error('Complaint is already on hold');
+            }
+            
+            if (complaint.status !== 'In Progress') {
+                throw new Error('Only complaints in progress can be put on hold');
+            }
+            
+            // Start transaction
+            await pool.execute('START TRANSACTION');
+            
+            try {
+                // Create hold reason record
+                const holdId = uuidv4();
+                const companyId = complaint.company_id;
+                
+                await pool.execute(
+                    `INSERT INTO complaint_hold_reasons 
+                    (id, company_id, complaint_id, technician_id, reason, expected_resolution_date, held_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+                    [holdId, companyId, complaintId, technicianId, reason, expectedResolutionDate]
+                );
+                
+                // Update complaint status
+                await pool.execute(
+                    `UPDATE complaints 
+                    SET is_on_hold = TRUE,
+                        hold_reason_id = ?,
+                        status = 'In Progress',  // Keep as In Progress but on hold
+                        updated_at = CURRENT_TIMESTAMP,
+                        work_paused_at = CURRENT_TIMESTAMP,
+                        is_timer_running = FALSE,
+                        last_timer_action = 'pause'
+                    WHERE id = ?`,
+                    [holdId, complaintId]
+                );
+                
+                await pool.execute('COMMIT');
+                
+                return {
+                    success: true,
+                    holdId: holdId,
+                    message: 'Complaint placed on hold successfully'
+                };
+                
+            } catch (error) {
+                await pool.execute('ROLLBACK');
+                throw error;
+            }
+            
+        } catch (error) {
+            console.error('Error in holdComplaint:', error);
+            throw error;
+        }
+    }
+
+    // Resume a complaint from hold
+    static async resumeComplaint(complaintId, technicianId) {
+        try {
+            const accessCheck = await Complaint.canTechnicianStartWork(complaintId, technicianId, null);
+            if (!accessCheck.canStart) {
+                throw new Error(accessCheck.reason);
+            }
+            
+            // Check if complaint is on hold
+            const [check] = await pool.execute(
+                `SELECT c.id, c.status, c.is_on_hold, chr.id as hold_reason_id
+                FROM complaints c
+                LEFT JOIN complaint_hold_reasons chr ON c.hold_reason_id = chr.id
+                WHERE c.id = ?`,
+                [complaintId]
+            );
+            
+            if (check.length === 0) {
+                throw new Error('Complaint not found');
+            }
+            
+            const complaint = check[0];
+            
+            if (!complaint.is_on_hold) {
+                throw new Error('Complaint is not on hold');
+            }
+            
+            // Start transaction
+            await pool.execute('START TRANSACTION');
+            
+            try {
+                // Update hold reason record
+                await pool.execute(
+                    `UPDATE complaint_hold_reasons 
+                    SET resumed_at = CURRENT_TIMESTAMP 
+                    WHERE complaint_id = ? AND resumed_at IS NULL`,
+                    [complaintId]
+                );
+                
+                // Update complaint status
+                await pool.execute(
+                    `UPDATE complaints 
+                    SET is_on_hold = FALSE,
+                        hold_reason_id = NULL,
+                        status = 'In Progress',
+                        updated_at = CURRENT_TIMESTAMP,
+                        work_paused_at = NULL,
+                        is_timer_running = TRUE,
+                        last_timer_action = 'start'
+                    WHERE id = ?`,
+                    [complaintId]
+                );
+                
+                await pool.execute('COMMIT');
+                
+                return {
+                    success: true,
+                    message: 'Complaint resumed successfully'
+                };
+                
+            } catch (error) {
+                await pool.execute('ROLLBACK');
+                throw error;
+            }
+            
+        } catch (error) {
+            console.error('Error in resumeComplaint:', error);
+            throw error;
+        }
+    }
+
+    // Get hold history for a complaint
+    static async getHoldHistory(complaintId) {
+        try {
+            const [rows] = await pool.execute(
+                `SELECT 
+                    chr.*,
+                    CONCAT(u.firstname, ' ', u.lastname) as technician_name,
+                    u.email as technician_email,
+                    u.mobile as technician_mobile
+                FROM complaint_hold_reasons chr
+                LEFT JOIN users u ON chr.technician_id = u.id
+                WHERE chr.complaint_id = ?
+                ORDER BY chr.held_at DESC`,
+                [complaintId]
+            );
+            
+            return rows;
+            
+        } catch (error) {
+            console.error('Error in getHoldHistory:', error);
+            throw error;
+        }
+    }
+
+    // Get current hold status for a complaint
+    static async getCurrentHoldStatus(complaintId) {
+        try {
+            const [rows] = await pool.execute(
+                `SELECT 
+                    c.is_on_hold,
+                    chr.id as hold_reason_id,
+                    chr.reason,
+                    chr.expected_resolution_date,
+                    chr.held_at,
+                    chr.resumed_at,
+                    CONCAT(u.firstname, ' ', u.lastname) as technician_name
+                FROM complaints c
+                LEFT JOIN complaint_hold_reasons chr ON c.hold_reason_id = chr.id
+                LEFT JOIN users u ON chr.technician_id = u.id
+                WHERE c.id = ? AND c.is_on_hold = TRUE`,
+                [complaintId]
+            );
+            
+            return rows[0] || null;
+            
+        } catch (error) {
+            console.error('Error in getCurrentHoldStatus:', error);
+            throw error;
+        }
+    }
 }
+
+
 
 module.exports = Complaint;

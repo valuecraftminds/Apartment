@@ -2,50 +2,51 @@ const pool = require('../db');
 const { v4: uuidv4 } = require('uuid');
 
 class Category {
-    // Get all categories
-    static async findAll() {
+    // Get all categories for a company
+    static async findAll(companyId) {
         const [rows] = await pool.execute(
             `SELECT * FROM complaint_categories 
-             WHERE is_active = TRUE 
-             ORDER BY name ASC`
+             WHERE is_active = TRUE AND company_id = ?
+             ORDER BY name ASC`,
+            [companyId]
         );
         return rows;
     }
 
-    // Get category by ID
-    static async findById(id) {
+    // Get category by ID with company check
+    static async findById(id, companyId) {
         const [rows] = await pool.execute(
-            `SELECT * FROM complaint_categories WHERE id = ?`,
-            [id]
+            `SELECT * FROM complaint_categories WHERE id = ? AND company_id = ?`,
+            [id, companyId]
         );
         return rows[0];
     }
 
-    // Get category by name
-    static async findByName(name) {
+    // Get category by name with company check
+    static async findByName(name, companyId) {
         const [rows] = await pool.execute(
-            `SELECT * FROM complaint_categories WHERE name = ?`,
-            [name]
+            `SELECT * FROM complaint_categories WHERE name = ? AND company_id = ?`,
+            [name, companyId]
         );
         return rows[0];
     }
 
-    // Create new category
+    // Create new category with company_id
     static async create(categoryData) {
-        const { name, description, icon = 'wrench', color = 'gray' } = categoryData;
+        const { name, description, company_id, icon = 'wrench', color = 'gray' } = categoryData;
         const id = uuidv4();
         
         const [result] = await pool.execute(
-            `INSERT INTO complaint_categories (id, name, description, icon, color) 
-             VALUES (?, ?, ?, ?, ?)`,
-            [id, name, description, icon, color]
+            `INSERT INTO complaint_categories (id, name, description, company_id, icon, color) 
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [id, name, description, company_id, icon, color]
         );
         
         return { id, ...categoryData };
     }
 
-    // Update category
-    static async update(id, updateData) {
+    // Update category with company check
+    static async update(id, companyId, updateData) {
         const { name, description, icon, color, is_active } = updateData;
         
         const updates = [];
@@ -77,22 +78,22 @@ class Category {
         }
         
         updates.push('updated_at = CURRENT_TIMESTAMP');
-        params.push(id);
+        params.push(id, companyId);
         
         await pool.execute(
-            `UPDATE complaint_categories SET ${updates.join(', ')} WHERE id = ?`,
+            `UPDATE complaint_categories SET ${updates.join(', ')} WHERE id = ? AND company_id = ?`,
             params
         );
         
-        return this.findById(id);
+        return this.findById(id, companyId);
     }
 
-    // Delete category (soft delete)
-    static async delete(id) {
+    // Delete category (soft delete) with company check
+    static async delete(id, companyId) {
         await pool.execute(
             `UPDATE complaint_categories SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP 
-             WHERE id = ?`,
-            [id]
+             WHERE id = ? AND company_id = ?`,
+            [id, companyId]
         );
         return true;
     }

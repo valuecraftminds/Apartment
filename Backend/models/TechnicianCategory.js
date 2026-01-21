@@ -1,8 +1,9 @@
 const pool = require('../db');
+const { v4: uuidv4 } = require('uuid');
 
 class TechnicianCategory {
   // Get all categories assigned to a technician
-  static async findByTechnicianId(technicianId) {
+  static async findByTechnicianId(technicianId, companyId) {
     const [rows] = await pool.execute(
       `SELECT 
         tc.id,
@@ -14,18 +15,19 @@ class TechnicianCategory {
         c.name as category_name,
         c.description as category_description,
         c.icon as category_icon,
+        c.color as category_color,
         c.is_active as category_active
-       FROM technician_categories tc
-       JOIN categories c ON tc.category_id = c.id
-       WHERE tc.technician_id = ?
-       ORDER BY c.name ASC`,
-      [technicianId]
+      FROM technician_categories tc
+      JOIN complaint_categories c ON tc.category_id = c.id
+      WHERE tc.technician_id = ? AND tc.company_id = ?
+      ORDER BY c.name ASC`,
+      [technicianId, companyId]
     );
     return rows;
   }
 
   // Get all technicians assigned to a category
-  static async findByCategoryId(categoryId) {
+  static async findByCategoryId(categoryId, companyId) {
     const [rows] = await pool.execute(
       `SELECT 
         tc.id,
@@ -38,14 +40,13 @@ class TechnicianCategory {
         u.firstname,
         u.lastname,
         u.email,
-        r.role,
+        u.role,
         u.is_active
        FROM technician_categories tc
        JOIN users u ON tc.technician_id = u.id
-        JOIN roles r ON u.role = r.id
-       WHERE tc.category_id = ?
+       WHERE tc.category_id = ? AND tc.company_id = ?
        ORDER BY u.firstname ASC`,
-      [categoryId]
+      [categoryId, companyId]
     );
     return rows;
   }
@@ -57,25 +58,28 @@ class TechnicianCategory {
     try {
       await connection.beginTransaction();
 
-      // Delete existing assignments
+      // Delete existing assignments for this company
       await connection.execute(
-        'DELETE FROM technician_categories WHERE technician_id = ?',
-        [technicianId]
+        'DELETE FROM technician_categories WHERE technician_id = ? AND company_id = ?',
+        [technicianId, companyId]
       );
 
       // Insert new assignments if any
       if (categoryIds && categoryIds.length > 0) {
+        // Create an array of value arrays, each with a unique ID
         const values = categoryIds.map(categoryId => [
+          uuidv4(), // Generate unique ID for each row
           technicianId, 
           categoryId, 
           companyId, 
           assignedBy
         ]);
-        const placeholders = categoryIds.map(() => '(?, ?, ?, ?)').join(', ');
+        
+        const placeholders = categoryIds.map(() => '(?, ?, ?, ?, ?)').join(', ');
         
         await connection.execute(
           `INSERT INTO technician_categories 
-          (technician_id, category_id, company_id, assigned_by) 
+          (id, technician_id, category_id, company_id, assigned_by) 
           VALUES ${placeholders}`,
           values.flat()
         );
@@ -92,29 +96,29 @@ class TechnicianCategory {
   }
 
   // Check if technician has category
-  static async hasCategory(technicianId, categoryId) {
+  static async hasCategory(technicianId, categoryId, companyId) {
     const [rows] = await pool.execute(
       `SELECT 1 FROM technician_categories 
-       WHERE technician_id = ? AND category_id = ?`,
-      [technicianId, categoryId]
+       WHERE technician_id = ? AND category_id = ? AND company_id = ?`,
+      [technicianId, categoryId, companyId]
     );
     return rows.length > 0;
   }
 
   // Get assignment count for technician
-  static async getAssignmentCount(technicianId) {
+  static async getAssignmentCount(technicianId, companyId) {
     const [rows] = await pool.execute(
-      `SELECT COUNT(*) as count FROM technician_categories WHERE technician_id = ?`,
-      [technicianId]
+      `SELECT COUNT(*) as count FROM technician_categories WHERE technician_id = ? AND company_id = ?`,
+      [technicianId, companyId]
     );
     return rows[0]?.count || 0;
   }
 
   // Remove specific category assignment from technician
-  static async removeAssignment(technicianId, categoryId) {
+  static async removeAssignment(technicianId, categoryId, companyId) {
     const [result] = await pool.execute(
-      'DELETE FROM technician_categories WHERE technician_id = ? AND category_id = ?',
-      [technicianId, categoryId]
+      'DELETE FROM technician_categories WHERE technician_id = ? AND category_id = ? AND company_id = ?',
+      [technicianId, categoryId, companyId]
     );
     return result.affectedRows > 0;
   }
@@ -129,7 +133,7 @@ class TechnicianCategory {
         u.firstname as technician_firstname,
         u.lastname as technician_lastname,
         u.email as technician_email,
-        r.role as technician_role,
+        u.role as technician_role,
         c.id as category_id,
         c.name as category_name,
         c.description as category_description,
@@ -137,9 +141,8 @@ class TechnicianCategory {
         ass.lastname as assigned_by_lastname
        FROM technician_categories tc
        JOIN users u ON tc.technician_id = u.id
-       JOIN categories c ON tc.category_id = c.id
+       JOIN complaint_categories c ON tc.category_id = c.id
        LEFT JOIN users ass ON tc.assigned_by = ass.id
-       LEFT JOIN roles r ON u.role = r.id
        WHERE tc.company_id = ?
        ORDER BY tc.assigned_at DESC`,
       [companyId]
