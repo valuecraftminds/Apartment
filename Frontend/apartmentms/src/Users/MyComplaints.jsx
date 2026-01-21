@@ -346,32 +346,31 @@ const fetchMyComplaints = async () => {
 
   // Render Start Work button based on complaint status
   const renderStartWorkButton = (complaint) => {
-    if (complaint.status === 'Resolved' || complaint.status === 'Closed') {
-        return (
-            <div className="text-center py-2">
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                    Completed
-                </span>
-            </div>
-        );
-    }
+      if (complaint.status === 'Resolved' || complaint.status === 'Closed') {
+          return (
+              <div className="text-center py-2">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                      Completed
+                  </span>
+              </div>
+          );
+      }
 
-    if (complaint.status === 'Pending' || complaint.status === 'In Progress') {
-        return (
-            <button
-                onClick={() => handleStartWork(complaint)}
-                className="flex items-center justify-center gap-1 px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors w-full"
-                title="Start Work"
-                disabled={complaint.status === 'In Progress'}
-            >
-                <Play size={16} />
-                <span>Start Work</span>
-            </button>
-        );
-    }
+      if (complaint.status === 'Pending' || complaint.status === 'In Progress' || complaint.is_on_hold) {
+          return (
+              <button
+                  onClick={() => handleStartWork(complaint)}
+                  className="flex items-center justify-center gap-1 px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors w-full"
+                  title={complaint.is_on_hold ? "Resume from Hold" : "Start Work"}
+              >
+                  <Play size={16} />
+                  <span>{complaint.is_on_hold ? "Resume Work" : "Start Work"}</span>
+              </button>
+          );
+      }
 
-    return null;
-};
+      return null;
+  };
 
   // Render access information
   const renderAccessInfo = () => {
@@ -641,6 +640,7 @@ const fetchMyComplaints = async () => {
                               <div className="flex flex-wrap gap-1 mt-1">
                                 <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(complaint.status)}`}>
                                   {complaint.status}
+                                   {complaint.is_on_hold && " (On Hold)"}
                                 </span>
                                 {getCategoryBadge(complaint)}
                               </div>
@@ -721,6 +721,9 @@ const fetchMyComplaints = async () => {
                             Status
                           </th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Hold Status
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             Action
                           </th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -762,6 +765,13 @@ const fetchMyComplaints = async () => {
                               <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(complaint.status)}`}>
                                 {complaint.status}
                               </span>
+                               {complaint.is_on_hold && (
+                                <div className="mt-1">
+                                  <span className="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300">
+                                    On Hold
+                                  </span>
+                                </div>
+                              )}
                             </td>
                             <td className="px-4 py-4">
                               {renderStartWorkButton(complaint)}

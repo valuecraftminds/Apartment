@@ -512,6 +512,68 @@ class Complaint {
 
 
     // Stop/Complete timer for complaint
+    // static async stopTimer(complaintId, technicianId) {
+    //     try {
+    //         // Check access first
+    //         const accessCheck = await Complaint.canTechnicianStartWork(complaintId, technicianId, null);
+    //         if (!accessCheck.canStart) {
+    //             throw new Error(accessCheck.reason);
+    //         }
+
+    //         // Check if complaint is on hold
+    //         const [check] = await pool.execute(
+    //             `SELECT is_on_hold FROM complaints WHERE id = ?`,
+    //             [complaintId]
+    //         );
+            
+    //         if (check.length === 0) return false;
+            
+    //         complaint = check[0];
+            
+    //         if (complaint.is_on_hold) {
+    //             throw new Error('Cannot complete complaint while it is on hold. Please resume the complaint first.');
+    //         }
+            
+    //         // Get current work time and started time
+    //         const [current] = await pool.execute(
+    //             `SELECT work_started_at, total_work_time, is_timer_running
+    //             FROM complaints WHERE id = ?`,
+    //             [complaintId]
+    //         );
+            
+    //         if (current.length === 0) return false;
+            
+    //         const complaint = current[0];
+    //         let additionalTime = 0;
+            
+    //         // Calculate time elapsed if timer was running
+    //         if (complaint.work_started_at && complaint.is_timer_running) {
+    //             const startTime = new Date(complaint.work_started_at);
+    //             const now = new Date();
+    //             additionalTime = Math.floor((now - startTime) / 1000);
+    //         }
+            
+    //         const [result] = await pool.execute(
+    //             `UPDATE complaints 
+    //             SET work_paused_at = NULL,
+    //                 work_started_at = NULL,
+    //                 is_timer_running = FALSE,
+    //                 total_work_time = total_work_time + ?,
+    //                 last_timer_action = 'stop',
+    //                 status = 'Resolved',  
+    //                 resolved_at = CURRENT_TIMESTAMP,
+    //                 updated_at = CURRENT_TIMESTAMP
+    //             WHERE id = ?`,
+    //             [additionalTime, complaintId]
+    //         );
+            
+    //         return result.affectedRows > 0;
+    //     } catch (error) {
+    //         console.error('Error in stopTimer:', error);
+    //         throw error;
+    //     }
+    // }
+    
     static async stopTimer(complaintId, technicianId) {
         try {
             // Check access first
@@ -520,30 +582,24 @@ class Complaint {
                 throw new Error(accessCheck.reason);
             }
 
-            // Check if complaint is on hold
-            const [check] = await pool.execute(
-                `SELECT is_on_hold FROM complaints WHERE id = ?`,
-                [complaintId]
-            );
-            
-            if (check.length === 0) return false;
-            
-            complaint = check[0];
-            
-            if (complaint.is_on_hold) {
-                throw new Error('Cannot complete complaint while it is on hold. Please resume the complaint first.');
-            }
-            
-            // Get current work time and started time
+            // Get current complaint state
             const [current] = await pool.execute(
-                `SELECT work_started_at, total_work_time, is_timer_running
+                `SELECT work_started_at, total_work_time, is_timer_running, is_on_hold
                 FROM complaints WHERE id = ?`,
                 [complaintId]
             );
             
-            if (current.length === 0) return false;
+            if (current.length === 0) {
+                throw new Error('Complaint not found');
+            }
             
             const complaint = current[0];
+            
+            // Check if complaint is on hold
+            if (complaint.is_on_hold) {
+                throw new Error('Cannot complete complaint while it is on hold. Please resume the complaint first.');
+            }
+            
             let additionalTime = 0;
             
             // Calculate time elapsed if timer was running
@@ -574,19 +630,62 @@ class Complaint {
         }
     }
 
-    static async resumeTimer(complaintId, technicianId) {
-        const [result] = await pool.execute(
-            `UPDATE complaints 
-            SET work_started_at = CURRENT_TIMESTAMP,
-                work_paused_at = NULL,
-                is_timer_running = TRUE,
-                last_timer_action = 'start',
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = ? AND is_timer_running = FALSE`,  // Removed assigned_to check
-            [complaintId]
-        );
+    // static async resumeTimer(complaintId, technicianId) {
+    //     const [result] = await pool.execute(
+    //         `UPDATE complaints 
+    //         SET work_started_at = CURRENT_TIMESTAMP,
+    //             work_paused_at = NULL,
+    //             is_timer_running = TRUE,
+    //             last_timer_action = 'start',
+    //             updated_at = CURRENT_TIMESTAMP
+    //         WHERE id = ? AND is_timer_running = FALSE`,  // Removed assigned_to check
+    //         [complaintId]
+    //     );
         
-        return result.affectedRows > 0;
+    //     return result.affectedRows > 0;
+    // }
+    static async resumeTimer(complaintId, technicianId) {
+        try {
+            // Check if the complaint is on hold first
+            const [check] = await pool.execute(
+                `SELECT id, status, is_on_hold, is_timer_running 
+                FROM complaints WHERE id = ?`,
+                [complaintId]
+            );
+            
+            if (check.length === 0) {
+                throw new Error('Complaint not found');
+            }
+            
+            const complaint = check[0];
+            
+            // If complaint is on hold, use resumeComplaint instead
+            if (complaint.is_on_hold) {
+                throw new Error('Complaint is on hold. Use resumeComplaint method instead.');
+            }
+            
+            // Only resume if timer is not already running
+            if (complaint.is_timer_running) {
+                throw new Error('Timer is already running');
+            }
+            
+            const [result] = await pool.execute(
+                `UPDATE complaints 
+                SET work_started_at = CURRENT_TIMESTAMP,
+                    work_paused_at = NULL,
+                    is_timer_running = TRUE,
+                    last_timer_action = 'resume',
+                    status = 'In Progress',
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = ? AND is_timer_running = FALSE`,
+                [complaintId]
+            );
+            
+            return result.affectedRows > 0;
+        } catch (error) {
+            console.error('Error in resumeTimer:', error);
+            throw error;
+        }
     }
 
 
@@ -725,6 +824,8 @@ static async getTimerStatus(complaintId) {
 
     // Hold a complaint
     static async holdComplaint(complaintId, technicianId, reason, expectedResolutionDate = null) {
+        const connection = await pool.getConnection();
+        
         try {
             const accessCheck = await Complaint.canTechnicianStartWork(complaintId, technicianId, null);
             if (!accessCheck.canStart) {
@@ -732,8 +833,8 @@ static async getTimerStatus(complaintId) {
             }
             
             // Check if complaint is in progress
-            const [check] = await pool.execute(
-                `SELECT id, status, is_on_hold FROM complaints WHERE id = ?`,
+            const [check] = await connection.execute(
+                `SELECT id, status, is_on_hold, company_id FROM complaints WHERE id = ?`,
                 [complaintId]
             );
             
@@ -751,15 +852,15 @@ static async getTimerStatus(complaintId) {
                 throw new Error('Only complaints in progress can be put on hold');
             }
             
-            // Start transaction
-            await pool.execute('START TRANSACTION');
+            // Start transaction using regular query
+            await connection.beginTransaction();
             
             try {
                 // Create hold reason record
                 const holdId = uuidv4();
                 const companyId = complaint.company_id;
                 
-                await pool.execute(
+                await connection.execute(
                     `INSERT INTO complaint_hold_reasons 
                     (id, company_id, complaint_id, technician_id, reason, expected_resolution_date, held_at) 
                     VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
@@ -767,11 +868,11 @@ static async getTimerStatus(complaintId) {
                 );
                 
                 // Update complaint status
-                await pool.execute(
+                await connection.execute(
                     `UPDATE complaints 
                     SET is_on_hold = TRUE,
                         hold_reason_id = ?,
-                        status = 'In Progress',  // Keep as In Progress but on hold
+                        status = 'In Progress', 
                         updated_at = CURRENT_TIMESTAMP,
                         work_paused_at = CURRENT_TIMESTAMP,
                         is_timer_running = FALSE,
@@ -780,7 +881,7 @@ static async getTimerStatus(complaintId) {
                     [holdId, complaintId]
                 );
                 
-                await pool.execute('COMMIT');
+                await connection.commit();
                 
                 return {
                     success: true,
@@ -789,18 +890,26 @@ static async getTimerStatus(complaintId) {
                 };
                 
             } catch (error) {
-                await pool.execute('ROLLBACK');
+                await connection.rollback();
                 throw error;
+            } finally {
+                connection.release();
             }
             
         } catch (error) {
             console.error('Error in holdComplaint:', error);
+            // Make sure to release connection even on error
+            if (connection && connection.release) {
+                connection.release();
+            }
             throw error;
         }
     }
 
     // Resume a complaint from hold
     static async resumeComplaint(complaintId, technicianId) {
+        const connection = await pool.getConnection();
+        
         try {
             const accessCheck = await Complaint.canTechnicianStartWork(complaintId, technicianId, null);
             if (!accessCheck.canStart) {
@@ -808,7 +917,7 @@ static async getTimerStatus(complaintId) {
             }
             
             // Check if complaint is on hold
-            const [check] = await pool.execute(
+            const [check] = await connection.execute(
                 `SELECT c.id, c.status, c.is_on_hold, chr.id as hold_reason_id
                 FROM complaints c
                 LEFT JOIN complaint_hold_reasons chr ON c.hold_reason_id = chr.id
@@ -827,11 +936,11 @@ static async getTimerStatus(complaintId) {
             }
             
             // Start transaction
-            await pool.execute('START TRANSACTION');
+            await connection.beginTransaction();
             
             try {
                 // Update hold reason record
-                await pool.execute(
+                await connection.execute(
                     `UPDATE complaint_hold_reasons 
                     SET resumed_at = CURRENT_TIMESTAMP 
                     WHERE complaint_id = ? AND resumed_at IS NULL`,
@@ -839,7 +948,7 @@ static async getTimerStatus(complaintId) {
                 );
                 
                 // Update complaint status
-                await pool.execute(
+                await connection.execute(
                     `UPDATE complaints 
                     SET is_on_hold = FALSE,
                         hold_reason_id = NULL,
@@ -852,7 +961,7 @@ static async getTimerStatus(complaintId) {
                     [complaintId]
                 );
                 
-                await pool.execute('COMMIT');
+                await connection.commit();
                 
                 return {
                     success: true,
@@ -860,12 +969,18 @@ static async getTimerStatus(complaintId) {
                 };
                 
             } catch (error) {
-                await pool.execute('ROLLBACK');
+                await connection.rollback();
                 throw error;
+            } finally {
+                connection.release();
             }
             
         } catch (error) {
             console.error('Error in resumeComplaint:', error);
+            // Make sure to release connection even on error
+            if (connection && connection.release) {
+                connection.release();
+            }
             throw error;
         }
     }

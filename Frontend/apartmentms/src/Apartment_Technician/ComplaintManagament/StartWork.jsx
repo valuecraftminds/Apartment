@@ -1,3 +1,4 @@
+// StartWork.jsx
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import { 
   Loader, 
@@ -17,7 +18,8 @@ import {
   Pause,
   StopCircle,
   Clock,
-  Wrench
+  Wrench,
+  PlayCircle
 } from 'lucide-react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -27,6 +29,7 @@ import Sidebar from '../../components/Sidebar';
 import Navbar from '../../components/Navbar';
 import { AuthContext } from '../../contexts/AuthContext';
 import { Html5QrcodeScanner, Html5QrcodeScanType } from 'html5-qrcode';
+import HoldComplaintModal from './HoldComplaintModal';
 
 export default function StartWork() {
     const { complaintId } = useParams();
@@ -49,6 +52,9 @@ export default function StartWork() {
     const [workStarted, setWorkStarted] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+    const [showHoldModal, setShowHoldModal] = useState(false);
+    const [holdStatus, setHoldStatus] = useState(null);
+    const [loadingHoldStatus, setLoadingHoldStatus] = useState(false);
 
     // Fetch complaint details if not passed in state
     useEffect(() => {
@@ -330,10 +336,12 @@ export default function StartWork() {
             if (response.data.success) {
                 setTimerRunning(true);
                 
-                // Start interval again
-                timerIntervalRef.current = setInterval(() => {
-                    setElapsedTime(prev => prev + 1);
-                }, 1000);
+                // Start interval for UI
+                if (!timerIntervalRef.current) {
+                    timerIntervalRef.current = setInterval(() => {
+                        setElapsedTime(prev => prev + 1);
+                    }, 1000);
+                }
 
                 toast.success('Timer resumed');
                 return true;
@@ -371,34 +379,49 @@ export default function StartWork() {
             // Set scanned data
             setScannedData({ houseId: houseId, source: 'manual' });
             
-            // Check if house exists and matches complaint
-            const accessResult = await checkHouseAccess(houseId);
-            
-            if (accessResult.access) {
-                setAccessGranted(true);
-                toast.success(`Access granted! This is the correct house.`);
+            // If complaint is on hold, just verify location
+            if (holdStatus?.is_on_hold) {
+                const accessResult = await checkHouseAccess(houseId);
                 
-                // Auto-start timer
-                try {
-                    const timerStarted = await startComplaintTimer();
-                    if (timerStarted) {
-                        setTimerRunning(true);
-                        setWorkStarted(true);
-                        
-                        // Update complaint status immediately
-                        setComplaint(prev => ({
-                            ...prev,
-                            status: 'In Progress',
-                            is_timer_running: true
-                        }));
-                    }
-                } catch (error) {
-                    toast.error('Failed to start timer: ' + error.message);
+                if (accessResult.access) {
+                    toast.success('Location verified! Ready to resume from hold.');
+                    setAccessGranted(true);
+                    // Don't start timer here
+                } else {
+                    setAccessGranted(false);
+                    setAccessDeniedReason(accessResult.reason || 'Access denied');
+                    toast.error(accessResult.reason || 'Access denied');
                 }
             } else {
-                setAccessGranted(false);
-                setAccessDeniedReason(accessResult.reason || 'Access denied');
-                toast.error(accessResult.reason || 'Access denied');
+                // Normal flow
+                const accessResult = await checkHouseAccess(houseId);
+                
+                if (accessResult.access) {
+                    setAccessGranted(true);
+                    toast.success(`Access granted! This is the correct house.`);
+                    
+                    // Auto-start timer
+                    try {
+                        const timerStarted = await startComplaintTimer();
+                        if (timerStarted) {
+                            setTimerRunning(true);
+                            setWorkStarted(true);
+                            
+                            // Update complaint status immediately
+                            setComplaint(prev => ({
+                                ...prev,
+                                status: 'In Progress',
+                                is_timer_running: true
+                            }));
+                        }
+                    } catch (error) {
+                        toast.error('Failed to start timer: ' + error.message);
+                    }
+                } else {
+                    setAccessGranted(false);
+                    setAccessDeniedReason(accessResult.reason || 'Access denied');
+                    toast.error(accessResult.reason || 'Access denied');
+                }
             }
 
         } catch (error) {
@@ -471,35 +494,49 @@ export default function StartWork() {
             // Set scanned data
             setScannedData({ houseId: houseId, source: 'qr' });
             
-            // Check if house exists and matches complaint
-            const accessResult = await checkHouseAccess(houseId);
-            
-            // In handleScanSuccess and handleManualInput:
-            if (accessResult.access) {
-                setAccessGranted(true);
-                toast.success(`Access granted! This is the correct house.`);
-    
-                // Auto-start timer
-                try {
-                    const timerStarted = await startComplaintTimer();
-                    if (timerStarted) {
-                        setTimerRunning(true);
-                        setWorkStarted(true);
-                        
-                        // Update complaint status immediately
-                        setComplaint(prev => ({
-                            ...prev,
-                            status: 'In Progress',
-                            is_timer_running: true
-                        }));
-                    }
-                } catch (error) {
-                    toast.error('Failed to start timer: ' + error.message);
+            // If complaint is on hold, just verify location without starting timer
+            if (holdStatus?.is_on_hold) {
+                const accessResult = await checkHouseAccess(houseId);
+                
+                if (accessResult.access) {
+                    toast.success('Location verified! Ready to resume from hold.');
+                    setAccessGranted(true);
+                    // Don't start timer here - let user click "Resume from Hold" button
+                } else {
+                    setAccessGranted(false);
+                    setAccessDeniedReason(accessResult.reason || 'Access denied');
+                    toast.error(accessResult.reason || 'Access denied');
                 }
-            }else {
-                setAccessGranted(false);
-                setAccessDeniedReason(accessResult.reason || 'Access denied');
-                toast.error(accessResult.reason || 'Access denied');
+            } else {
+                // Normal flow for non-held complaints
+                const accessResult = await checkHouseAccess(houseId);
+                
+                if (accessResult.access) {
+                    setAccessGranted(true);
+                    toast.success(`Access granted! This is the correct house.`);
+
+                    // Auto-start timer only for non-held complaints
+                    try {
+                        const timerStarted = await startComplaintTimer();
+                        if (timerStarted) {
+                            setTimerRunning(true);
+                            setWorkStarted(true);
+                            
+                            // Update complaint status immediately
+                            setComplaint(prev => ({
+                                ...prev,
+                                status: 'In Progress',
+                                is_timer_running: true
+                            }));
+                        }
+                    } catch (error) {
+                        toast.error('Failed to start timer: ' + error.message);
+                    }
+                } else {
+                    setAccessGranted(false);
+                    setAccessDeniedReason(accessResult.reason || 'Access denied');
+                    toast.error(accessResult.reason || 'Access denied');
+                }
             }
 
         } catch (error) {
@@ -625,6 +662,89 @@ export default function StartWork() {
         }
     };
 
+    //hold complaint modal handling
+    const fetchHoldStatus = async () => {
+    try {
+        setLoadingHoldStatus(true);
+        const response = await api.get(`/complaints/${complaintId}/hold-status`, {
+        headers: {
+            Authorization: `Bearer ${auth.accessToken}`
+        }
+        });
+        
+        if (response.data.success) {
+        setHoldStatus(response.data.data);
+        }
+    } catch (error) {
+        console.error('Error fetching hold status:', error);
+    } finally {
+        setLoadingHoldStatus(false);
+    }
+    };
+
+    // Call fetchHoldStatus when component loads
+    useEffect(() => {
+    if (complaintId && auth?.accessToken) {
+        fetchHoldStatus();
+    }
+    }, [complaintId, auth?.accessToken]);
+
+    const handleResumeFromHold = async () => {
+        try {
+            setLoading(true);
+            const resumed = await api.post(`/complaints/${complaintId}/resume`, {}, {
+                headers: {
+                    Authorization: `Bearer ${auth.accessToken}`
+                }
+            });
+
+            if (resumed.data.success) {
+                toast.success('Complaint resumed from hold');
+                
+                // Update local state
+                setHoldStatus(null);
+                setTimerRunning(true);
+                setWorkStarted(true);
+                
+                // Update complaint status
+                setComplaint(prev => ({
+                    ...prev,
+                    status: 'In Progress',
+                    is_timer_running: true,
+                    is_on_hold: false
+                }));
+                
+                // Start interval for UI
+                if (timerIntervalRef.current) {
+                    clearInterval(timerIntervalRef.current);
+                }
+                
+                timerIntervalRef.current = setInterval(() => {
+                    setElapsedTime(prev => prev + 1);
+                }, 1000);
+                
+            } else {
+                toast.error(resumed.data.message || 'Failed to resume complaint');
+            }
+        } catch (error) {
+            console.error('Error resuming from hold:', error);
+            toast.error(error.response?.data?.message || 'Failed to resume complaint');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+        // Add the handleHoldSuccess function
+    const handleHoldSuccess = () => {
+        fetchHoldStatus();
+        setTimerRunning(false);
+        
+        if (timerIntervalRef.current) {
+            clearInterval(timerIntervalRef.current);
+            timerIntervalRef.current = null;
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">            
             <div className="flex">
@@ -695,7 +815,7 @@ export default function StartWork() {
                         )}
 
                         {/* Timer Display */}                        
-                        {workStarted && (
+                        {workStarted && !holdStatus?.is_on_hold && (
                             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
                                 <div className="flex flex-col md:flex-row items-center justify-between">
                                     <div className="flex items-center mb-4 md:mb-0">
@@ -719,32 +839,135 @@ export default function StartWork() {
                                         {timerRunning ? (
                                             <button
                                                 onClick={pauseComplaintTimer}
-                                                className="flex items-center justify-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors min-w-[120px]"
+                                                className="flex items-center justify-center gap-2 px-2 py-1 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors min-w-[100px]"
                                             >
-                                                <Pause size={16} />
-                                                Pause Timer
+                                                {/* <Pause size={16} /> */}
+                                                Pause
                                             </button>
                                         ) : (
                                             <button
                                                 onClick={resumeComplaintTimer}
-                                                className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors min-w-[120px]"
+                                                className="flex items-center justify-center gap-2 px-2 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors min-w-[100px]"
                                             >
-                                                <Play size={16} />
-                                                Resume Timer
+                                                {/* <Play size={16} /> */}
+                                                Resume 
                                             </button>
                                         )}
+
+                                        {/* Hold Button */}
+                                        <button
+                                            onClick={() => setShowHoldModal(true)}
+                                            className="flex items-center justify-center gap-2 px-2 py-1 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors min-w-[100px]"
+                                        >
+                                            {/* <AlertCircle size={16} /> */}
+                                            Hold
+                                        </button>
                                         
                                         <button
                                             onClick={stopComplaintTimer}
-                                            className="flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors min-w-[120px]"
+                                            className="flex items-center justify-center gap-2 px-2 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors min-w-[100px]"
                                         >
-                                            <StopCircle size={16} />
-                                            Complete Work
+                                            {/* <StopCircle size={16} /> */}
+                                            Complete
                                         </button>
                                     </div>
                                 </div>
                             </div>
                         )}
+                        {holdStatus?.is_on_hold && !workStarted && (
+                            <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6 mb-6">
+                                <div className="flex items-start mb-4">
+                                    <AlertCircle size={24} className="text-orange-600 dark:text-orange-400 mr-3 mt-1" />
+                                    <div>
+                                        <h3 className="font-semibold text-orange-800 dark:text-orange-300">
+                                            Complaint On Hold
+                                        </h3>
+                                        <p className="text-orange-700 dark:text-orange-400 mb-2">
+                                            <span className="font-medium">Reason:</span> {holdStatus.reason}
+                                        </p>
+                                        {holdStatus.expected_resolution_date && (
+                                            <p className="text-orange-700 dark:text-orange-400">
+                                                <span className="font-medium">Expected Resolution:</span>{' '}
+                                                {new Date(holdStatus.expected_resolution_date).toLocaleDateString()}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                                
+                                <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
+                                    <h4 className="font-medium text-gray-800 dark:text-white mb-3">
+                                        To resume work:
+                                    </h4>
+                                    <ol className="list-decimal pl-5 space-y-2 text-gray-600 dark:text-gray-300">
+                                        <li>Verify your location (scan QR or enter House ID)</li>
+                                        <li>Click "Resume from Hold" button</li>
+                                        <li>The timer will resume from where it was paused</li>
+                                    </ol>
+                                </div>
+                                
+                                {accessGranted ? (
+                                    <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                                        <div className="flex items-center">
+                                            <Check size={20} className="text-green-600 dark:text-green-400 mr-2" />
+                                            <span className="text-green-700 dark:text-green-300">
+                                                Location verified! You can now resume work.
+                                            </span>
+                                        </div>
+                                        <button
+                                            onClick={handleResumeFromHold}
+                                            className="mt-3 w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                                            disabled={loading}
+                                        >
+                                            <PlayCircle size={20} />
+                                            Resume from Hold
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-4">
+                                        Please verify your location first to resume work
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
+                        {/* {holdStatus?.is_on_hold && (
+                            <div className="flex gap-3">
+                                <button
+                                onClick={handleResumeFromHold}
+                                className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors min-w-[140px]"
+                                >
+                                <PlayCircle size={16} />
+                                Resume from Hold
+                                </button>
+                            </div>
+                        )} */}
+
+                        {/* Add Hold Status Display */}
+                        {/* {holdStatus?.is_on_hold && (
+                        <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4 mb-6">
+                            <div className="flex items-start">
+                            <AlertCircle size={24} className="text-orange-600 dark:text-orange-400 mr-3 mt-1" />
+                            <div className="flex-1">
+                                <h3 className="font-semibold text-orange-800 dark:text-orange-300 mb-2">
+                                Complaint On Hold
+                                </h3>
+                                <p className="text-orange-700 dark:text-orange-400 mb-2">
+                                <span className="font-medium">Reason:</span> {holdStatus.reason}
+                                </p>
+                                {holdStatus.expected_resolution_date && (
+                                <p className="text-orange-700 dark:text-orange-400">
+                                    <span className="font-medium">Expected Resolution:</span>{' '}
+                                    {new Date(holdStatus.expected_resolution_date).toLocaleDateString()}
+                                </p>
+                                )}
+                                <p className="text-sm text-orange-600 dark:text-orange-300 mt-2">
+                                Placed on hold by {holdStatus.technician_name} on{' '}
+                                {new Date(holdStatus.held_at).toLocaleString()}
+                                </p>
+                            </div>
+                            </div>
+                        </div>
+                        )} */}
 
                         {/* Scanning Interface */}
                         {scanning && !workStarted && (
@@ -951,7 +1174,7 @@ export default function StartWork() {
                                         You are now working on complaint: <strong>{complaint?.complaint_number}</strong>
                                     </p>
                                     
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                    {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                                         <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                                             <p className="text-sm text-gray-500 dark:text-gray-400">Location</p>
                                             <p className="font-semibold text-gray-800 dark:text-white">
@@ -968,7 +1191,7 @@ export default function StartWork() {
                                                 {formatTime(elapsedTime)}
                                             </p>
                                         </div>
-                                    </div>
+                                    </div> */}
                                     
                                     <div className="text-sm text-gray-500 dark:text-gray-400">
                                         <p>Remember to stop the timer when you finish your work</p>
@@ -980,6 +1203,13 @@ export default function StartWork() {
                     </div>
                 </div>
             </div>
+            {showHoldModal && complaint && (
+                <HoldComplaintModal
+                    complaint={complaint}
+                    onClose={() => setShowHoldModal(false)}
+                    onHoldSuccess={handleHoldSuccess}
+                />
+                )}
             <ToastContainer 
                 position="top-center" 
                 autoClose={3000}
