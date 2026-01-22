@@ -204,6 +204,7 @@ mountRoute('/api/houseowner-auth', './routes/houseOwnerAuth' );
 mountRoute('/api/complaints', './routes/complaints');
 mountRoute('/api/categories', './routes/categories');
 mountRoute('/api/technician-categories', './routes/technicianCategories');
+mountRoute('/api/ratings', './routes/ratings');
 
 /* =====================================================
    HEALTH CHECK

@@ -379,7 +379,7 @@ const handleGenerateBill = async () => {
                         onChange={(e) => setYear(parseInt(e.target.value))}
                         className="w-full px-3 py-2 text-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
                     >
-                        {[2023, 2024, 2025].map(y => (
+                        {[2023, 2024, 2025,2026].map(y => (
                             <option key={y} value={y}>{y}</option>
                         ))}
                     </select>

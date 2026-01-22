@@ -1,3 +1,4 @@
+// ViewComplaint.jsx
 import React, { useState, useEffect, useContext } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
 import { 
@@ -275,6 +276,23 @@ export default function ViewComplaint() {
     });
   };
 
+  const loadRatings = async (complaintId) => {
+    try {
+      const res = await api.get(`/ratings/get-rating/${complaintId}/rating`, {
+        headers: {
+          Authorization: `Bearer ${auth.accessToken}`
+        }
+      });
+      if (res.data.success) {
+        return res.data.data;
+      }
+    } catch (err) {
+      console.error('Failed to load ratings:', err);
+      toast.error('Failed to load ratings');
+    }
+    return null;
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -487,11 +505,11 @@ export default function ViewComplaint() {
                           Status
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                          Timeline
+                          Timeline & Rating
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        {/* <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           Actions
-                        </th>
+                        </th> */}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -534,27 +552,6 @@ export default function ViewComplaint() {
                               {complaint.status}
                             </span>
                           </td>
-                          {/* <td className="px-4 py-4">
-                            {complaint.assigned_to_name ? (
-                              <div className="space-y-1">
-                                <div className="flex items-center">
-                                  <User size={14} className="text-gray-400 mr-1" />
-                                  <span className="text-sm text-gray-900 dark:text-white">
-                                    {complaint.assigned_to_name}
-                                  </span>
-                                </div>
-                                {complaint.assigned_at && (
-                                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                                    Assigned: {formatDate(complaint.assigned_at)}
-                                  </div>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-sm text-gray-500 dark:text-gray-400 italic">
-                                Auto-assign pending
-                              </span>
-                            )}
-                          </td> */}
                           <td className="px-4 py-4">
                             <div className="space-y-1">
                               {complaint.resolved_at ? (
@@ -580,37 +577,11 @@ export default function ViewComplaint() {
                               )}
                             </div>
                           </td>
-                          <td className="px-4 py-4">
+                          {/* <td className="px-4 py-4">
                             <div className="flex space-x-2">
-                              {complaint.status === 'In Progress' && (
-                                <button
-                                  onClick={() => handleUpdateStatus(complaint.id, 'Resolved')}
-                                  className="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                                  title="Mark as Resolved"
-                                >
-                                  Resolve
-                                </button>
-                              )}
-                              {complaint.status === 'Resolved' && (
-                                <button
-                                  onClick={() => handleUpdateStatus(complaint.id, 'Closed')}
-                                  className="px-3 py-1 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                                  title="Mark as Closed"
-                                >
-                                  Close
-                                </button>    
-                              )}
-                              {complaint.status === 'Pending' && (
-                                <button
-                                  onClick={() => handleUpdateStatus(complaint.id, 'In Progress')}
-                                  className="px-3 py-1 text-sm bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
-                                  title="Mark as In Progress"
-                                >
-                                  Start
-                                </button>
-                              )}
+                              // View Details Button
                             </div>
-                          </td>
+                          </td> */}
                         </tr>
                       ))}
                     </tbody>

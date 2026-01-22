@@ -64,25 +64,17 @@ class Complaint {
                     ho.name as houseowner_name,
                     ho.email as houseowner_email,
                     ho.mobile as houseowner_mobile,
-                    CONCAT(u.firstname, ' ', u.lastname) as assigned_to_name,
-                    u.mobile as assigned_to_mobile,
-                    u.email as assigned_to_email,
-                    r.role_name as assigned_to_role,
-                    CONCAT(au.firstname, ' ', au.lastname) as assigned_by_name,
                     cc.name as category_name,  -- Add this
                     cc.icon as category_icon,  -- Add this
                     cc.color as category_color -- Add this
-            FROM complaints c
-            LEFT JOIN apartments a ON c.apartment_id = a.id
-            LEFT JOIN floors f ON c.floor_id = f.id
-            LEFT JOIN houses h ON c.house_id = h.id
-            LEFT JOIN houseowner ho ON c.houseowner_id = ho.id
-            LEFT JOIN users u ON c.assigned_to = u.id
-            LEFT JOIN roles r ON u.role_id = r.id
-            LEFT JOIN users au ON c.assigned_by = au.id
-            LEFT JOIN complaint_categories cc ON c.category_id = cc.id  -- Add this join
-            WHERE c.id = ?`,
-            [id]
+                    FROM complaints c
+                    LEFT JOIN apartments a ON c.apartment_id = a.id
+                    LEFT JOIN floors f ON c.floor_id = f.id
+                    LEFT JOIN houses h ON c.house_id = h.id
+                    LEFT JOIN houseowner ho ON c.houseowner_id = ho.id
+                    LEFT JOIN complaint_categories cc ON c.category_id = cc.id  -- Add this join
+                    WHERE c.id = ?`,
+                    [id]
         );
         return rows[0];
     }
@@ -96,18 +88,14 @@ class Complaint {
                 h.house_id as house_number,
                 ho.name as houseowner_name,
                 ho.mobile as houseowner_mobile,
-                CONCAT(u.firstname, ' ', u.lastname) as assigned_to_name,
-                r.role_name as assigned_to_role,
                 cc.name as category_name
-            FROM complaints c
-            LEFT JOIN apartments a ON c.apartment_id = a.id
-            LEFT JOIN floors f ON c.floor_id = f.id
-            LEFT JOIN houses h ON c.house_id = h.id
-            LEFT JOIN houseowner ho ON c.houseowner_id = ho.id
-            LEFT JOIN users u ON c.assigned_to = u.id
-            LEFT JOIN roles r ON u.role_id = r.id
-            LEFT JOIN complaint_categories cc ON c.category_id = cc.id  -- Add this join
-            WHERE c.company_id = ?
+                FROM complaints c
+                LEFT JOIN apartments a ON c.apartment_id = a.id
+                LEFT JOIN floors f ON c.floor_id = f.id
+                LEFT JOIN houses h ON c.house_id = h.id
+                LEFT JOIN houseowner ho ON c.houseowner_id = ho.id
+                LEFT JOIN complaint_categories cc ON c.category_id = cc.id  
+                WHERE c.company_id = ?
         `;
         
         const params = [company_id];
@@ -1033,6 +1021,153 @@ static async getTimerStatus(complaintId) {
         } catch (error) {
             console.error('Error in getCurrentHoldStatus:', error);
             throw error;
+        }
+    }
+
+    // Check if house owner can close complaint
+    static async canHouseOwnerClose(complaintId, houseownerId) {
+        try {
+            const [rows] = await pool.execute(
+                `SELECT id, status, houseowner_id, resolved_at, is_timer_running
+                FROM complaints 
+                WHERE id = ? AND houseowner_id = ?`,
+                [complaintId, houseownerId]
+            );
+            
+            if (rows.length === 0) {
+                return { canClose: false, reason: 'Complaint not found or unauthorized' };
+            }
+            
+            const complaint = rows[0];
+            
+            if (complaint.status !== 'Resolved') {
+                return { canClose: false, reason: 'Only resolved complaints can be closed' };
+            }
+            
+            // Check if timer is stopped (work is completed)
+            if (complaint.is_timer_running) {
+                return { canClose: false, reason: 'Work is still in progress. Timer must be stopped first.' };
+            }
+            
+            return { canClose: true, complaint: complaint };
+        } catch (error) {
+            console.error('Error in canHouseOwnerClose:', error);
+            return { canClose: false, reason: 'Error checking access' };
+        }
+    }
+
+    // Check if house owner can reopen complaint
+    static async canHouseOwnerReopen(complaintId, houseownerId) {
+        try {
+            const [rows] = await pool.execute(
+                `SELECT id, status, houseowner_id, resolved_at, is_on_hold
+                FROM complaints 
+                WHERE id = ? AND houseowner_id = ?`,
+                [complaintId, houseownerId]
+            );
+            
+            if (rows.length === 0) {
+                return { canReopen: false, reason: 'Complaint not found or unauthorized' };
+            }
+            
+            const complaint = rows[0];
+            
+            // Can only reopen if status is Resolved
+            if (complaint.status !== 'Resolved') {
+                return { canReopen: false, reason: 'Only resolved complaints can be reopened' };
+            }
+            
+            // Check if complaint is on hold
+            if (complaint.is_on_hold) {
+                return { canReopen: false, reason: 'Cannot reopen a complaint that is on hold' };
+            }
+            
+            return { canReopen: true, complaint: complaint };
+        } catch (error) {
+            console.error('Error in canHouseOwnerReopen:', error);
+            return { canReopen: false, reason: 'Error checking access' };
+        }
+    }
+
+    // House owner closes complaint
+    static async houseOwnerClose(complaintId, houseownerId) {
+        const connection = await pool.getConnection();
+        
+        try {
+            // Verify house owner can close
+            const accessCheck = await this.canHouseOwnerClose(complaintId, houseownerId);
+            if (!accessCheck.canClose) {
+                throw new Error(accessCheck.reason);
+            }
+            
+            const [result] = await pool.execute(
+                `UPDATE complaints 
+                SET status = 'Closed',
+                    updated_at = CURRENT_TIMESTAMP,
+                    resolved_at = COALESCE(resolved_at, CURRENT_TIMESTAMP)
+                WHERE id = ? AND houseowner_id = ?`,
+                [complaintId, houseownerId]
+            );
+            
+            if (result.affectedRows === 0) {
+                throw new Error('Failed to close complaint');
+            }
+            
+            return { success: true, message: 'Complaint closed successfully' };
+            
+        } catch (error) {
+            console.error('Error in houseOwnerClose:', error);
+            throw error;
+        } finally {
+            connection.release();
+        }
+    }
+
+    // House owner reopens complaint
+    static async houseOwnerReopen(complaintId, houseownerId) {
+        const connection = await pool.getConnection();
+        
+        try {
+            // Verify house owner can reopen
+            const accessCheck = await this.canHouseOwnerReopen(complaintId, houseownerId);
+            if (!accessCheck.canReopen) {
+                throw new Error(accessCheck.reason);
+            }
+            
+            const [result] = await pool.execute(
+                `UPDATE complaints 
+                SET status = 'Pending',
+                    updated_at = CURRENT_TIMESTAMP,
+                    resolved_at = NULL
+                WHERE id = ? AND houseowner_id = ?`,
+                [complaintId, houseownerId]
+            );
+            
+            if (result.affectedRows === 0) {
+                throw new Error('Failed to reopen complaint');
+            }
+            
+            return { success: true, message: 'Complaint reopened successfully' };
+            
+        } catch (error) {
+            console.error('Error in houseOwnerReopen:', error);
+            throw error;
+        } finally {
+            connection.release();
+        }
+    }
+
+    // Check if complaint has been rated
+    static async hasBeenRated(complaintId) {
+        try {
+            const [rows] = await pool.execute(
+                `SELECT id FROM complaint_ratings WHERE complaint_id = ?`,
+                [complaintId]
+            );
+            return rows.length > 0;
+        } catch (error) {
+            console.error('Error checking rating status:', error);
+            return false;
         }
     }
 }

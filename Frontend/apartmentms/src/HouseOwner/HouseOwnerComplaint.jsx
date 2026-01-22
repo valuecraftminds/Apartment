@@ -1,4 +1,4 @@
-// HouseOwnerComplaint.jsx - COMPLETE UPDATED VERSION
+// HouseOwnerComplaint.jsx 
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
 import api from '../api/axios';
@@ -23,7 +23,8 @@ import {
   Users,
   Settings,
   Check,
-  Tag
+  Tag,
+  Star
 } from 'lucide-react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -56,6 +57,14 @@ export default function HouseOwnerComplaints() {
   const { auth } = useContext(AuthContext);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [houseInfo, setHouseInfo] = useState(null);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [ratingForm, setRatingForm] = useState({
+    rating: 0,
+    feedback: ''
+  });
+  const [ratingError, setRatingError] = useState('');
+  const [showRatingPrompt, setShowRatingPrompt] = useState(false);
+  const [complaintForRating, setComplaintForRating] = useState(null);
 
   // Fetch house owner's information including location and categories
   const fetchHouseOwnerInfo = async () => {
@@ -264,9 +273,99 @@ export default function HouseOwnerComplaints() {
     }
   };
 
-  const handleViewComplaint = (complaint) => {
+  const handleViewComplaint = async (complaint) => {
     setSelectedComplaint(complaint);
     setShowViewModal(true);
+    
+    // Check if rating is needed
+    if (complaint.status === 'Closed') {
+      try {
+        const res = await api.get(`/complaints/${complaint.id}/rating-status`, {
+          headers: { Authorization: `Bearer ${auth.accessToken}` }
+        });
+        
+        if (res.data.success && res.data.canRate) {
+          setComplaintForRating(complaint);
+          setShowRatingPrompt(true);
+        }
+      } catch (err) {
+        console.error('Error checking rating status:', err);
+      }
+    }
+  };
+
+  // Handle close complaint
+  const handleCloseComplaint = async (complaintId) => {
+    try {
+      const res = await api.post(`/complaints/${complaintId}/close`, {}, {
+        headers: { Authorization: `Bearer ${auth.accessToken}` }
+      });
+
+      if (res.data.success) {
+        toast.success('Complaint closed successfully!');
+        
+        // Check if rating is required
+        if (res.data.requiresRating) {
+          setComplaintForRating(selectedComplaint);
+          setShowRatingModal(true);
+        }
+        
+        fetchComplaints();
+        setShowViewModal(false);
+      }
+    } catch (err) {
+      console.error('Failed to close complaint:', err);
+      toast.error(err.response?.data?.message || 'Failed to close complaint');
+    }
+  };
+
+  //handle reopen complaint
+  const handleReopenComplaint = async (complaintId) => {
+    try {
+      const res = await api.post(`/complaints/${complaintId}/reopen`, {}, {
+        headers: { Authorization: `Bearer ${auth.accessToken}` }
+      });
+
+      if (res.data.success) {
+        toast.success('Complaint reopened successfully!');
+        fetchComplaints();
+        setShowViewModal(false);
+      }
+    } catch (err) {
+      console.error('Failed to reopen complaint:', err);
+      toast.error(err.response?.data?.message || 'Failed to reopen complaint');
+    }
+  };
+
+  // Handle submit rating
+  const handleSubmitRating = async (e) => {
+    e.preventDefault();
+    
+    if (!ratingForm.rating) {
+      setRatingError('Please select a rating');
+      return;
+    }
+    
+    try {
+      const res = await api.post(`/ratings/complaints/${complaintForRating.id}/rate`, {
+        rating: ratingForm.rating,
+        feedback: ratingForm.feedback
+      }, {
+        headers: { Authorization: `Bearer ${auth.accessToken}` }
+      });
+
+      if (res.data.success) {
+        toast.success('Thank you for your feedback!');
+        setShowRatingModal(false);
+        setShowRatingPrompt(false);
+        setRatingForm({ rating: 0, feedback: '' });
+        setRatingError('');
+        fetchComplaints();
+      }
+    } catch (err) {
+      console.error('Failed to submit rating:', err);
+      toast.error(err.response?.data?.message || 'Failed to submit rating');
+    }
   };
 
   // Get category name by ID
@@ -524,25 +623,6 @@ export default function HouseOwnerComplaints() {
                                 <FileText size={16} />
                               </button>
                               
-                              {complaint.status === 'In Progress' && (
-                                <button
-                                  onClick={() => handleUpdateStatus(complaint.id, 'Resolved')}
-                                  className="p-2 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 transition-colors hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg"
-                                  title="Mark as Resolved"
-                                >
-                                  <Check size={16} />
-                                </button>
-                              )}
-                              
-                              {complaint.status === 'Pending' && (
-                                <button
-                                  onClick={() => handleUpdateStatus(complaint.id, 'In Progress')}
-                                  className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"
-                                  title="Mark as In Progress"
-                                >
-                                  <Clock size={16} />
-                                </button>
-                              )}
                             </div>
                           </td>
                         </tr>
@@ -776,36 +856,6 @@ export default function HouseOwnerComplaints() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
                   <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">
-                    Location Details
-                  </h4>
-                  <div className="space-y-3">
-                    <div className="flex items-center">
-                      <Building2 className="text-purple-600 dark:text-purple-400 mr-3" size={18} />
-                      <div>
-                        <div className="text-gray-900 dark:text-white font-medium">
-                          {selectedComplaint.apartment_name}
-                        </div>
-                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                          Apartment Complex
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      <Home className="text-purple-600 dark:text-purple-400 mr-3" size={18} />
-                      <div>
-                        <div className="text-gray-900 dark:text-white font-medium">
-                          Floor {selectedComplaint.floor_number} • House {selectedComplaint.house_number}
-                        </div>
-                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                          Your Unit
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">
                     Timeline
                   </h4>
                   <div className="space-y-2">
@@ -890,50 +940,171 @@ export default function HouseOwnerComplaints() {
                 <div className="flex flex-wrap gap-2">
                   {selectedComplaint.status === 'Resolved' && (
                     <button
-                      onClick={() => handleUpdateStatus(selectedComplaint.id, 'Closed')}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-                    >
-                      Confirm Resolution & Close
-                    </button>
-                  )}
-                  
-                  {selectedComplaint.status === 'Pending' && (
-                    <button
-                      onClick={() => handleUpdateStatus(selectedComplaint.id, 'In Progress')}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                    >
-                      Mark as In Progress
+                      onClick={() => handleCloseComplaint(selectedComplaint.id)}
+                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
+                      >
+                      Verified & Close
                     </button>
                   )}
 
-                  {selectedComplaint.status === 'In Progress' && (
-                    <button
-                      onClick={() => handleUpdateStatus(selectedComplaint.id, 'Resolved')}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-                    >
-                      Mark as Resolved
-                    </button>
-                  )}
-                  
-                  {selectedComplaint.status === 'Closed' && (
-                    <button
-                      onClick={() => handleUpdateStatus(selectedComplaint.id, 'Pending')}
-                      className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm"
-                    >
-                      Reopen Complaint
-                    </button>
-                  )}
-                  
+                   {/* House Owner can reopen resolved complaints (before closing) */}
                   {selectedComplaint.status === 'Resolved' && (
                     <button
-                      onClick={() => handleUpdateStatus(selectedComplaint.id, 'In Progress')}
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+                      onClick={() => handleReopenComplaint(selectedComplaint.id)}
+                      className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm"
                     >
-                      Issue Not Resolved
+                      Reopen - Issue Not Resolved
                     </button>
+                  )}
+                  
+                  {/* Closed complaints - cannot be reopened */}
+                  {selectedComplaint.status === 'Closed' && (
+                    <div className="text-sm text-gray-600 dark:text-gray-400 italic">
+                      This complaint is closed and cannot be reopened.
+                    </div>
                   )}
                 </div>
               </div>
+
+              {/* Rating Modal */}
+              {showRatingModal && complaintForRating && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
+                    <div className="p-6">
+                      <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                          Rate Your Experience
+                        </h2>
+                        <button
+                          onClick={() => {
+                            setShowRatingModal(false);
+                            setRatingForm({ rating: 0, feedback: '' });
+                            setRatingError('');
+                          }}
+                          className="text-gray-500 hover:text-gray-800 dark:hover:text-white text-xl transition-colors"
+                        >
+                          ✖
+                        </button>
+                      </div>
+                      
+                      <div className="mb-6">
+                        <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg mb-4">
+                          <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+                            Complaint: <span className="font-semibold">{complaintForRating.complaint_number}</span>
+                          </p>
+                          <p className="text-sm text-gray-600 dark:text-gray-300">
+                            {complaintForRating.title}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <form onSubmit={handleSubmitRating}>
+                        {/* Star Rating */}
+                        <div className="mb-6">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                            How would you rate the service? *
+                          </label>
+                          <div className="flex justify-center space-x-2">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                key={star}
+                                type="button"
+                                onClick={() => {
+                                  setRatingForm(prev => ({ ...prev, rating: star }));
+                                  if (ratingError) setRatingError('');
+                                }}
+                                className={`text-3xl ${star <= ratingForm.rating ? 'text-yellow-500' : 'text-gray-300 dark:text-gray-600'} hover:text-yellow-400 transition-colors`}
+                              >
+                                ★
+                              </button>
+                            ))}
+                          </div>
+                          <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-2">
+                            <span>Poor</span>
+                            <span>Excellent</span>
+                          </div>
+                          {ratingError && (
+                            <p className="text-red-500 text-sm mt-2">{ratingError}</p>
+                          )}
+                        </div>
+                        
+                        {/* Feedback */}
+                        <div className="mb-6">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Additional Feedback (Optional)
+                          </label>
+                          <textarea
+                            value={ratingForm.feedback}
+                            onChange={(e) => setRatingForm(prev => ({ ...prev, feedback: e.target.value }))}
+                            rows={3}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
+                            placeholder="Tell us about your experience..."
+                          />
+                        </div>
+                        
+                        {/* Submit Button */}
+                        <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowRatingModal(false);
+                              setRatingForm({ rating: 0, feedback: '' });
+                              setRatingError('');
+                            }}
+                            className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                          >
+                            Skip
+                          </button>
+                          <button
+                            type="submit"
+                            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                          >
+                            Submit Rating
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Add Rating Prompt (optional - shows as a toast) */}
+              {showRatingPrompt && (
+                <div className="fixed bottom-4 right-4 bg-purple-600 text-white p-4 rounded-lg shadow-lg max-w-sm z-50">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <Star size={24} className="text-yellow-300" />
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="font-semibold">Rate Your Experience</h3>
+                      <p className="text-sm mt-1">Please rate the service for complaint {complaintForRating?.complaint_number}</p>
+                      <div className="flex space-x-2 mt-2">
+                        <button
+                          onClick={() => {
+                            setShowRatingModal(true);
+                            setShowRatingPrompt(false);
+                          }}
+                          className="px-3 py-1 bg-white text-purple-600 rounded text-sm font-medium hover:bg-gray-100 transition-colors"
+                        >
+                          Rate Now
+                        </button>
+                        <button
+                          onClick={() => setShowRatingPrompt(false)}
+                          className="px-3 py-1 bg-transparent border border-white rounded text-sm hover:bg-purple-700 transition-colors"
+                        >
+                          Later
+                        </button>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowRatingPrompt(false)}
+                      className="ml-4 text-white hover:text-gray-200"
+                    >
+                      ✖
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div className="flex justify-end pt-6">
                 <button

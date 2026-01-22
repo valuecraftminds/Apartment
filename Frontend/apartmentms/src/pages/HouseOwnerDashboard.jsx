@@ -45,7 +45,7 @@ export default function HouseOwnerDashboard() {
       await fetchComplaintStats();
       
       // Fetch recent complaints
-      await fetchRecentComplaints();
+      // await fetchRecentComplaints();
       
       // Simulate fetching notifications
       setNotifications([
@@ -99,24 +99,24 @@ export default function HouseOwnerDashboard() {
     }
   };
 
-  const fetchRecentComplaints = async () => {
-    try {
-      if (auth.accessToken) {
-        const res = await api.get('/complaints/recent', {
-          headers: { 
-            Authorization: `Bearer ${auth.accessToken}`
-          }
-        });
+  // const fetchRecentComplaints = async () => {
+  //   try {
+  //     if (auth.accessToken) {
+  //       const res = await api.get('/complaints/recent', {
+  //         headers: { 
+  //           Authorization: `Bearer ${auth.accessToken}`
+  //         }
+  //       });
         
-        if (res.data.success) {
-          setRecentComplaints(res.data.data || []);
-        }
-      }
-    } catch (err) {
-      console.error('Failed to fetch recent complaints:', err);
-      // Don't show error for recent complaints
-    }
-  };
+  //       if (res.data.success) {
+  //         setRecentComplaints(res.data.data || []);
+  //       }
+  //     }
+  //   } catch (err) {
+  //     console.error('Failed to fetch recent complaints:', err);
+  //     // Don't show error for recent complaints
+  //   }
+  // };
 
   const getStatusColor = (status) => {
     switch(status) {
@@ -324,18 +324,11 @@ export default function HouseOwnerDashboard() {
                   <User className="mx-auto text-green-600 dark:text-green-400 mb-2" size={mobileView ? 20 : 24} />
                   <span className="text-xs md:text-sm font-medium text-gray-800 dark:text-gray-200">Profile</span>
                 </button>
-                <button 
-                  onClick={() => window.location.href = '/settings'}
-                  className="bg-white dark:bg-gray-800 p-3 md:p-4 rounded-lg shadow hover:shadow-md transition-all duration-200 text-center border border-gray-200 dark:border-gray-700 hover:border-orange-400 dark:hover:border-orange-500"
-                >
-                  <Calendar className="mx-auto text-orange-600 dark:text-orange-400 mb-2" size={mobileView ? 20 : 24} />
-                  <span className="text-xs md:text-sm font-medium text-gray-800 dark:text-gray-200">Settings</span>
-                </button>
               </div>
             </div>
 
             {/* Recent Complaints Section */}
-            <div className="mt-6 md:mt-8 bg-white dark:bg-gray-800 rounded-lg shadow p-4 md:p-6 transition-colors duration-200 mb-6 md:mb-8">
+            {/* <div className="mt-6 md:mt-8 bg-white dark:bg-gray-800 rounded-lg shadow p-4 md:p-6 transition-colors duration-200 mb-6 md:mb-8">
               <div className="flex items-center justify-between mb-4 md:mb-6">
                 <h3 className="text-lg md:text-xl font-semibold text-gray-800 dark:text-white">Recent Complaints</h3>
                 <button 
@@ -387,7 +380,7 @@ export default function HouseOwnerDashboard() {
                   </button>
                 </div>
               )}
-            </div>
+            </div> */}
 
             {/* Complaints Statistics Section */}
             <div className="mt-6 md:mt-8 bg-white dark:bg-gray-800 rounded-lg shadow p-4 md:p-6 transition-colors duration-200 mb-6 md:mb-8">
@@ -422,16 +415,6 @@ export default function HouseOwnerDashboard() {
                   </h4>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Resolved</p>
                 </div>
-              </div>
-              
-              <div className="mt-6 text-center">
-                <button 
-                  onClick={handleCreateComplaint}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                >
-                  <Plus size={18} />
-                  File New Complaint
-                </button>
               </div>
             </div>
 

@@ -590,11 +590,6 @@ export default function StartWork() {
         setWorkStarted(false);
     };
 
-    // Go back to My Complaints
-    const handleBackToComplaints = () => {
-        navigate('/my-complaints');
-    };
-
     // Clean up on component unmount
     useEffect(() => {
         return () => {
@@ -748,11 +743,9 @@ export default function StartWork() {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">            
             <div className="flex">
-                <Sidebar onCollapse={setIsSidebarCollapsed} />
+                <Sidebar/>
                 
-                <div className={`flex-1 p-4 transition-all duration-300 ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
-                    <Navbar onMobileMenuClick={() => setIsMobileSidebarOpen(true)} />
-                    
+                <div className='flex-1 p-4'>                    
                     <div className="max-w-4xl mx-auto">
                         {/* Complaint Information Card */}
                         {complaint && (
@@ -766,17 +759,10 @@ export default function StartWork() {
                                             {complaint.title}
                                         </p>
                                     </div>
-                                    <button
-                                        onClick={handleBackToComplaints}
-                                        className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-white bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                                    >
-                                        <ArrowLeft size={16} />
-                                        <span>Back to Complaints</span>
-                                    </button>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                    <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                                    {/* <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                                         <h3 className="font-semibold text-gray-800 dark:text-white mb-2">Location</h3>
                                         <div className="flex items-center text-gray-600 dark:text-gray-300 mb-2">
                                             <Building2 size={16} className="mr-2" />
@@ -786,7 +772,7 @@ export default function StartWork() {
                                             <MapPin size={16} className="mr-2" />
                                             <span>Floor {complaint.floor_number} • House {complaint.house_number}</span>
                                         </div>
-                                    </div>
+                                    </div> */}
 
                                     <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                                         <h3 className="font-semibold text-gray-800 dark:text-white mb-2">Status</h3>
@@ -839,36 +825,36 @@ export default function StartWork() {
                                         {timerRunning ? (
                                             <button
                                                 onClick={pauseComplaintTimer}
-                                                className="flex items-center justify-center gap-2 px-2 py-1 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors min-w-[100px]"
+                                                className="flex items-center justify-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors min-w-[70px]"
                                             >
-                                                {/* <Pause size={16} /> */}
-                                                Pause
+                                                <Pause size={16} />
+                                                
                                             </button>
                                         ) : (
                                             <button
                                                 onClick={resumeComplaintTimer}
-                                                className="flex items-center justify-center gap-2 px-2 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors min-w-[100px]"
+                                                className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors min-w-[70px]"
                                             >
-                                                {/* <Play size={16} /> */}
-                                                Resume 
+                                                <Play size={16} />
+                                                {/* Resume  */}
                                             </button>
                                         )}
 
                                         {/* Hold Button */}
                                         <button
                                             onClick={() => setShowHoldModal(true)}
-                                            className="flex items-center justify-center gap-2 px-2 py-1 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors min-w-[100px]"
+                                            className="flex items-center justify-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors min-w-[70px]"
                                         >
-                                            {/* <AlertCircle size={16} /> */}
-                                            Hold
+                                            <AlertCircle size={16} />
+                                            {/* Hold */}
                                         </button>
                                         
                                         <button
                                             onClick={stopComplaintTimer}
-                                            className="flex items-center justify-center gap-2 px-2 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors min-w-[100px]"
+                                            className="flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors min-w-[70px]"
                                         >
-                                            {/* <StopCircle size={16} /> */}
-                                            Complete
+                                            <StopCircle size={16} />
+                                            {/* Complete */}
                                         </button>
                                     </div>
                                 </div>

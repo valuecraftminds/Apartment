@@ -803,6 +803,143 @@ const complaintController = {
                 message: 'Server error while fetching hold status'
             });
         }
+    },
+
+    // House owner closes complaint
+    async houseOwnerCloseComplaint(req, res) {
+        try {
+            const { id } = req.params;
+            const houseowner_id = req.houseowner?.id;
+
+            if (!houseowner_id) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Authentication required'
+                });
+            }
+
+            const result = await Complaint.houseOwnerClose(id, houseowner_id);
+
+            // Check if rating exists
+            const hasRating = await Complaint.hasBeenRated(id);
+            
+            res.json({
+                success: true,
+                message: result.message,
+                requiresRating: !hasRating,
+                data: result
+            });
+
+        } catch (err) {
+            console.error('House owner close complaint error:', err);
+            res.status(500).json({
+                success: false,
+                message: err.message || 'Server error while closing complaint'
+            });
+        }
+    },
+
+    // House owner reopens complaint
+    async houseOwnerReopenComplaint(req, res) {
+        try {
+            const { id } = req.params;
+            const houseowner_id = req.houseowner?.id;
+
+            if (!houseowner_id) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Authentication required'
+                });
+            }
+
+            const result = await Complaint.houseOwnerReopen(id, houseowner_id);
+
+            res.json({
+                success: true,
+                message: result.message,
+                data: result
+            });
+
+        } catch (err) {
+            console.error('House owner reopen complaint error:', err);
+            res.status(500).json({
+                success: false,
+                message: err.message || 'Server error while reopening complaint'
+            });
+        }
+    },
+
+    // Check if complaint can be rated
+    async checkRatingStatus(req, res) {
+        try {
+            const { id } = req.params;
+            const houseowner_id = req.houseowner?.id;
+
+            if (!houseowner_id) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Authentication required'
+                });
+            }
+
+            // Get complaint
+            const complaint = await Complaint.findById(id);
+            
+            if (!complaint) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Complaint not found'
+                });
+            }
+
+            // Verify house owner owns this complaint
+            if (complaint.houseowner_id !== houseowner_id) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'You are not authorized to rate this complaint'
+                });
+            }
+
+            // Check if complaint is closed
+            if (complaint.status !== 'Closed') {
+                return res.json({
+                    success: true,
+                    canRate: false,
+                    reason: 'Only closed complaints can be rated'
+                });
+            }
+
+            // Check if already rated
+            const hasRating = await Complaint.hasBeenRated(id);
+            
+            if (hasRating) {
+                return res.json({
+                    success: true,
+                    canRate: false,
+                    reason: 'Already rated',
+                    hasRating: true
+                });
+            }
+
+            res.json({
+                success: true,
+                canRate: true,
+                message: 'Ready to rate this complaint',
+                complaint: {
+                    id: complaint.id,
+                    complaint_number: complaint.complaint_number,
+                    title: complaint.title,
+                    assigned_to_name: complaint.assigned_to_name
+                }
+            });
+
+        } catch (err) {
+            console.error('Check rating status error:', err);
+            res.status(500).json({
+                success: false,
+                message: 'Server error while checking rating status'
+            });
+        }
     }
 };
 

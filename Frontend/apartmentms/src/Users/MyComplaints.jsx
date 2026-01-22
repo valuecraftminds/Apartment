@@ -201,14 +201,14 @@ const fetchMyComplaints = async () => {
 
   const handleStartWork = async (complaint) => {
     try {
-        // Navigate to StartWork page with complaint data
-        navigate(`/start-work/${complaint.id}`, {
+        // Navigate to MyWork page with complaint data
+        navigate(`/my-work/${complaint.id}`, {
             state: { 
                 complaint: complaint 
             }
         });
     } catch (error) {
-        console.error('Error navigating to start work:', error);
+        console.error('Error navigating to my work:', error);
         toast.error('Failed to start work');
     }
 };
@@ -406,9 +406,9 @@ const fetchMyComplaints = async () => {
     return (
       <div className="mb-4">
         <div className="flex flex-wrap gap-2 mb-2">
-          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+          {/* <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
             Assigned Apartments: {apartments.length}
-          </span>
+          </span> */}
           <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
             Assigned Categories: {assignedCategories.length}
           </span>
@@ -419,9 +419,9 @@ const fetchMyComplaints = async () => {
             {assignedCategories.slice(0, 3).map(category => (
               <span 
                 key={category.category_id}
-                className="px-2 py-1 text-xs rounded-full"
+                className="px-4 py-2 text-xs rounded-full font-medium bg-gray-400 dark:bg-gray-300"
                 style={{ 
-                  backgroundColor: `${category.category_color}20`,
+                  // backgroundColor: `${category.category_color}20`,
                   color: category.category_color
                 }}
               >

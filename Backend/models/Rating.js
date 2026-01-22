@@ -1,16 +1,17 @@
+//models/Rating.js
 const pool = require('../db');
 const { v4: uuidv4 } = require('uuid');
 
 class Rating {
     // Submit rating for complaint
     static async create(ratingData) {
-        const { complaint_id, houseowner_id, rating, feedback } = ratingData;
+        const { company_id,complaint_id, houseowner_id, rating, feedback } = ratingData;
         const id = uuidv4();
         
         const [result] = await pool.execute(
-            `INSERT INTO complaint_ratings (id, complaint_id, houseowner_id, rating, feedback) 
-             VALUES (?, ?, ?, ?, ?)`,
-            [id, complaint_id, houseowner_id, rating, feedback]
+            `INSERT INTO complaint_ratings (id, company_id, complaint_id, houseowner_id, rating, feedback) 
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [id, company_id, complaint_id, houseowner_id, rating, feedback]
         );
         
         return { id, ...ratingData };

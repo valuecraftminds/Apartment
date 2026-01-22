@@ -48,6 +48,7 @@ import ViewComplaint from './Apartment_Technician/ComplaintManagament/ViewCompla
 import MyComplaints from './Users/MyComplaints'
 import HouseOwnerProfilePage from './HouseOwner/HouseOwnerProfilePage'
 import StartWork from './Apartment_Technician/ComplaintManagament/StartWork'
+import MyWork from './Apartment_Technician/ComplaintManagament/MyWork'
 
 export default function App() {
   return (
@@ -99,7 +100,8 @@ export default function App() {
         <Route path="/houseowner/houseowner-profile" element={<HouseOwnerProfilePage />} />
         <Route path='/view-complaints' element= {<ViewComplaint/>}/>
         <Route path='/my-complaints' element= {<MyComplaints/>}/>
-        <Route path= '/start-work/:complaintId' element={<StartWork />} />
+        <Route path='/my-work/:complaintId' element={<MyWork />} />
+        <Route path= '/start-work' element={<StartWork />} />
       </Routes>
       </AuthProvider>
     </BrowserRouter>
