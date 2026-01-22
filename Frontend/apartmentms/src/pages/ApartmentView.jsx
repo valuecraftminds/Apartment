@@ -9,7 +9,7 @@ import EditApartment from '../Apartments/EditApartment';
 import { toast, ToastContainer } from 'react-toastify';
 import BulkImportModal from '../Apartments/BulkImportModal';
 import DocumentModal from '../Apartments/DocumentModal';
-import Sidebar from '../components/sidebar';
+import Sidebar from '../components/Sidebar';
 // import ViewApartment from '../Apartments/ViewApartment';
 
 export default function ApartmentView() {
@@ -221,7 +221,7 @@ export default function ApartmentView() {
                                     <Loader size={32} className="animate-spin text-purple-600" />
                                     <span className="ml-2 text-gray-600 dark:text-gray-300">Loading apartments...</span>
                                 </div>
-                            ) : error ? (
+                                ) : error ? (
                                 <div className="text-center py-12 text-red-600 dark:text-red-400">
                                     {error}
                                     <button 
@@ -237,7 +237,7 @@ export default function ApartmentView() {
                                     <p className="text-lg">No apartments found</p>
                                     <p className="text-sm">Get started by adding your first apartment</p>
                                 </div>
-                            ) : (
+                                ) : (
                                 <div className="overflow-x-auto">
                                     <table className="w-full table-auto">
                                         <thead className="bg-gray-50 dark:bg-gray-700">
