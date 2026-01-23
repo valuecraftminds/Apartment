@@ -167,7 +167,6 @@ export default function AdminDashboard() {
   const loadApartments = async () => {
     try {
       const result = await api.get('/apartments');
-      console.log('Apartments API Response:', result.data);
 
       if (result.data.success && Array.isArray(result.data.data)) {
         setApartments(result.data.data);
@@ -199,7 +198,6 @@ export default function AdminDashboard() {
   const loadUsers = async () => {
     try {
       const result = await api.get('/auth/users');
-      console.log('Users API Response:', result.data);
 
       if (result.data.success && Array.isArray(result.data.data)) {
         const usersData = result.data.data;

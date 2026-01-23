@@ -92,7 +92,6 @@ export default function StartWork() {
     // Check if house is valid for this complaint
     const checkHouseAccess = async (houseId) => {
         try {
-            console.log('Checking access for house ID:', houseId);
             
             if (!houseId) {
                 return {
@@ -487,7 +486,7 @@ export default function StartWork() {
             setScanning(false);
             setManualHouseId('');
 
-            console.log('Scanned house ID:', decodedText);
+            //console.log('Scanned house ID:', decodedText);
             
             const houseId = decodedText.trim();
             
@@ -1099,7 +1098,7 @@ export default function StartWork() {
                                     </p>
                                     
                                     {/* Manual Input Section */}
-                                    <div className="mb-8">
+                                    {/* <div className="mb-8">
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 text-left">
                                             Enter House ID:
                                         </label>
@@ -1118,7 +1117,7 @@ export default function StartWork() {
                                             <FileText size={16} />
                                             Verify & Start Work
                                         </button>
-                                    </div>
+                                    </div> */}
                                     
                                     <div className="mb-6">
                                         <div className="flex items-center">

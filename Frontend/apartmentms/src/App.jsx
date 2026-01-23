@@ -49,6 +49,7 @@ import MyComplaints from './Users/MyComplaints'
 import HouseOwnerProfilePage from './HouseOwner/HouseOwnerProfilePage'
 import StartWork from './Apartment_Technician/ComplaintManagament/StartWork'
 import MyWork from './Apartment_Technician/ComplaintManagament/MyWork'
+import ComplaintCategories from './Apartment_Technician/ComplaintManagament/ComplaintCategories'
 
 export default function App() {
   return (
@@ -57,7 +58,6 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Welcome />} />
         <Route path='/login' element={<Login />} />
-        {/* <Route path='/companyregistration' element={<CompanyRegistration />}/> */}
         <Route path='/register' element={<Register />}/>
         <Route path='/verify' element={<Verify />}/>
         <Route path='/sidebar' element={<Sidebar/>}/>
@@ -77,9 +77,6 @@ export default function App() {
         <Route path='/bills-and-calculations' element={<BillsAndCalculations/>}/>
         <Route path="/billranges/:bill_id" element={<BillRange />} />
         <Route path="/billprice/:bill_id/:billrange_id" element={<BillPrice />} />        
-        {/* <Route path="/owner-dashboard" element={<OwnerDashboard />} />
-        <Route path="/manager-dashboard" element={<ManagerDashboard />} />
-        <Route path="/tech-dashboard" element={<TechDashboard/>} /> */}
         <Route path='/employee-dashboard' element={<EmployeeDashboard/>}/>
         <Route path='/role' element={<Role/>}/>
         <Route path='/profile-page' element={<ProfilePage/>}/>
@@ -102,6 +99,7 @@ export default function App() {
         <Route path='/my-complaints' element= {<MyComplaints/>}/>
         <Route path='/my-work/:complaintId' element={<MyWork />} />
         <Route path= '/start-work' element={<StartWork />} />
+        <Route path= '/complaint-categories' element={<ComplaintCategories/>}/>
       </Routes>
       </AuthProvider>
     </BrowserRouter>

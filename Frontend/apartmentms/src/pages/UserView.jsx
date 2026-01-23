@@ -35,7 +35,6 @@ export default function UserView() {
       setLoading(true);
       setError(null);
       const result = await api.get('/auth/users');
-      console.log('API Response:', result.data);
 
       if (result.data.success && Array.isArray(result.data.data)) {
         setUsers(result.data.data);

@@ -134,7 +134,7 @@ export default function Role() {
     // Add this function to handle assignment completion
     const handleAssignmentComplete = (roleId, components) => {
         // You can update local state if needed
-        console.log(`Components assigned to role ${roleId}:`, components);
+        toast.success('Components assigned successfully!');
     };
 
     const formatDate = (dateString) => {

@@ -156,12 +156,12 @@ const fetchMyComplaints = async () => {
             params: filters
         });
         
-        console.log('API Response:', response.data);
+        //console.log('API Response:', response.data);
         
         if (response.data.success) {
             const accessibleComplaints = response.data.data || [];
             
-            console.log('Accessible complaints:', accessibleComplaints);
+            //console.log('Accessible complaints:', accessibleComplaints);
             
             setComplaints(accessibleComplaints);
             setFilteredComplaints(accessibleComplaints);
@@ -324,9 +324,9 @@ const fetchMyComplaints = async () => {
   };
 
   // Handle view complaint details
-  const handleViewComplaint = (complaintId) => {
-    navigate(`/complaints/${complaintId}`);
-  };
+  // const handleViewComplaint = (complaintId) => {
+  //   navigate(`/complaints/${complaintId}`);
+  // };
 
   // Handle filter change
   const handleFilterChange = (filterName, value) => {
@@ -692,12 +692,12 @@ const fetchMyComplaints = async () => {
                               </p>
                             )}
                           </div>
-                          <button
+                          {/* <button
                             onClick={() => handleViewComplaint(complaint.id)}
                             className="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300"
                           >
                             <ChevronRight size={18} />
-                          </button>
+                          </button> */}
                         </div>
                       </div>
                     ))}
@@ -723,9 +723,9 @@ const fetchMyComplaints = async () => {
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             Hold Status
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          {/* <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             Action
-                          </th>
+                          </th> */}
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             Created
                           </th>

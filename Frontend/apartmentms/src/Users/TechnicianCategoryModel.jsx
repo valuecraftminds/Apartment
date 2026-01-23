@@ -209,13 +209,9 @@ export default function TechnicianCategoryModal({ user, onClose, onAssignSuccess
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="flex items-center space-x-2 mb-2">
-                              {category.icon ? (
-                                <span className="text-xl" role="img" aria-label="category icon">
-                                  {category.icon}
-                                </span>
-                              ) : (
+                              
                                 <Layers2 size={16} className="text-gray-400" />
-                              )}
+                              
                               <h3 className="font-semibold text-gray-900 dark:text-white">
                                 {category.name}
                               </h3>
@@ -238,11 +234,11 @@ export default function TechnicianCategoryModal({ user, onClose, onAssignSuccess
                             )}
                             
                             <div className="flex items-center space-x-3 text-xs text-gray-500 dark:text-gray-400">
-                              <span className="flex items-center space-x-1">
+                              {/* <span className="flex items-center space-x-1">
                                 <Users size={12} />
                                 <span>{getAssignedTechniciansCount(category)} assigned</span>
-                              </span>
-                              <span>•</span>
+                              </span> */}
+                              {/* <span>•</span> */}
                               <span className="flex items-center space-x-1">
                                 <Award size={12} />
                                 <span>Service Category</span>

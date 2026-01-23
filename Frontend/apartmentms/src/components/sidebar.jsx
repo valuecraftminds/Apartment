@@ -172,7 +172,6 @@ export default function Sidebar() {
   const fetchUserComponents = async () => {
     try {
       setLoading(true);
-      console.log('Fetching components for role:', userRole);
       
       if (userRole === 'Admin') {
         // For Admin, use predefined admin components
@@ -184,11 +183,9 @@ export default function Sidebar() {
       // For non-admin roles, always fetch fresh from API
       try {
         const response = await api.get('/role-components/user/components');
-        console.log('API Response:', response.data);
         
         if (response.data.success) {
           const apiComponents = response.data.data || [];
-          console.log('Components from API:', apiComponents);
           
           // Filter out constant components that might come from API to avoid duplicates
           const customComponents = apiComponents.filter(comp => 
@@ -196,7 +193,6 @@ export default function Sidebar() {
           );
           
           const finalComponents = [...CONSTANT_COMPONENTS, ...customComponents];
-          console.log('Final components to set:', finalComponents);
           setAssignedComponents(finalComponents);
         } else {
           console.error('API returned error:', response.data.message);
@@ -233,7 +229,6 @@ export default function Sidebar() {
       .map(componentId => allComponents[componentId])
       .filter(Boolean); // Remove any undefined components
     
-    console.log('Built navigation items:', items);
     return items;
   };
 

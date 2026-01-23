@@ -223,7 +223,7 @@ export function AuthProvider({ children }) {
     }
     
     navigate("/login");
-    console.log('Auto logged out due to inactivity');
+    //console.log('Auto logged out due to inactivity');
   }, [navigate]);
 
   const resetTimer = useCallback(() => {

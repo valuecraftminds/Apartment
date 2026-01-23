@@ -8,8 +8,6 @@ export default function CreateApartment({ onClose, onEdited, apartment  }) {
     name: '',
     address: '',
     city: '',
-    floors:'',
-    houses:'',
     image: null,
   });
   const [loading, setLoading] = useState(false);
@@ -21,8 +19,6 @@ export default function CreateApartment({ onClose, onEdited, apartment  }) {
         name: apartment.name || '',
         address: apartment.address || '',
         city: apartment.city || '',
-        floors: apartment.floors || '',
-        houses: apartment.houses || '',
         image: null, // Keep image as null, user can choose to update
       });
     }
@@ -46,8 +42,6 @@ const handleSubmit = async (e) => {
       submitFormData.append('name', formData.name); 
       submitFormData.append('address', formData.address);
       submitFormData.append('city', formData.city);
-      submitFormData.append('floors', formData.floors);
-      submitFormData.append('houses', formData.houses);
       
       if (formData.image) {
         submitFormData.append('picture', formData.image);
@@ -101,7 +95,7 @@ const handleSubmit = async (e) => {
         className="border rounded p-2  text-black dark:text-white border-purple-600"
         required
       />
-      <input
+      {/* <input
         type="number"
         name="floors"
         placeholder="No of Floors"
@@ -118,7 +112,7 @@ const handleSubmit = async (e) => {
         onChange={handleChange}
         className="border rounded p-2  text-black dark:text-white border-purple-600"
         required
-      />
+      /> */}
       <input
         type="file"
         name="image"

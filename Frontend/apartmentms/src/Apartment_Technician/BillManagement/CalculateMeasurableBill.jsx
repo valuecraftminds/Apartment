@@ -21,14 +21,14 @@ export default function CalculateMeasurableBill() {
     const actualBillId = location.state?.actualBillId || bill_id;
     const source = location.state?.source || 'qr';
     
-    console.log("🔍 CalculateMeasurableBill Data:", {
-        bill_id,
-        actualBillId,
-        source,
-        scannedData,
-        houseDetails,
-        billData
-    });
+    // console.log("🔍 CalculateMeasurableBill Data:", {
+    //     bill_id,
+    //     actualBillId,
+    //     source,
+    //     scannedData,
+    //     houseDetails,
+    //     billData
+    // });
     
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -83,22 +83,20 @@ export default function CalculateMeasurableBill() {
             return;
         }
         
-        console.log("✅ Data validated:", {
-            bill_id,
-            actualBillId,
-            source,
-            scannedData,
-            houseDetails,
-            billData
-        });
+        // console.log("✅ Data validated:", {
+        //     bill_id,
+        //     actualBillId,
+        //     source,
+        //     scannedData,
+        //     houseDetails,
+        //     billData
+        // });
     }, [bill_id, actualBillId, scannedData, houseDetails, billData, navigate]);
 
     // Load bill ranges
     const loadBillRanges = async () => {
         try {
-            console.log("Loading bill ranges for bill_id:", actualBillId);
             const result = await api.get(`/billranges/bills/${actualBillId}`);
-            console.log("Bill ranges API response FULL:", result);
             
             // Check if data exists and is an array
             let rangesData = [];
@@ -122,7 +120,7 @@ export default function CalculateMeasurableBill() {
                 }
             }
             
-            console.log("Extracted rangesData:", rangesData);
+            // console.log("Extracted rangesData:", rangesData);
             
             if (rangesData.length > 0) {
                 // Sort ranges by fromRange in ascending order
@@ -153,12 +151,12 @@ export default function CalculateMeasurableBill() {
             const monthName = getMonthName(formData.month);
             const monthNumber = formData.month;
             
-            console.log("🔍 Loading prices for:", {
-                monthNumber: monthNumber,
-                monthName: monthName,
-                year: formData.year,
-                bill_id: actualBillId
-            });
+            // console.log("🔍 Loading prices for:", {
+            //     monthNumber: monthNumber,
+            //     monthName: monthName,
+            //     year: formData.year,
+            //     bill_id: actualBillId
+            // });
             
             // Clear previous prices
             setBillPrices([]);
@@ -242,7 +240,6 @@ export default function CalculateMeasurableBill() {
                 }
             }
             
-            console.log("✅ Processed bill prices:", pricesData);
             
             // Filter prices for the current month/year
             const filteredPrices = pricesData.filter(price => {
@@ -257,7 +254,6 @@ export default function CalculateMeasurableBill() {
                 return monthMatch && yearMatch;
             });
             
-            console.log("Filtered prices for current month/year:", filteredPrices);
             
             if (filteredPrices.length > 0) {
                 setBillPrices(filteredPrices);
@@ -312,7 +308,7 @@ export default function CalculateMeasurableBill() {
         houseId = scannedData?.houseId || scannedData?.hse;
         
         if (!houseId || !actualBillId) {
-            console.log("Missing houseId or bill_id");
+            //console.log("Missing houseId or bill_id");
             setFormData(prev => ({ ...prev, previous_reading: '0' }));
             return;
         }
@@ -320,11 +316,11 @@ export default function CalculateMeasurableBill() {
         try {
             setLoadingPreviousReading(true);
             
-            console.log("🔍 Loading previous reading for:", { 
-                houseId, 
-                bill_id: actualBillId,
-                source 
-            });
+            // console.log("🔍 Loading previous reading for:", { 
+            //     houseId, 
+            //     bill_id: actualBillId,
+            //     source 
+            // });
             
             const response = await api.get(`/generate-measurable-bills/previous-reading`, {
                 params: {
@@ -333,7 +329,6 @@ export default function CalculateMeasurableBill() {
                 }
             });
             
-            console.log("✅ API Response:", response.data);
             
             if (response.data.success) {
                 const previousReading = response.data.data?.current_reading || 0;
@@ -341,7 +336,7 @@ export default function CalculateMeasurableBill() {
                     ...prev,
                     previous_reading: previousReading.toString()
                 }));
-                console.log(`✅ Previous reading set to: ${previousReading}`);
+                // console.log(`✅ Previous reading set to: ${previousReading}`);
             }
         } catch (err) {
             console.error("❌ Error loading previous reading:", err);
@@ -448,12 +443,8 @@ export default function CalculateMeasurableBill() {
     };
 
     // SEQUENTIAL CALCULATION FUNCTION
-    const calculateBillAmountSequential = (usedUnits) => {
-        console.log("=== SEQUENTIAL CALCULATION ===");
-        console.log("Used units:", usedUnits);
-        
+    const calculateBillAmountSequential = (usedUnits) => {        
         if (!billRanges.length || !billPrices.length) {
-            console.log("Missing ranges or prices");
             return { totalAmount: 0, details: [] };
         }
 
@@ -530,8 +521,8 @@ export default function CalculateMeasurableBill() {
             }
         }
 
-        console.log("=== FINAL CALCULATION ===");
-        console.log("Total amount:", totalAmount.toFixed(2));
+        // console.log("=== FINAL CALCULATION ===");
+        // console.log("Total amount:", totalAmount.toFixed(2));
 
         return { totalAmount, details };
     };
@@ -587,14 +578,14 @@ export default function CalculateMeasurableBill() {
         const apartmentId = houseDetails?.apartment_id;
         const floorId = houseDetails?.floor_id;
         
-        console.log("🔍 DEBUG - Extracted IDs:", { 
-            houseId, 
-            apartmentId,
-            floorId,
-            source,
-            scannedData,
-            houseDetails
-        });
+        // console.log("🔍 DEBUG - Extracted IDs:", { 
+        //     houseId, 
+        //     apartmentId,
+        //     floorId,
+        //     source,
+        //     scannedData,
+        //     houseDetails
+        // });
         
         if (!houseId || !apartmentId || !floorId) {
             toast.error("House information is missing. Please go back and try again.");
@@ -628,12 +619,12 @@ export default function CalculateMeasurableBill() {
                 source: source
             };
             
-            console.log("📤 Generating bill with payload:", payload);
+            // console.log("📤 Generating bill with payload:", payload);
             
             // Call the API endpoint
             const response = await api.post('/generate-measurable-bills/from-calculation', payload);
             
-            console.log("API Response:", response.data);
+            //console.log("API Response:", response.data);
             
             if (response.data.success) {
                 toast.success("Bill generated successfully!");
@@ -847,7 +838,7 @@ export default function CalculateMeasurableBill() {
                                                     name="month"
                                                     value={formData.month}
                                                     onChange={handleInputChange}
-                                                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base"
+                                                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm md:text-base"
                                                     required
                                                 >
                                                     {monthOptions.map(month => (
@@ -861,7 +852,7 @@ export default function CalculateMeasurableBill() {
                                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 md:mb-2">
                                                     Year
                                                 </label>
-                                                <select
+                                                {/* <select
                                                     name="year"
                                                     value={formData.year}
                                                     onChange={handleInputChange}
@@ -873,7 +864,18 @@ export default function CalculateMeasurableBill() {
                                                             {year}
                                                         </option>
                                                     ))}
-                                                </select>
+                                                </select> */}
+                                                <input
+                                                    type="number"
+                                                    name='year'
+                                                    value={formData.year}
+                                                    onChange={handleInputChange}
+                                                    min="2025"
+                                                    max="2030"
+                                                    className="w-full px-3 py-2 text-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
+                                                    placeholder="Enter year"
+                                                    required
+                                                />
                                             </div>
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -883,7 +885,7 @@ export default function CalculateMeasurableBill() {
                                                     type="date"
                                                     value={dueDate}
                                                     onChange={(e) => setDueDate(e.target.value)}
-                                                    className="w-full px-3 py-2 text-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                                                    className="w-full px-3 py-2 text-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
                                                 />
                                             </div>
                                         </div>
@@ -903,13 +905,13 @@ export default function CalculateMeasurableBill() {
                                                         placeholder="Previous reading"
                                                         min="0"
                                                         step="1"
-                                                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base"
+                                                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm md:text-base"
                                                         required
                                                         readOnly
                                                     />
                                                     {loadingPreviousReading && (
                                                         <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                                            <div className="animate-spin rounded-full h-3 w-3 md:h-4 md:w-4 border-b-2 border-blue-600"></div>
+                                                            <div className="animate-spin rounded-full h-3 w-3 md:h-4 md:w-4 border-b-2 border-purple-600"></div>
                                                         </div>
                                                     )}
                                                 </div>
@@ -929,7 +931,7 @@ export default function CalculateMeasurableBill() {
                                                     placeholder="Enter current reading"
                                                     min={formData.previous_reading}
                                                     step="1"
-                                                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base"
+                                                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm md:text-base"
                                                     required
                                                 />
                                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">

@@ -1,9 +1,9 @@
 // MeasurableBills.jsx
 import React, { useState, useEffect, useRef, useContext } from 'react'
-import { Loader, ArrowLeft, FileText, Camera, QrCode, AlertCircle, Check, X, Receipt } from 'lucide-react'
+import { Loader, ArrowLeft, FileText, Camera, QrCode, AlertCircle, Check, X, Receipt, RotateCw } from 'lucide-react'
 import { toast, ToastContainer } from 'react-toastify'
 import api from '../../api/axios'
-import { Html5QrcodeScanner } from 'html5-qrcode'
+import { Html5QrcodeScanner, Html5QrcodeScanType } from 'html5-qrcode'
 import Sidebar from '../../components/Sidebar'
 import Navbar from '../../components/Navbar'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -23,6 +23,7 @@ export default function MeasurableBills() {
     const scannerRef = useRef(null)
     const navigate = useNavigate();
     const { auth } = useContext(AuthContext);
+    const [cameraDirection, setCameraDirection] = useState('environment'); // 'environment' for back, 'user' for front
 
     // Fetch the specific bill details
     const fetchSelectedBill = async () => {
@@ -64,7 +65,7 @@ export default function MeasurableBills() {
     // Enhanced checkHouseAccess with additional API calls
     const checkHouseAccess = async (houseId, userApartments) => {
         try {
-            console.log('Checking access for house ID:', houseId);
+           // console.log('Checking access for house ID:', houseId);
             
             if (!houseId) {
                 return {
@@ -294,6 +295,8 @@ export default function MeasurableBills() {
                         fps: 10,
                         qrbox: { width: 250, height: 250 },
                         aspectRatio: 1.0,
+                        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
+                        facingMode: cameraDirection // Use selected camera direction
                     },
                     false
                 )
@@ -313,6 +316,17 @@ export default function MeasurableBills() {
         }, 100)
     }
 
+    // Toggle camera direction
+    const toggleCameraDirection = () => {
+        const newDirection = cameraDirection === 'environment' ? 'user' : 'environment';
+        setCameraDirection(newDirection);
+        
+        if (scanning) {
+            // Restart scanning with new camera direction
+            startScanning();
+        }
+    };
+
     // Handle successful scan - QR contains only house ID
     const handleScanSuccess = async (decodedText) => {
         try {
@@ -324,7 +338,7 @@ export default function MeasurableBills() {
             setScanning(false);
             setManualHouseId('');
 
-            console.log('Scanned house ID:', decodedText);
+           // console.log('Scanned house ID:', decodedText);
             
             // QR contains only house ID (from QRCodeGenerator)
             const houseId = decodedText.trim();
@@ -428,13 +442,21 @@ export default function MeasurableBills() {
                                     <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
                                         Scanner Active
                                     </h2>
-                                    <button
-                                        onClick={handleReset}
-                                        className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-100 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-gray-600"
-                                    >
-                                        <X size={16} />
-                                        <span>Cancel</span>
-                                    </button>
+                                    <div className='flex gap-2'>
+                                        <button
+                                            onClick={toggleCameraDirection}
+                                            className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-100 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-gray-600"
+                                            title={`Switch to ${cameraDirection === 'environment' ? 'Front' : 'Back'} Camera`}
+                                        >
+                                            <RotateCw size={16} />
+                                        </button>
+                                        <button
+                                            onClick={handleReset}
+                                            className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-100 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-gray-600"
+                                        >
+                                            <X size={16} />
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div className="relative">
@@ -442,7 +464,7 @@ export default function MeasurableBills() {
                                     
                                     <div className="absolute top-4 left-4 right-4 text-center z-10">
                                         <div className="inline-block bg-black/70 text-white px-3 py-1 rounded-full text-sm">
-                                            Position QR code within frame
+                                            Position QR code within frame {cameraDirection === 'environment' ? 'Back Camera' : 'Front Camera'}
                                         </div>
                                     </div>
                                 </div>

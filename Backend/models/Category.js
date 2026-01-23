@@ -33,13 +33,13 @@ class Category {
 
     // Create new category with company_id
     static async create(categoryData) {
-        const { name, description, company_id, icon = 'wrench', color = 'gray' } = categoryData;
+        const { name, description, company_id, color = 'purple' } = categoryData;
         const id = uuidv4();
         
         const [result] = await pool.execute(
-            `INSERT INTO complaint_categories (id, name, description, company_id, icon, color) 
-             VALUES (?, ?, ?, ?, ?, ?)`,
-            [id, name, description, company_id, icon, color]
+            `INSERT INTO complaint_categories (id, name, description, company_id, color) 
+             VALUES (?, ?, ?, ?, ?)`,
+            [id, name, description, company_id, color]
         );
         
         return { id, ...categoryData };
@@ -47,7 +47,7 @@ class Category {
 
     // Update category with company check
     static async update(id, companyId, updateData) {
-        const { name, description, icon, color, is_active } = updateData;
+        const { name, description, color, is_active } = updateData;
         
         const updates = [];
         const params = [];
@@ -60,11 +60,6 @@ class Category {
         if (description !== undefined) {
             updates.push('description = ?');
             params.push(description);
-        }
-        
-        if (icon !== undefined) {
-            updates.push('icon = ?');
-            params.push(icon);
         }
         
         if (color !== undefined) {
@@ -91,8 +86,7 @@ class Category {
     // Delete category (soft delete) with company check
     static async delete(id, companyId) {
         await pool.execute(
-            `UPDATE complaint_categories SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP 
-             WHERE id = ? AND company_id = ?`,
+            `DeleTE FROM complaint_categories WHERE id = ? AND company_id = ?`,
             [id, companyId]
         );
         return true;

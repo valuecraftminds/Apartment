@@ -38,6 +38,64 @@ const upload = multer({
     }
 });
 
+router.post('/parse-excel', authenticateToken, upload.single('excelFile'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'No file uploaded'
+            });
+        }
+
+        const xlsx = require('xlsx');
+        const workbook = xlsx.readFile(req.file.path);
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = xlsx.utils.sheet_to_json(worksheet);
+        
+        if (!jsonData || jsonData.length === 0) {
+            // Clean up the temp file
+            fs.unlinkSync(req.file.path);
+            return res.status(400).json({
+                success: false,
+                message: 'No data found in Excel file'
+            });
+        }
+
+        // Take the first row
+        const firstRow = jsonData[0];
+        const extractedData = {
+            name: firstRow.name || firstRow.Name || firstRow.NAME || '',
+            nic: firstRow.nic || firstRow.NIC || firstRow.id || firstRow.ID || '',
+            occupation: firstRow.occupation || firstRow.Occupation || firstRow.OCCUPATION || '',
+            country: firstRow.country || firstRow.Country || firstRow.COUNTRY || '',
+            mobile: firstRow.mobile || firstRow.Mobile || firstRow.MOBILE || firstRow.phone || '',
+            email: firstRow.email || firstRow.Email || firstRow.EMAIL || '',
+            occupied_way: firstRow.occupied_way || firstRow['occupied way'] || 'own'
+        };
+
+        // Clean up the temp file
+        fs.unlinkSync(req.file.path);
+
+        res.json({
+            success: true,
+            data: extractedData
+        });
+    } catch (error) {
+        console.error('Excel parsing error:', error);
+        
+        // Clean up temp file on error
+        if (req.file && fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
+        }
+        
+        res.status(500).json({
+            success: false,
+            message: 'Failed to parse Excel file'
+        });
+    }
+});
+
 // Apply authentication to ALL apartment routes
 // router.use(authenticateToken);
 router.get('/health-check', (req, res) => {
