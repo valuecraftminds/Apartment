@@ -491,6 +491,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/axios';
 import { Loader, ChevronDown, ChevronUp, Upload, FileSpreadsheet, X, Check, Download } from 'lucide-react';
+import ImportHouseOwnerModal from './ImportHouseOwnerModal';
 
 export default function EditHouse({ house, onClose, onUpdated, apartment_id, floor_id }) {
     const [formData, setFormData] = useState({
@@ -522,6 +523,7 @@ export default function EditHouse({ house, onClose, onUpdated, apartment_id, flo
     const [excelData, setExcelData] = useState(null);
     const [parsing, setParsing] = useState(false);
     const [parseError, setParseError] = useState(null);
+    const [showImportModal, setShowImportModal] = useState(false);
 
     useEffect(() => {
         const fetchCountries = async () => {
@@ -815,6 +817,33 @@ Important:
 
     const selectedCountry = countries.find(c => c.country_name === ownerFormData.country);
 
+    const handleImportSuccess = (newOwner) => {
+        // Update the form data with the new house owner ID
+        setFormData(prev => ({
+            ...prev,
+            houseowner_id: newOwner.id,
+            status: 'occupied' // Automatically set status to occupied
+        }));
+        
+        // Show a success message
+        alert(`✅ House owner imported successfully!\n\nName: ${newOwner.name}\nEmail: ${newOwner.email}\n\nVerification email has been sent.`);
+        
+        // Close the import modal
+        setShowImportModal(false);
+        
+        // Optionally, you can also update the local owner form data
+        setOwnerFormData({
+            name: newOwner.name,
+            nic: newOwner.nic,
+            occupation: newOwner.occupation,
+            country: newOwner.country,
+            mobile: newOwner.mobile,
+            email: newOwner.email,
+            occupied_way: newOwner.occupied_way || 'own',
+            proof: null
+        });
+    };
+
     return (
         <form onSubmit={handleSubmit} className="flex flex-col max-h-[80vh]">
             <div className="flex-1 overflow-y-auto space-y-4 pr-2 pl-1">
@@ -912,18 +941,17 @@ Important:
                                             </div>
                                         </button>
                                         <button
-                                            type="button"
-                                            onClick={() => setUploadMethod('excel')}
+                                            onClick={() => setShowImportModal(true)}
                                             className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all ${
-                                                uploadMethod === 'excel'
+                                                uploadMethod === 'import'
                                                     ? 'border-green-600 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'
                                                     : 'border-gray-300 dark:border-gray-600 hover:border-green-400 text-gray-700 dark:text-gray-300'
                                             }`}
                                         >
                                             <div className="flex flex-col items-center">
-                                                <FileSpreadsheet size={24} className="mb-2" />
-                                                <span className="font-medium">Upload Excel</span>
-                                                <span className="text-xs mt-1">Fill template & upload</span>
+                                                <Upload size={24} className="mb-2" />
+                                                <span className="font-medium">Import from Excel</span>
+                                                <span className="text-xs mt-1">Upload Excel file</span>
                                             </div>
                                         </button>
                                     </div>
@@ -1244,6 +1272,14 @@ Important:
                     </button>
                 </div>
             </div>
+            <ImportHouseOwnerModal
+                isOpen={showImportModal}
+                onClose={() => setShowImportModal(false)}
+                onImportSuccess={handleImportSuccess}
+                apartment_id={apartment_id}
+                floor_id={floor_id}
+                house_id={house.id}
+            />
         </form>
     );
 }

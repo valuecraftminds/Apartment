@@ -38,7 +38,32 @@ const upload = multer({
     }
 });
 
-router.post('/parse-excel', authenticateToken, upload.single('excelFile'), async (req, res) => {
+const excelStorage = multer.memoryStorage(); // Use memory storage for Excel files
+
+const uploadExcel = multer({ 
+    storage: excelStorage,
+    limits: {
+        fileSize: 10 * 1024 * 1024 // 10MB limit
+    },
+    fileFilter: function (req, file, cb) {
+        // Allow Excel and CSV files
+        const allowedMimeTypes = [
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.ms-excel',
+            'text/csv',
+            'application/vnd.oasis.opendocument.spreadsheet'
+        ];
+        
+        if (allowedMimeTypes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only Excel/CSV files are allowed!'), false);
+        }
+    }
+});
+
+
+router.post('/parse-excel', authenticateToken, uploadExcel.single('excelFile'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({
@@ -96,7 +121,8 @@ router.post('/parse-excel', authenticateToken, upload.single('excelFile'), async
     }
 });
 
-// Apply authentication to ALL apartment routes
+router.post('/import-from-excel', authenticateToken, uploadExcel.single('excelFile'), houseOwnerController.importHouseOwnerFromExcel);
+
 // router.use(authenticateToken);
 router.get('/health-check', (req, res) => {
   res.json({ 
@@ -150,13 +176,39 @@ router.get('/available-roles', authenticateToken, async (req, res) => {
 });
 
 // Error handling middleware for multer
+// router.use((error, req, res, next) => {
+//     if (error instanceof multer.MulterError) {
+//         if (error.code === 'LIMIT_FILE_SIZE') {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: 'File too large. Maximum size is 5MB.'
+//             });
+//         }
+//     }
+//     if (error) {
+//         return res.status(400).json({
+//             success: false,
+//             message: error.message
+//         });
+//     }
+//     next();
+// });
+
 router.use((error, req, res, next) => {
     if (error instanceof multer.MulterError) {
         if (error.code === 'LIMIT_FILE_SIZE') {
-            return res.status(400).json({
-                success: false,
-                message: 'File too large. Maximum size is 5MB.'
-            });
+            // Check which upload type it is based on the route
+            if (req.originalUrl.includes('/import-from-excel') || req.originalUrl.includes('/parse-excel')) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Excel file too large. Maximum size is 10MB.'
+                });
+            } else {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Image file too large. Maximum size is 5MB.'
+                });
+            }
         }
     }
     if (error) {
@@ -166,7 +218,7 @@ router.use((error, req, res, next) => {
         });
     }
     next();
-});
+})
 
 //remove once error fixed
 // Add this route for testing
