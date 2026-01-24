@@ -486,7 +486,7 @@ async createHouseOwner(req, res) {
         }
     },
 
-    // In houseOwnerController.js, update the importHouseOwnerFromExcel method
+   // In houseOwnerController.js, update the importHouseOwnerFromExcel method
     async importHouseOwnerFromExcel(req, res) {
         let connection;
         try {
@@ -644,23 +644,6 @@ async createHouseOwner(req, res) {
 
             // Commit the transaction
             await connection.commit();
-
-            // Send verification email if email is provided
-            try {
-                // Use axios for internal API call
-                const axios = require('axios');
-                await axios.post('http://localhost:2500/api/houseowner-auth/admin/send-verification', {
-                    houseowner_id: houseOwnerId,
-                    email: extractedData.email
-                }, {
-                    headers: {
-                        'Authorization': req.headers['authorization']
-                    }
-                });
-            } catch (emailError) {
-                console.error('Error sending verification email:', emailError);
-                // Continue even if email fails - don't rollback
-            }
 
             res.json({
                 success: true,

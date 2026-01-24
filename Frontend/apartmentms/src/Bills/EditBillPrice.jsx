@@ -27,12 +27,12 @@ export default function EditBillPrice({ bill_id, billrange_id, billPrice, onClos
 
   // Add this useEffect to debug the props
   useEffect(() => {
-    console.log('EditBillPrice props:', { 
-      bill_id, 
-      billrange_id, 
-      billPrice,
-      formData 
-    });
+    // console.log('EditBillPrice props:', { 
+    //   bill_id, 
+    //   billrange_id, 
+    //   billPrice,
+    //   formData 
+    // });
   }, [bill_id, billrange_id, billPrice, formData]);
 
   const handleChange = (e) => {
@@ -62,7 +62,7 @@ export default function EditBillPrice({ bill_id, billrange_id, billPrice, onClos
       id: billPrice.id // Include the bill price ID for update
     };
     
-    console.log('Updating bill price data:', requestData);
+    //console.log('Updating bill price data:', requestData);
 
     try {
       const result = await api.put(

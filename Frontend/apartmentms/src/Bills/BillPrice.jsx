@@ -31,7 +31,7 @@ export default function BillPrice() {
       setLoading(true);
       setError(null);
       
-      console.log('Loading bill prices with:', { bill_id, billrange_id });
+      // console.log('Loading bill prices with:', { bill_id, billrange_id });
       
       // Use the correct API endpoint with query parameters
       const res = await api.get(`/billprice?bill_id=${bill_id}&billrange_id=${billrange_id}`);

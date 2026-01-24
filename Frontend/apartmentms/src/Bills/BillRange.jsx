@@ -10,7 +10,7 @@ import EditBillRange from "./EditBillRange";
 
 export default function BillRange() {
   const { bill_id } = useParams(); // get from route
-  console.log('Bill ID:', bill_id);
+  //console.log('Bill ID:', bill_id);
   const [loadingRanges, setLoadingRanges] = useState(false);
   const [error, setError] = useState(null);
   const [billRanges, setBillRanges] = useState([]);

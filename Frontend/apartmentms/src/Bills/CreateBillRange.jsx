@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { X } from "lucide-react";
+import { toast } from "react-toastify";
 
 export default function CreateBillRange({ show, onClose, onSave }) {
   const [formData, setFormData] = useState({
@@ -16,7 +17,7 @@ export default function CreateBillRange({ show, onClose, onSave }) {
 
   const handleSubmit = () => {
     if (!formData.fromRange || !formData.toRange) {
-      alert("Please fill all fields.");
+      toast.error("Please fill all fields.");
       return;
     }
     onSave(formData);

@@ -491,7 +491,7 @@ export default function BillPayments() {
                     value={filters.year}
                     onChange={(e) => handleFilterChange('year', e.target.value)}
                     min="2025"
-                    max="2100"
+                    max="2030"
                     className="w-full px-3 py-2 text-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
                     placeholder="Enter year"
                     required
