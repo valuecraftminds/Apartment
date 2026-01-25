@@ -117,6 +117,7 @@ export default function CreateHouseType({ onClose, apartment_id,onCreated }) {
         value={formData.bathrooms}
         onChange={handleChange}
         className="border rounded p-2 text-black dark:text-white border-purple-600"
+        required
       />
 
       <div className="flex justify-end gap-2">

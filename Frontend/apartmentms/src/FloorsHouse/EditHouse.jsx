@@ -505,6 +505,7 @@ import React, { useEffect, useState } from 'react';
 import api from '../api/axios';
 import { Loader, ChevronDown, ChevronUp, Upload } from 'lucide-react';
 import ImportHouseOwnerModal from './ImportHouseOwnerModal';
+import { toast } from 'react-toastify';
 
 export default function EditHouse({ house, onClose, onUpdated, apartment_id, floor_id }) {
     const [formData, setFormData] = useState({
@@ -731,7 +732,7 @@ export default function EditHouse({ house, onClose, onUpdated, apartment_id, flo
             });
             
             if (res.data.success) {
-                alert(`✅ Setup successful!\n\nVerification email sent to: ${houseOwnerEmail}\n\n${res.data.message}`);
+                toast.success(`✅ Setup successful!\n\nVerification email sent to: ${houseOwnerEmail}\n\n${res.data.message}`);
                 onUpdated();
             } else {
                 alert(res.data.message || 'Failed to set up house owner');

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import Sidebar from '../components/Sidebar';
-import Navbar from '../components/Navbar';
+import Navbar from '../components/navbar';
 import { Plus, Users, Loader, Edit, Trash2, User, Send, ToggleLeft, ToggleRight, Building2 } from 'lucide-react';
 import { toast, ToastContainer } from 'react-toastify';
 import api from '../api/axios';

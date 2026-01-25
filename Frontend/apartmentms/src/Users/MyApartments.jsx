@@ -5,7 +5,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import api from '../api/axios';
 import { AuthContext } from '../contexts/AuthContext';
 import Sidebar from '../components/Sidebar';
-import Navbar from '../components/Navbar';
+import Navbar from '../components/navbar';
 import { useNavigate } from 'react-router-dom';
 
 export default function MyApartments() {

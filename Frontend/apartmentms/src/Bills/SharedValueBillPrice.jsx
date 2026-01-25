@@ -5,8 +5,9 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import api from '../api/axios';
 import Sidebar from '../components/Sidebar';
-import Navbar from '../components/Navbar';
+// import Navbar from '../components/Navbar';
 import CreateSharedValueBillPrice from './CreateSharedValueBillPrice';
+import Navbar from '../components/navbar';
 
 export default function SharedValueBillPrice() {
     const { bill_id } = useParams();
@@ -81,7 +82,7 @@ export default function SharedValueBillPrice() {
 
     // Update your handleCreateSuccess function in SharedValueBillPrice.jsx
 const handleCreateSuccess = () => {
-    console.log('handleCreateSuccess called'); // Debug log
+    //console.log('handleCreateSuccess called'); // Debug log
     setShowCreateModal(false);
     toast.success('Shared value price created successfully');
     loadSharedValuePrices(); // Make sure this is called
@@ -89,7 +90,7 @@ const handleCreateSuccess = () => {
 
 // Also update your useEffect to see if it's loading properly
 useEffect(() => {
-    console.log('bill_id changed:', bill_id); // Debug log
+   // console.log('bill_id changed:', bill_id); // Debug log
     if (bill_id) {
         loadBillInfo();
         loadSharedValuePrices();

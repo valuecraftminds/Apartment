@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function HouseOwnerVerify() {
   const [searchParams] = useSearchParams();
@@ -14,6 +15,8 @@ export default function HouseOwnerVerify() {
   const [ownerId, setOwnerId] = useState('');
   const [token, setToken] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     const tokenParam = searchParams.get('token');
@@ -156,27 +159,45 @@ export default function HouseOwnerVerify() {
             {showSetPassword ? (
               <div className="mt-6">
                 <div className="space-y-4">
-                  <div>
+                  <div className='passwordField'>
                     <input
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       placeholder="Enter password"
                       value={password}
                       onChange={handlePasswordChange}
                       className="w-full p-3 border rounded-md dark:bg-gray-700 dark:text-white text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required
                     />
+                    <span 
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className='passwordToggle bottom-0'
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}                      
+                    </span>
                     <p className="text-xs text-gray-500 mt-1 text-left">
                       Must be at least 6 characters with uppercase, lowercase, numbers, and special characters
                     </p>
                   </div>
                   
-                  <div>
+                  <div className='passwordField'>
                     <input
-                      type="password"
+                      type={showConfirmPassword ? "text" : "password"}
                       placeholder="Confirm password"
                       value={confirmPassword}
                       onChange={handleConfirmPasswordChange}
                       className="w-full p-3 border rounded-md dark:bg-gray-700 dark:text-white text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required
                     />
+                    <span 
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className='passwordToggle'
+                      aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                    >
+                      {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}                      
+                    </span>
                   </div>
                   
                   {passwordError && (

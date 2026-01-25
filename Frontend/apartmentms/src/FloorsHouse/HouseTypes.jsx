@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react'
 import Sidebar from '../components/Sidebar'
-import Navbar from '../components/Navbar';
 import {Edit, Image, Loader, Plus, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -11,7 +10,7 @@ import EditHouseType from './EditHouseType';
 
 export default function HouseTypes() {
     const {apartment_id} = useParams();
-    console.log('Apartment ID:', apartment_id);  
+    //console.log('Apartment ID:', apartment_id);  
     const [loadingHouseTypes,setLoadingHouseTypes] = useState(false);
     const [error, setError] = useState(null);
     const [housetype,setHouseType] = useState([]);

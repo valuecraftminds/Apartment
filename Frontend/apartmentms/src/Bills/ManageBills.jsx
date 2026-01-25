@@ -33,14 +33,14 @@ export default function ManageBills() {
         setLoading(true);
         setError(null);
         const result = await api.get('/apartments')
-        console.log('API Response:', result.data);
+        //console.log('API Response:', result.data);
 
         if (result.data.success && Array.isArray(result.data.data)) {
             setApartments(result.data.data);
         } else if (Array.isArray(result.data)) {
             setApartments(result.data);
         } else {
-            console.warn('Unexpected response format:', result.data);
+            //console.warn('Unexpected response format:', result.data);
             setApartments([]);
         }
     } catch (err) {

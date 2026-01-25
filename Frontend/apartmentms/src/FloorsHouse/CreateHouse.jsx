@@ -29,7 +29,7 @@ export default function CreateHouse({ onClose, onCreated, apartment_id, floor_id
 
         if (res.data?.data?.length > 0) {
           setExistingHouses(res.data.data);
-          console.log("Existing houses:", res.data.data);
+          //console.log("Existing houses:", res.data.data);
         }
       } catch (err) {
         console.error("Error fetching existing houses:", err);
@@ -70,12 +70,12 @@ export default function CreateHouse({ onClose, onCreated, apartment_id, floor_id
       })
       .filter(num => num > 0);
 
-    console.log(`Houses with prefix "${prefix}":`, housesWithPrefix);
+    //console.log(`Houses with prefix "${prefix}":`, housesWithPrefix);
 
     if (housesWithPrefix.length === 0) return 0;
     
     const maxNumber = Math.max(...housesWithPrefix);
-    console.log(`Last house number for prefix "${prefix}":`, maxNumber);
+    //console.log(`Last house number for prefix "${prefix}":`, maxNumber);
     return maxNumber;
   };
 
@@ -141,7 +141,7 @@ export default function CreateHouse({ onClose, onCreated, apartment_id, floor_id
       }
     });
 
-    console.log(`Generated ${generatedHouses.length} houses:`, generatedHouses);
+    //console.log(`Generated ${generatedHouses.length} houses:`, generatedHouses);
     setHouses(generatedHouses);
   };
 

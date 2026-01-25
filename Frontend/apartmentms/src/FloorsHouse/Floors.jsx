@@ -446,7 +446,7 @@
 
 import React, { useEffect, useState } from 'react'
 import Sidebar from '../components/Sidebar';
-import Navbar from '../components/Navbar';
+import Navbar from '../components/navbar';
 import { Building, Building2, ChevronLeft, Edit, Image, Loader, Plus, ToggleLeft, ToggleRight, Trash2, Menu } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../api/axios';

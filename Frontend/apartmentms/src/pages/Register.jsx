@@ -241,68 +241,6 @@ export default function CombinedRegistration() {
     setCurrentStep(currentStep - 1);
   };
 
-//   async function submit(e) {
-//     e.preventDefault();
-  
-//     // Validate all steps before submitting
-//     let allValid = true;
-//     for (let step = 1; step <= totalSteps; step++) {
-//       if (!validateStep(step)) {
-//         allValid = false;
-//         if (step !== currentStep) {
-//           setCurrentStep(step);
-//         }
-//         break;
-//       }
-//     }
-
-//     if (!allValid) {
-//       toast.error("Please fix all validation errors before submitting");
-//       return;
-//     }
-
-//     try {
-//       // Prepare company data
-//       const companyPayload = {
-//         regNo: companyData.regNo,
-//         name: companyData.name,
-//         address: companyData.address,
-//         employees: parseInt(companyData.employees, 10)
-//       };
-
-//     console.log('Sending company data to /tenants:', companyPayload);
-    
-//     // First register the company
-//     const companyResponse = await api.post('/tenants', companyPayload);
-//     console.log('Company registration successful:', companyResponse.data);
-
-//     // Create default admin role for the company
-//     const defaultRoleResponse = await api.post('/roles', {
-//       role_name: 'Admin'
-//     }, {
-//       headers: {
-//         Authorization: `Bearer ${companyResponse.data.accessToken}` // You might need to adjust this
-//       }
-//     });
-
-//     // Then register the user with the company ID
-//     const userResponse = await api.post('/auth/register', {
-//       firstname: userData.firstname,
-//       lastname: userData.lastname,
-//       country: userData.country,
-//       mobile:userData.mobile,
-//       email: userData.email,
-//       password: userData.password,
-//       company_id: companyResponse.data.data.id // Send as company_id (not companyId)
-//     });
-
-//       toast.success("Registration successful! Company and user account created.");
-//       setTimeout(() => navigate('/login'), 2000);
-//     } catch (err) {
-//       console.error('Registration error:', err);
-//       toast.error(err.response?.data?.message || "❌ Registration failed");
-//     }
-// }
 
 async function submit(e) {
   e.preventDefault();
@@ -332,11 +270,12 @@ async function submit(e) {
       address: companyData.address
     };
 
-    console.log('Sending company data to /tenants:', companyPayload);
+    //console.log('Sending company data to /tenants:', companyPayload);
     
     // First register the company
     const companyResponse = await api.post('/tenants', companyPayload);
-    console.log('Company registration successful:', companyResponse.data);
+    //console.log('Company registration successful:', companyResponse.data);
+
 
     // Get the company ID from the response
     const companyId = companyResponse.data.data.id;

@@ -25,7 +25,7 @@ import {
 import { AuthContext } from '../contexts/AuthContext';
 import api from '../api/axios';
 import Sidebar from '../components/Sidebar';
-import Navbar from '../components/Navbar';
+import Navbar from '../components/navbar';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 

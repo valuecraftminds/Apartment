@@ -199,7 +199,7 @@ export default function HouseOwnerComplaints() {
         fetchComplaints();
       }
     } catch (err) {
-      console.error('Failed to create complaint:', err);
+      toast.error('Failed to create complaint');
       const errorMsg = err.response?.data?.message || 'Failed to create complaint';
       toast.error(errorMsg);
     }

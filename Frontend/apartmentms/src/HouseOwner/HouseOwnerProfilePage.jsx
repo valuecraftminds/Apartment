@@ -9,8 +9,6 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import api from '../api/axios';
 import { AuthContext } from '../contexts/AuthContext';
-import Sidebar from '../components/Sidebar';
-import Navbar from '../components/Navbar';
 import HouseOwnerSidebar from '../components/HouseOwnerSidebar';
 import HouseOwnerNavbar from '../components/HouseOwnerNavbar';
 
@@ -35,10 +33,10 @@ export default function HouseOwnerProfilePage() {
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      console.log('Fetching house owner profile...');
+      //console.log('Fetching house owner profile...');
       
       const response = await api.get('/auth/me');
-      console.log('House owner profile response:', response.data);
+      //console.log('House owner profile response:', response.data);
       
       if (response.data.success && response.data.data && response.data.data.length > 0) {
         const userData = response.data.data[0];

@@ -137,7 +137,7 @@ export default function HouseOwnerViewBills() {
       setLoadingBills(true)
       setError(null)
       
-      console.log('🔍 [Frontend] Fetching bill payments...')
+      //console.log('🔍 [Frontend] Fetching bill payments...')
       
       // Build query params
       const params = {}
@@ -146,7 +146,7 @@ export default function HouseOwnerViewBills() {
       // if (filters.year !== 'all') params.year = filters.year
       // if (filters.house_id !== 'all') params.house_id = filters.house_id
       
-      console.log('🔍 [Frontend] Query params:', params)
+      //console.log('🔍 [Frontend] Query params:', params)
       
       const res = await api.get('/bill-payments/house-owner/me', {
         headers: { 
@@ -156,13 +156,13 @@ export default function HouseOwnerViewBills() {
         params: params
       })
       
-      console.log('✅ [Frontend] Response received:', res.data)
+      //console.log('✅ [Frontend] Response received:', res.data)
       
       if (res.data.success) {
         const billsData = res.data.data || []
         const housesData = res.data.houses || houses // Use existing houses if not returned
         
-        console.log(`✅ [Frontend] Found ${billsData.length} bills for ${housesData.length} houses`)
+        //console.log(`✅ [Frontend] Found ${billsData.length} bills for ${housesData.length} houses`)
         
         setBills(billsData)
         setFilteredBills(billsData)
@@ -182,13 +182,13 @@ export default function HouseOwnerViewBills() {
           setSelectedHouse(housesData[0])
         }
       } else {
-        console.error('❌ [Frontend] API error:', res.data.message)
+        console.error('[Frontend] API error:', res.data.message)
         setError(res.data.message || 'Failed to fetch bills')
         setBills([])
         setFilteredBills([])
       }
     } catch (err) {
-      console.error('❌ [Frontend] Failed to fetch bill payments:', err)
+      console.error('[Frontend] Failed to fetch bill payments:', err)
 
        try {
       const debugRes = await api.get('/bill-payments/debug/database-state', {
@@ -197,13 +197,13 @@ export default function HouseOwnerViewBills() {
           'Content-Type': 'application/json'
         }
       });
-      console.log('🔍 [Frontend] Debug database state:', debugRes.data);
+      //console.log('🔍 [Frontend] Debug database state:', debugRes.data);
     } catch (debugErr) {
-      console.error('❌ [Frontend] Debug endpoint failed:', debugErr);
+      console.error(' [Frontend] Debug endpoint failed:', debugErr);
     }
       
       if (err.response) {
-        console.error('❌ [Frontend] Error response:', {
+        console.error('[Frontend] Error response:', {
           status: err.response.status,
           data: err.response.data,
           headers: err.response.headers
@@ -223,10 +223,10 @@ export default function HouseOwnerViewBills() {
           setError(`Server error: ${err.response.status}`)
         }
       } else if (err.request) {
-        console.error('❌ [Frontend] No response received:', err.request)
+        console.error('[Frontend] No response received:', err.request)
         setError('Network error. Please check your internet connection.')
       } else {
-        console.error('❌ [Frontend] Request setup error:', err.message)
+        console.error('[Frontend] Request setup error:', err.message)
         setError('An unexpected error occurred: ' + err.message)
       }
     } finally {
@@ -353,15 +353,15 @@ export default function HouseOwnerViewBills() {
 
   const summary = calculateSummary()
 
-  const handleDownloadBill = (bill) => {
-    // Real implementation would go here
-    alert('Download functionality coming soon!')
-  }
+  // const handleDownloadBill = (bill) => {
+  //   // Real implementation would go here
+  //   alert('Download functionality coming soon!')
+  // }
 
-  const handlePayBill = (bill) => {
-    // Real implementation would go here
-    alert('Payment functionality coming soon!')
-  }
+  // const handlePayBill = (bill) => {
+  //   // Real implementation would go here
+  //   alert('Payment functionality coming soon!')
+  // }
 
   if (loading) {
     return (

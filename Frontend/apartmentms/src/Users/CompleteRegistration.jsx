@@ -31,7 +31,7 @@ export default function CompleteRegistration() {
     const tokenParam = searchParams.get("token");
     const idParam = searchParams.get("id");
 
-    console.log("URL Parameters:", { token: tokenParam, id: idParam });
+   // console.log("URL Parameters:", { token: tokenParam, id: idParam });
 
     if (!tokenParam || !idParam) {
       setIsValidLink(false);
@@ -51,7 +51,7 @@ export default function CompleteRegistration() {
           id: idParam 
         });
         
-        console.log("Link verification response:", response.data);
+       // console.log("Link verification response:", response.data);
         
         if (response.data.success) {
           setEmail(response.data.email);
@@ -98,7 +98,7 @@ export default function CompleteRegistration() {
         id: userId
       });
 
-      console.log("Verification response:", verifyResponse.data);
+      // console.log("Verification response:", verifyResponse.data);
 
       // If verification successful, complete registration
       await api.post("/auth/complete-registration", {

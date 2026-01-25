@@ -18,7 +18,7 @@ export default function CreateFloors({ onClose, apartment_id }) {
           },
         });
 
-        console.log("Existing floors from backend:", res.data);
+        //console.log("Existing floors from backend:", res.data);
 
         if (res.data && res.data.length > 0) {
           // Extract the max number from ANY digits in floor_id
@@ -28,7 +28,7 @@ export default function CreateFloors({ onClose, apartment_id }) {
               return match ? parseInt(match[0]) : 0;
             })
           );
-          console.log("Detected last floor number:", maxNum);
+         // console.log("Detected last floor number:", maxNum);
           setLastFloorNumber(maxNum);
         }
       } catch (err) {
@@ -45,7 +45,7 @@ export default function CreateFloors({ onClose, apartment_id }) {
     const generated = Array.from({ length: numFloors }, (_, i) => ({
       floor_id: `F${lastFloorNumber + i + 1}`, // continue from last floor
     }));
-    console.log("Generated floors:", generated);
+    //console.log("Generated floors:", generated);
     setFloors(generated);
   };
 
@@ -72,7 +72,7 @@ export default function CreateFloors({ onClose, apartment_id }) {
           },
         }
       );
-      console.log("Created floors:", res.data);
+      //console.log("Created floors:", res.data);
       onClose();
     } catch (err) {
       console.error("Error creating floors:", err);
