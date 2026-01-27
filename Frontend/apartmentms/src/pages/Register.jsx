@@ -21,7 +21,7 @@ export default function CombinedRegistration() {
   const [companyData, setCompanyData] = useState({
     regNo: '',
     name: '',
-    address: ''
+    address: '' 
   });
 
   const [errors, setErrors] = useState({
