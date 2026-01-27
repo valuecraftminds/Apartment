@@ -54,9 +54,9 @@ const authLimiter = rateLimit({
 ===================================================== */
 const allowedOrigins = [
   'http://localhost:5173',
-  // 'https://apartment.valuecraftminds.com',
-  // 'https://apmt.apivcm.shop',
-   'http://localhost:2500',
+  'https://apartment.valuecraftminds.com',
+  'https://apmt.apivcm.shop',
+  // 'http://localhost:2500',
   process.env.FRONTEND_URL
 ].filter(Boolean);
 

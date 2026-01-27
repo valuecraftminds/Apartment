@@ -58,8 +58,10 @@ export default function CombinedRegistration() {
   useEffect(() => {
     const fetchCountries = async () => {
       try {
-        const res = await api.get('/countries/external');
-        setCountries(res.data.data);
+        // const res = await api.get('/countries/external');
+        const res = await fetch('https://general.apivcm.shop/countries');
+        const data = await res.json();
+        setCountries(data.data);
       } catch (err) {
         console.error("Error fetching countries:", err);
       }
@@ -80,7 +82,7 @@ export default function CombinedRegistration() {
   //   }
   // };
 
-  const handleCountryChange = (e) => {
+const handleCountryChange = (e) => {
   const countryName = e.target.value;
   const selectedCountry = countries.find(c => c.country === countryName);
   
@@ -88,13 +90,16 @@ export default function CombinedRegistration() {
     setUserData(prev => ({
       ...prev,
       country: selectedCountry.country,
-      mobile: selectedCountry.international_dialing + ' ' 
+      mobile: selectedCountry.international_dialing + ' '
     }));
   }
 };
-  
-  const navigate = useNavigate();
-  const totalSteps = 3;
+
+// Error message state for persistent error display
+const [submitError, setSubmitError] = useState("");
+
+const navigate = useNavigate();
+const totalSteps = 3;
 
   // Validation rules
   const validateField = (name, value) => {
@@ -560,7 +565,7 @@ async function submit(e) {
                     <option value="">Select country *</option>
                     {countries.map(country => (
                       <option key={country.country} value={country.country}>
-                        {country.country} ({country.international_dialing})
+                        {country.country}
                       </option>
                     ))}
                   </select>
