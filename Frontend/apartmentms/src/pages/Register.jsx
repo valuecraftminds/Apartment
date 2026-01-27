@@ -58,7 +58,7 @@ export default function CombinedRegistration() {
   useEffect(() => {
     const fetchCountries = async () => {
       try {
-        const res = await api.get('/countries');
+        const res = await api.get('/countries/external');
         setCountries(res.data.data);
       } catch (err) {
         console.error("Error fetching countries:", err);
@@ -67,18 +67,31 @@ export default function CombinedRegistration() {
     fetchCountries();
   }, []);
 
-  const handleCountryChange = (e) => {
-    const countryId = e.target.value;
-    const selectedCountry = countries.find(c => c.id.toString() === countryId);
+  // const handleCountryChange = (e) => {
+  //   const countryId = e.target.value;
+  //   const selectedCountry = countries.find(c => c.id.toString() === countryId);
 
-    if (selectedCountry) {
-      setUserData(prev => ({
-        ...prev,
-        country: selectedCountry.country_name, //set country
-        mobile: selectedCountry.phone_code // auto set phone code
-      }));
-    }
-  };
+  //   if (selectedCountry) {
+  //     setUserData(prev => ({
+  //       ...prev,
+  //      country: selectedCountry.country_name, //set country
+  //       mobile: selectedCountry.phone_code // auto set phone code
+  //     }));
+  //   }
+  // };
+
+  const handleCountryChange = (e) => {
+  const countryName = e.target.value;
+  const selectedCountry = countries.find(c => c.country === countryName);
+  
+  if (selectedCountry) {
+    setUserData(prev => ({
+      ...prev,
+      country: selectedCountry.country,
+      mobile: selectedCountry.international_dialing + ' ' 
+    }));
+  }
+};
   
   const navigate = useNavigate();
   const totalSteps = 3;
@@ -107,10 +120,16 @@ export default function CombinedRegistration() {
         if (!value.trim()) error = 'Country is required';
         break;
 
+      // case 'mobile':
+      //   if (!value.trim()) error = 'Mobile Number is required';
+      //   else if (!/^\+\d{2} \d{9}$/.test(value)) error = 'Mobile must be in format +XX XXXXXXXXX';
+      //   else if (value.length > 15) error = 'Mobile cannot exceed 15 digits';
+      //   break;
+
       case 'mobile':
         if (!value.trim()) error = 'Mobile Number is required';
-        else if (!/^\+\d{2} \d{9}$/.test(value)) error = 'Mobile must be in format +XX XXXXXXXXX';
-        else if (value.length > 15) error = 'Mobile cannot exceed 15 digits';
+        else if (!/^\+\d{1,4} \d{9,10}$/.test(value)) error = 'Mobile must be in format +XXX XXXXXXXXXX (country code followed by 9-10 digits)';
+        else if (value.length > 20) error = 'Mobile cannot exceed 20 digits';
         break;
 
         
@@ -508,7 +527,7 @@ async function submit(e) {
                   )} */}
                 </div>
 
-                <div>
+                {/* <div>
                   <select
                     name="country"
                     value={countries.find(c => c.country_name === userData.country)?.id || ''}
@@ -528,16 +547,68 @@ async function submit(e) {
                       <X size={14} className="mr-1" /> {errors.country}
                     </div>
                   )}
+                </div> */}
+
+                <div>
+                  <select
+                    name="country"
+                    value={userData.country || ''}
+                    onChange={handleCountryChange}
+                    onBlur={(e) => handleBlur(e, false)}
+                    className={`loginInput ${errors.country ? 'border-red-500' : touched.country && 'border-green-500'}`}
+                  >
+                    <option value="">Select country *</option>
+                    {countries.map(country => (
+                      <option key={country.country} value={country.country}>
+                        {country.country} ({country.international_dialing})
+                      </option>
+                    ))}
+                  </select>
+                  {touched.country && errors.country && (
+                    <div className="text-red-500 text-sm mt-1 flex items-center">
+                      <X size={14} className="mr-1" /> {errors.country}
+                    </div>
+                  )}
                 </div>
 
 
-                <div>
+                {/* <div>
                   <input
                     name="mobile"
                     value={userData.mobile}
                     onChange={(e) => handleInputChange(e, false)}
                     onBlur={(e) => handleBlur(e, false)}
                     placeholder="Mobile *"
+                    className={`loginInput ${errors.mobile ? 'border-red-500' : touched.mobile && 'border-green-500'}`}
+                  />
+                  {touched.mobile && errors.mobile && (
+                    <div className="text-red-500 text-sm mt-1 flex items-center">
+                      <X size={14} className="mr-1" /> {errors.mobile}
+                    </div>
+                  )}
+                </div> */}
+
+                <div>
+                  <input
+                    name="mobile"
+                    value={userData.mobile}
+                    onChange={(e) => {
+                      // Allow only numbers and + sign after the country code
+                      const countryCode = userData.mobile.split(' ')[0] || '';
+                      const userNumber = e.target.value.replace(countryCode + ' ', '');
+                      const newValue = countryCode + (userNumber ? ' ' + userNumber.replace(/\D/g, '') : '');
+                      
+                      // Update state
+                      const event = {
+                        target: {
+                          name: 'mobile',
+                          value: newValue
+                        }
+                      };
+                      handleInputChange(event, false);
+                    }}
+                    onBlur={(e) => handleBlur(e, false)}
+                    placeholder="Mobile * (e.g., +94 771234567)"
                     className={`loginInput ${errors.mobile ? 'border-red-500' : touched.mobile && 'border-green-500'}`}
                   />
                   {touched.mobile && errors.mobile && (

@@ -55,7 +55,7 @@ async function verifyTransport() {
 
 async function sendVerificationEmail(toEmail, plainToken, userId) {
   try {
-    console.log(`📧 Attempting to send verification email to: ${toEmail}`);
+    //console.log(`📧 Attempting to send verification email to: ${toEmail}`);
     
     // Verify the transporter first
     const isVerified = await verifyTransport();
@@ -66,7 +66,7 @@ async function sendVerificationEmail(toEmail, plainToken, userId) {
     // FIXED: Use the correct verification endpoint
     const verificationUrl = `${process.env.FRONTEND_URL || 'https://apmt.apivcm.shop'}/verify?token=${plainToken}&id=${userId}`;
     
-    console.log(`🔗 Verification URL: ${verificationUrl}`);
+    //console.log(`🔗 Verification URL: ${verificationUrl}`);
     
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
@@ -90,15 +90,6 @@ async function sendVerificationEmail(toEmail, plainToken, userId) {
           
           <p style="margin: 15px 0 0 0; color: #6b7280; font-size: 14px; text-align: center;">
             This verification link will expire in 24 hours.
-          </p>
-        </div>
-        
-        <div style="border-top: 1px solid #e5e7eb; padding-top: 20px;">
-          <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px;">
-            If the button doesn't work, copy and paste this link into your browser:
-          </p>
-          <p style="margin: 0; background: #f3f4f6; padding: 12px; border-radius: 4px; word-break: break-all; font-size: 12px; color: #374151;">
-            ${verificationUrl}
           </p>
         </div>
         
@@ -136,8 +127,8 @@ async function sendVerificationEmail(toEmail, plainToken, userId) {
 
     const result = await Promise.race([sendPromise, timeoutPromise]);
     
-    console.log(`✅ Verification email sent successfully to: ${toEmail}`);
-    console.log('📨 Message ID:', result.messageId);
+    //console.log(`✅ Verification email sent successfully to: ${toEmail}`);
+    //console.log('📨 Message ID:', result.messageId);
     
     return true;
 
@@ -159,7 +150,7 @@ async function sendVerificationEmail(toEmail, plainToken, userId) {
 // Send password reset email
 async function sendPasswordResetEmail(toEmail, resetToken, userId, userType = 'user') {
   try {
-    console.log(`📧 Attempting to send password reset email to: ${toEmail}`);
+    //console.log(`📧 Attempting to send password reset email to: ${toEmail}`);
     
     const isVerified = await verifyTransport();
     if (!isVerified) {
@@ -195,15 +186,6 @@ async function sendPasswordResetEmail(toEmail, resetToken, userId, userType = 'u
           </p>
         </div>
         
-        <div style="border-top: 1px solid #e5e7eb; padding-top: 20px;">
-          <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px;">
-            If the button doesn't work, copy and paste this link into your browser:
-          </p>
-          <p style="margin: 0; background: #f3f4f6; padding: 12px; border-radius: 4px; word-break: break-all; font-size: 12px; color: #374151;">
-            ${resetUrl}
-          </p>
-        </div>
-        
         <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
           <p style="margin: 0; color: #9ca3af; font-size: 12px; text-align: center;">
             If you didn't request a password reset, please ignore this email.
@@ -224,7 +206,7 @@ async function sendPasswordResetEmail(toEmail, resetToken, userId, userType = 'u
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log(`✅ Password reset email sent successfully to: ${toEmail}`);
+    //console.log(`✅ Password reset email sent successfully to: ${toEmail}`);
     return result;
     
   } catch (error) {
@@ -236,7 +218,7 @@ async function sendPasswordResetEmail(toEmail, resetToken, userId, userType = 'u
 // Send invitation email
 async function sendInvitationEmail(toEmail, plainToken, userId, role) {
   try {
-    console.log(`📧 Attempting to send invitation email to: ${toEmail}`);
+    //console.log(`📧 Attempting to send invitation email to: ${toEmail}`);
     
     const isVerified = await verifyTransport();
     if (!isVerified) {
@@ -270,14 +252,6 @@ async function sendInvitationEmail(toEmail, plainToken, userId, role) {
           </p>
         </div>
         
-        <div style="border-top: 1px solid #e5e7eb; padding-top: 20px;">
-          <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px;">
-            If the button doesn't work, copy and paste this link into your browser:
-          </p>
-          <p style="margin: 0; background: #f3f4f6; padding: 12px; border-radius: 4px; word-break: break-all; font-size: 12px; color: #374151;">
-            ${inviteUrl}
-          </p>
-        </div>
       </div>
     `;
 
@@ -293,7 +267,7 @@ async function sendInvitationEmail(toEmail, plainToken, userId, role) {
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log(`✅ Invitation email sent successfully to: ${toEmail}`);
+    //console.log(`✅ Invitation email sent successfully to: ${toEmail}`);
     return result;
     
   } catch (error) {
@@ -305,7 +279,7 @@ async function sendInvitationEmail(toEmail, plainToken, userId, role) {
 // HOuse owner verification email
 async function sendHouseOwnerVerificationEmail(toEmail, plainToken, ownerId) {
   try {
-    console.log(`📧 Attempting to send house owner verification email to: ${toEmail}`);
+    //console.log(`📧 Attempting to send house owner verification email to: ${toEmail}`);
     
     const isVerified = await verifyTransport();
     if (!isVerified) {
@@ -314,7 +288,7 @@ async function sendHouseOwnerVerificationEmail(toEmail, plainToken, ownerId) {
 
     const verificationUrl = `${process.env.FRONTEND_URL || 'https://apmt.apivcm.shop'}/houseowner/verify?token=${plainToken}&id=${ownerId}`;
     
-    console.log(`🔗 House Owner Verification URL: ${verificationUrl}`);
+    //console.log(`🔗 House Owner Verification URL: ${verificationUrl}`);
     
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
@@ -338,15 +312,6 @@ async function sendHouseOwnerVerificationEmail(toEmail, plainToken, ownerId) {
           
           <p style="margin: 15px 0 0 0; color: #6b7280; font-size: 14px; text-align: center;">
             This verification link will expire in 24 hours.
-          </p>
-        </div>
-        
-        <div style="border-top: 1px solid #e5e7eb; padding-top: 20px;">
-          <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px;">
-            If the button doesn't work, copy and paste this link into your browser:
-          </p>
-          <p style="margin: 0; background: #f3f4f6; padding: 12px; border-radius: 4px; word-break: break-all; font-size: 12px; color: #374151;">
-            ${verificationUrl}
           </p>
         </div>
         
@@ -385,8 +350,8 @@ async function sendHouseOwnerVerificationEmail(toEmail, plainToken, ownerId) {
 
     const result = await Promise.race([sendPromise, timeoutPromise]);
     
-    console.log(`✅ House owner verification email sent successfully to: ${toEmail}`);
-    console.log('📨 Message ID:', result.messageId);
+    //console.log(`✅ House owner verification email sent successfully to: ${toEmail}`);
+    //console.log('📨 Message ID:', result.messageId);
     
     return true;
 
@@ -399,7 +364,7 @@ async function sendHouseOwnerVerificationEmail(toEmail, plainToken, ownerId) {
 // Send password reset email
 async function sendHouseOwnerPasswordResetEmail(toEmail, resetToken, ownerId) {
   try {
-    console.log(`📧 Attempting to send password reset email to: ${toEmail}`);
+    //console.log(`📧 Attempting to send password reset email to: ${toEmail}`);
     
     const isVerified = await verifyTransport();
     if (!isVerified) {
@@ -433,15 +398,6 @@ async function sendHouseOwnerPasswordResetEmail(toEmail, resetToken, ownerId) {
           </p>
         </div>
         
-        <div style="border-top: 1px solid #e5e7eb; padding-top: 20px;">
-          <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px;">
-            If the button doesn't work, copy and paste this link into your browser:
-          </p>
-          <p style="margin: 0; background: #f3f4f6; padding: 12px; border-radius: 4px; word-break: break-all; font-size: 12px; color: #374151;">
-            ${resetUrl}
-          </p>
-        </div>
-        
         <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
           <p style="margin: 0; color: #9ca3af; font-size: 12px; text-align: center;">
             If you didn't request a password reset, please ignore this email.
@@ -462,7 +418,7 @@ async function sendHouseOwnerPasswordResetEmail(toEmail, resetToken, ownerId) {
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log(`✅ Password reset email sent successfully to: ${toEmail}`);
+    //console.log(`✅ Password reset email sent successfully to: ${toEmail}`);
     return result;
     
   } catch (error) {

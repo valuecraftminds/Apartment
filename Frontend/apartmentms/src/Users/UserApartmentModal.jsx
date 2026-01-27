@@ -178,7 +178,7 @@ export default function UserApartmentModal({ user, onClose, onAssignSuccess }) {
                     ? "text-purple-600 border-b-2 border-purple-600"
                     : "text-gray-600 dark:text-gray-300 hover:text-purple-600"}`}
           >
-            Assign Categories
+            Assign Service Categories
           </button>
         </div>
 

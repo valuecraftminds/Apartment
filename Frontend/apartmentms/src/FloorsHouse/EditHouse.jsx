@@ -506,6 +506,7 @@ import api from '../api/axios';
 import { Loader, ChevronDown, ChevronUp, Upload } from 'lucide-react';
 import ImportHouseOwnerModal from './ImportHouseOwnerModal';
 import { toast } from 'react-toastify';
+import { use } from 'react';
 
 export default function EditHouse({ house, onClose, onUpdated, apartment_id, floor_id }) {
     const [formData, setFormData] = useState({
@@ -537,7 +538,7 @@ export default function EditHouse({ house, onClose, onUpdated, apartment_id, flo
     useEffect(() => {
         const fetchCountries = async () => {
             try {
-                const res = await api.get('/countries');
+                const res = await api.get('/countries/external');
                 setCountries(res.data.data);
             } catch (err) {
                 console.error("Error fetching countries:", err);
@@ -547,14 +548,14 @@ export default function EditHouse({ house, onClose, onUpdated, apartment_id, flo
     }, []);
 
     const handleCountryChange = (e) => {
-        const countryId = e.target.value;
-        const selectedCountry = countries.find(c => c.id.toString() === countryId);
-
+        const countryName = e.target.value;
+        const selectedCountry = countries.find(c => c.country === countryName);
+        
         if (selectedCountry) {
             setOwnerFormData(prev => ({
                 ...prev,
-                country: selectedCountry.country_name,
-                mobile: selectedCountry.phone_code + ' '
+                country: selectedCountry.country,
+                mobile: selectedCountry.international_dialing + ' ' // Add space after country code
             }));
         } else {
             setOwnerFormData(prev => ({
@@ -565,32 +566,73 @@ export default function EditHouse({ house, onClose, onUpdated, apartment_id, flo
         }
     };
 
+    // const handleCountryChange = (e) => {
+    //     const countryName = e.target.value;
+    //     const selectedCountry = countries.find(c => c.country === countryName);
+        
+    //     if (selectedCountry) {
+    //         setUserData(prev => ({
+    //         ...prev,
+    //         country: selectedCountry.country,
+    //         mobile: selectedCountry.international_dialing + ' ' 
+    //         }));
+    //     }
+    // };
+
+    // const handleMobileChange = (e) => {
+    //     const value = e.target.value;
+        
+    //     if (ownerFormData.mobile && ownerFormData.mobile.includes('+')) {
+    //         const countryCodeMatch = ownerFormData.mobile.match(/^(\+\d+)(?:\s|$)/);
+    //         if (countryCodeMatch) {
+    //             const countryCode = countryCodeMatch[1];
+    //             if (value.startsWith(countryCode)) {
+    //                 setOwnerFormData(prev => ({
+    //                     ...prev,
+    //                     mobile: value
+    //                 }));
+    //             } else {
+    //                 setOwnerFormData(prev => ({
+    //                     ...prev,
+    //                     mobile: countryCode + ' ' + value.replace(/^\+\d+\s?/, '')
+    //                 }));
+    //             }
+    //             return;
+    //         }
+    //     }
+        
+    //     setOwnerFormData(prev => ({
+    //         ...prev,
+    //         mobile: value
+    //     }));
+    // };
+
+    
     const handleMobileChange = (e) => {
         const value = e.target.value;
         
-        if (ownerFormData.mobile && ownerFormData.mobile.includes('+')) {
-            const countryCodeMatch = ownerFormData.mobile.match(/^(\+\d+)(?:\s|$)/);
-            if (countryCodeMatch) {
-                const countryCode = countryCodeMatch[1];
-                if (value.startsWith(countryCode)) {
-                    setOwnerFormData(prev => ({
-                        ...prev,
-                        mobile: value
-                    }));
-                } else {
-                    setOwnerFormData(prev => ({
-                        ...prev,
-                        mobile: countryCode + ' ' + value.replace(/^\+\d+\s?/, '')
-                    }));
-                }
-                return;
-            }
+        // If country is selected, ensure country code is included
+        if (selectedCountry) {
+            // Extract only numbers from input
+            const numbers = value.replace(/\D/g, '');
+            const countryCode = selectedCountry.international_dialing.replace(/\D/g, '');
+            
+            // Remove country code if it's at the beginning
+            const userNumber = numbers.startsWith(countryCode) 
+                ? numbers.slice(countryCode.length)
+                : numbers;
+            
+            setOwnerFormData(prev => ({
+                ...prev,
+                mobile: selectedCountry.international_dialing + (userNumber ? ' ' + userNumber : '')
+            }));
+        } else {
+            // No country selected
+            setOwnerFormData(prev => ({
+                ...prev,
+                mobile: value
+            }));
         }
-        
-        setOwnerFormData(prev => ({
-            ...prev,
-            mobile: value
-        }));
     };
 
     useEffect(() => {
@@ -682,7 +724,7 @@ export default function EditHouse({ house, onClose, onUpdated, apartment_id, flo
             if (res.data.success) {
                 if (newHouseOwnerCreated) {
                     onUpdated();
-                    alert('✅ House owner saved successfully! You can now setup login.');
+                    toast.success('House owner saved successfully! You can now setup login.');
                 } else {
                     onUpdated();
                 }
@@ -690,13 +732,15 @@ export default function EditHouse({ house, onClose, onUpdated, apartment_id, flo
             }
         } catch (err) {
             console.error('Error updating house:', err);
-            alert('Error updating house. Please try again.');
+            toast.error('Error updating house. Please try again.');
         } finally {
             setLoading(false);
         }
     };
 
-    const selectedCountry = countries.find(c => c.country_name === ownerFormData.country);
+    // const selectedCountry = countries.find(c => c.country_name === ownerFormData.country);
+    const selectedCountry = countries.find(c => c.country === ownerFormData.country);
+
 
     const handleSetPasswordAndVerify = async () => {
         try {
@@ -705,14 +749,14 @@ export default function EditHouse({ house, onClose, onUpdated, apartment_id, flo
             const houseownerId = formData.houseowner_id;
             
             if (!houseownerId) {
-                alert('House owner ID not found. Please save the house owner first.');
+                toast.error('House owner ID not found. Please save the house owner first.');
                 return;
             }
             
             const houseOwnerEmail = ownerFormData.email;
             
             if (!houseOwnerEmail || !houseOwnerEmail.includes('@')) {
-                alert('Please enter a valid email address for the house owner');
+                toast.error('Please enter a valid email address for the house owner');
                 return;
             }
             
@@ -732,14 +776,15 @@ export default function EditHouse({ house, onClose, onUpdated, apartment_id, flo
             });
             
             if (res.data.success) {
-                toast.success(`✅ Setup successful!\n\nVerification email sent to: ${houseOwnerEmail}\n\n${res.data.message}`);
+                toast.success('Verification email sent. Check your inbox ');
                 onUpdated();
+                
             } else {
-                alert(res.data.message || 'Failed to set up house owner');
+                toast.error(res.data.message || 'Failed to set up house owner');
             }
         } catch (err) {
             console.error('Error setting up house owner:', err);
-            alert('Error setting up house owner. Please try again.');
+            toast.error('Error setting up house owner. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -893,11 +938,11 @@ export default function EditHouse({ house, onClose, onUpdated, apartment_id, flo
                                         />
                                     </div>
 
-                                    <div>
+                                    {/* <div>
                                         <label className="block text-gray-700 dark:text-gray-200 mb-1">Country *</label>
                                         <select
                                             name="country"
-                                            value={countries.find(c => c.country_name === ownerFormData.country)?.id || ''}
+                                           value={countries.find(c => c.country_name === ownerFormData.country)?.id || ''}
                                             onChange={handleCountryChange}
                                             className="w-full p-2 border rounded-md dark:bg-gray-700 dark:text-white text-black bg-white"
                                             required
@@ -907,18 +952,59 @@ export default function EditHouse({ house, onClose, onUpdated, apartment_id, flo
                                                 <option key={country.id} value={country.id}>
                                                     {country.country_name} ({country.phone_code})
                                                 </option>
+                                            ))}                                            
+                                        </select>
+                                    </div> */}
+                                    <div>
+                                        <label className="block text-gray-700 dark:text-gray-200 mb-1">Country *</label>
+                                        <select
+                                            name="country"
+                                            value={ownerFormData.country || ''}
+                                            onChange={handleCountryChange}
+                                            className="w-full p-2 border rounded-md dark:bg-gray-700 dark:text-white text-black bg-white"
+                                            required
+                                        >
+                                            <option value="">Select country *</option>
+                                            {countries.map(country => (
+                                                <option key={country.country} value={country.country}>
+                                                    {country.country} ({country.international_dialing})
+                                                </option>
                                             ))}
                                         </select>
                                     </div>
                                 </div>
 
                                 <div className="space-y-4">
-                                    <div>
+                                    {/* <div>
                                         <label className="block text-gray-700 dark:text-gray-200 mb-1">Mobile *</label>
                                         <div className="flex items-center">
                                             {selectedCountry && (
                                                 <span className="bg-gray-200 dark:bg-gray-700 px-3 py-2 rounded-l-md border border-r-0 border-gray-300 dark:border-gray-600 whitespace-nowrap">
                                                     {selectedCountry.phone_code}
+                                                </span>
+                                            )}
+                                            <input
+                                                name="mobile"
+                                                value={ownerFormData.mobile}
+                                                onChange={handleMobileChange}                                                
+                                                placeholder={selectedCountry ? "Enter phone number" : "Select country first"}
+                                                className={`w-full p-2 border rounded-md dark:bg-gray-700 dark:text-white text-black bg-white ${
+                                                    selectedCountry ? 'rounded-l-none' : ''
+                                                }`}
+                                                required
+                                                disabled={!selectedCountry}
+                                            />
+                                        </div>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Format: {selectedCountry?.phone_code || '+XX'} XXXXXXXXX
+                                        </p>
+                                    </div> */}
+                                    <div>
+                                        <label className="block text-gray-700 dark:text-gray-200 mb-1">Mobile *</label>
+                                        <div className="flex items-center">
+                                            {selectedCountry && (
+                                                <span className="bg-gray-200 dark:bg-gray-700 px-3 py-2 rounded-l-md border border-r-0 border-gray-300 dark:border-gray-600 whitespace-nowrap">
+                                                    {selectedCountry.international_dialing}
                                                 </span>
                                             )}
                                             <input
@@ -934,7 +1020,7 @@ export default function EditHouse({ house, onClose, onUpdated, apartment_id, flo
                                             />
                                         </div>
                                         <p className="text-xs text-gray-500 mt-1">
-                                            Format: {selectedCountry?.phone_code || '+XX'} XXXXXXXXX
+                                            Format: {selectedCountry?.international_dialing || '+XX'} XXXXXXXXX
                                         </p>
                                     </div>
                                     <div>
@@ -1020,7 +1106,7 @@ export default function EditHouse({ house, onClose, onUpdated, apartment_id, flo
                             className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50"
                             title={!ownerFormData.email ? "Enter email first" : "Setup login for house owner"}
                         >
-                            Setup Login for Owner
+                            Setup Auth
                         </button>
                     )}
                 </div>
