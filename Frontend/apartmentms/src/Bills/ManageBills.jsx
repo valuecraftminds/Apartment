@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { Building2, Plus, Edit, Trash2, Eye, Image, Loader, ToggleRight, ToggleLeft } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
-import Navbar from '../components/Navbar';
+import Navbar from '../components/navbar';
 import { AuthContext } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';

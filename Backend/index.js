@@ -9,7 +9,7 @@ const cors = require('cors');
 const path = require('path');
 
 const { verifyTransport } = require('./helpers/email');
-const { authenticateToken } = require('./middleware/auth');
+
 
 const app = express();
 
@@ -54,10 +54,7 @@ const authLimiter = rateLimit({
 ===================================================== */
 const allowedOrigins = [
   'http://localhost:5173',
-  'https://apartment.valuecraftminds.com',
-  'https://apmt.apivcm.shop',
-  // 'http://localhost:2500',
-  process.env.FRONTEND_URL
+  'https://apartment.valuecraftminds.com'
 ].filter(Boolean);
 
 app.use(cors({
@@ -94,8 +91,6 @@ app.use(cookieParser());
 /* =====================================================
    STATIC FILES
 ===================================================== */
-// Add this before your routes
-// Ensure static file responses include CORS headers so browsers can load images/docs
 app.use('/uploads', (req, res, next) => {
   const origin = req.headers.origin;
   // allowedOrigins defined earlier in this file
@@ -125,13 +120,34 @@ app.use('/evidance', (req, res, next) => {
 /* =====================================================
    RATE LIMIT APPLY (SKIP OPTIONS)
 ===================================================== */
+
 app.use((req, res, next) => {
   if (req.method === 'OPTIONS') return next();
 
-  if (req.path.startsWith('/api/auth')) {
+  if (
+    req.path.startsWith('/api/auth') ||
+    req.path.startsWith('/api/tenants')
+  ) {
     return authLimiter(req, res, next);
   }
   return globalLimiter(req, res, next);
+});
+
+// Debug middleware: log incoming requests to /api/tenants before routes mount
+app.use((req, res, next) => {
+  try {
+    if (req.path && req.path.startsWith('/api/tenants')) {
+      console.log('🔍 Incoming /api/tenants request:', {
+        method: req.method,
+        path: req.path,
+        authorization: req.headers && req.headers.authorization,
+        cookies: req.cookies
+      });
+    }
+  } catch (e) {
+    console.error('Error in tenants debug middleware:', e);
+  }
+  next();
 });
 
 /* =====================================================
@@ -166,6 +182,9 @@ function mountRoute(urlPath, modulePath, middlewares = []) {
    ROUTES (ONLY RELATIVE PATHS ✅)
 ===================================================== */
 mountRoute('/api/auth', './routes/auth');
+mountRoute('/api/tenants', './routes/tenants');
+
+const { authenticateToken } = require('./middleware/auth');
 
 app.get('/api/me', authenticateToken, async (req, res) => {
   const pool = require('./db');
@@ -176,7 +195,7 @@ app.get('/api/me', authenticateToken, async (req, res) => {
   res.json(rows[0]);
 });
 
-mountRoute('/api/tenants', './routes/tenants', [authenticateToken]);
+
 mountRoute('/api/apartments', './routes/apartments', [authenticateToken]);
 mountRoute('/api/countries', './routes/countries');
 mountRoute('/api/floors', './routes/floors', [authenticateToken]);

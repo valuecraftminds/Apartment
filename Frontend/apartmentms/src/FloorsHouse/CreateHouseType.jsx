@@ -21,28 +21,28 @@ export default function CreateHouseType({ onClose, apartment_id,onCreated }) {
   };
 
   // Fetch last house type and auto-increment ID
-  const fetchLastTypeId = async () => {
-    try {
-      const result = await api.get(`/housetype?apartment_id=${apartment_id}`);
-      const ty = result.data.data || [];
-      const lastType = ty.length > 0 ? ty[ty.length - 1] : null;
+  // const fetchLastTypeId = async () => {
+  //   try {
+  //     const result = await api.get(`/housetype?apartment_id=${apartment_id}`);
+  //     const ty = result.data.data || [];
+  //     const lastType = ty.length > 0 ? ty[ty.length - 1] : null;
 
-      const lastTypeId = lastType ? parseInt(lastType.name.replace("Type", "")) : 0;
-      const newTypeId = `Type ${String(lastTypeId + 1).padStart(2, "0")}`;
+  //     const lastTypeId = lastType ? parseInt(lastType.name.replace("Type", "")) : 0;
+  //     const newTypeId = `Type ${String(lastTypeId + 1).padStart(2, "0")}`;
 
-      setFormData((prev) => ({
-        ...prev,
-        name: newTypeId,
-      }));
-    } catch (error) {
-      console.error("Error fetching last type:", error);
-      setError("Failed to generate Type ID");
-    }
-  };
+  //     setFormData((prev) => ({
+  //       ...prev,
+  //       name: newTypeId,
+  //     }));
+  //   } catch (error) {
+  //     console.error("Error fetching last type:", error);
+  //     setError("Failed to generate Type ID");
+  //   }
+  // };
 
-  useEffect(() => {
-    fetchLastTypeId();
-  }, []);
+  // useEffect(() => {
+  //   fetchLastTypeId();
+  // }, []);
 
   // Handle form submit
   const handleSubmit = async (e) => {
@@ -88,7 +88,7 @@ export default function CreateHouseType({ onClose, apartment_id,onCreated }) {
         onChange={handleChange}
         className="border rounded p-2 text-black dark:text-white border-purple-600"
         required
-        disabled
+        placeholder="House Type Name"
       />
       <input
         type="number"

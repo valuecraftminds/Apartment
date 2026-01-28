@@ -75,31 +75,46 @@ export default function HoldComplaintModal({
   const minDate = new Date().toISOString().split('T')[0];
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md relative">
-        <button
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+        {/* <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 dark:hover:text-white"
         >
           <X size={20} />
-        </button>
+        </button> */}
 
-        <div className="flex items-center mb-4">
+        {/* <div className="flex items-center mb-4">
           <div className="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg mr-3">
             <AlertCircle size={24} className="text-yellow-600 dark:text-yellow-400" />
           </div>
           <h2 className="text-xl font-bold text-gray-800 dark:text-white">
-            Hold Complaint
+            
           </h2>
-        </div>
+        </div> */}
 
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg mr-3">
+              <AlertCircle size={24} className="text-yellow-600 dark:text-yellow-400" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                Hold Complaint
+            </h2>
+            <button
+                onClick={onClose}
+                className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+                <X size={20} />
+            </button>
+        </div>
+          <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
         <p className="text-gray-600 dark:text-gray-300 mb-6">
           Complaint: <span className="font-semibold">{complaint.complaint_number}</span>
         </p>
 
         <form onSubmit={handleSubmit}>
           {/* Common Reasons */}
-          <div className="mb-6">
+          <div className="mb-6 ">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Common Reasons
             </label>
@@ -201,6 +216,7 @@ export default function HoldComplaintModal({
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );

@@ -4,7 +4,7 @@ import { Plus, Loader, Image, Edit, Trash2, Receipt, ChevronLeft } from "lucide-
 import api from "../api/axios";
 import { toast, ToastContainer } from "react-toastify";
 import Sidebar from "../components/Sidebar";
-import Navbar from "../components/Navbar";
+import Navbar from "../components/navbar";
 import CreateBillRange from "./CreateBillRange";
 import EditBillRange from "./EditBillRange";
 

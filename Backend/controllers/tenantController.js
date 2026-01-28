@@ -1,52 +1,128 @@
+//tenantController.js
 const { pool } = require('../db');
 const Tenant = require('../models/Tenant');
 
 const tenantController = {
-    async createTenant(req,res){
-        try{
-            const {regNo,name, address}=req.body;
-            if(!regNo || !name || !address === undefined){
+    // async createTenant(req,res){
+    //      console.log('🔥 createTenant HIT');
+    //     try{
+    //         const {regNo,name, address}=req.body;
+    //         if(!regNo || !name || !address === undefined){
+    //             return res.status(400).json({
+    //                 success: false,
+    //                 message: 'All fields are required'
+    //             });
+    //         }
+            
+    //         // check existing tenants
+    //         const existingTenant = await Tenant.findByRegNo(regNo);
+    //         if(existingTenant){
+    //             return res.status(409).json({
+    //                 success:false,
+    //                 message:'Tenant is already exists'
+    //             });
+    //         }
+
+    //         //Validate employees is a positive number
+    //         // if(isNaN(employees) || employees < 1){
+    //         //     return res.status(400).json({
+    //         //         success:false,
+    //         //         message: 'Employees must be a positive number'
+    //         //     });
+    //         // }
+
+    //         //create tenant
+    //         const newTenant=await Tenant.create({
+    //             regNo,
+    //             name,
+    //             address
+    //         });
+
+    //         res.status(201).json({
+    //             success:true,
+    //             message:'Tenant created successfully',
+    //             data:newTenant
+    //         });
+
+    //     }catch(err){
+    //         console.error('Create tenant error',err);
+    //         res.status(500).json({
+    //             success:false,
+    //             message:'Server error while creating tenant'
+    //         });
+    //     }
+    // },
+
+    async createTenant(req, res) {
+        console.log('🔥 createTenant HIT - Request received');
+        console.log('🔥 Headers:', req.headers);
+        console.log('🔥 Cookies:', req.cookies);
+        console.log('🔥 Body:', req.body);
+        
+        try {
+            const { regNo, name, address } = req.body;
+            
+            // Validate required fields
+            if (!regNo || !name || !address) {
+                console.log('🔥 Validation failed - missing fields');
                 return res.status(400).json({
                     success: false,
-                    message: 'All fields are required'
+                    message: 'All fields are required: regNo, name, address'
                 });
             }
             
-            // check existing tenants
+            console.log('🔥 Checking existing tenant with regNo:', regNo);
+            
+            // Check existing tenants
             const existingTenant = await Tenant.findByRegNo(regNo);
-            if(existingTenant){
+            console.log('🔥 Existing tenant check result:', existingTenant);
+            
+            if (existingTenant) {
                 return res.status(409).json({
-                    success:false,
-                    message:'Tenant is already exists'
+                    success: false,
+                    message: 'Company with this registration number already exists'
                 });
             }
 
-            //Validate employees is a positive number
-            // if(isNaN(employees) || employees < 1){
-            //     return res.status(400).json({
-            //         success:false,
-            //         message: 'Employees must be a positive number'
-            //     });
-            // }
-
-            //create tenant
-            const newTenant=await Tenant.create({
+            console.log('🔥 Creating new tenant...');
+            
+            // Create tenant (NO company_id needed here for registration)
+            const newTenant = await Tenant.create({
                 regNo,
                 name,
                 address
             });
 
+            console.log('🔥 Tenant created successfully:', newTenant);
+
             res.status(201).json({
-                success:true,
-                message:'Tenant created successfully',
-                data:newTenant
+                success: true,
+                message: 'Company registered successfully',
+                data: newTenant
             });
 
-        }catch(err){
-            console.error('Create tenant error',err);
+        } catch (err) {
+            console.error('🔥 Create tenant ERROR:', err);
+            console.error('🔥 Error stack:', err.stack);
+            
+            if (err.code === 'ER_DUP_ENTRY') {
+                return res.status(409).json({
+                    success: false,
+                    message: 'Company already exists'
+                });
+            }
+            
+            if (err.code === 'ER_NO_SUCH_TABLE') {
+                return res.status(500).json({
+                    success: false,
+                    message: 'Database table not found. Please check database setup.'
+                });
+            }
+            
             res.status(500).json({
-                success:false,
-                message:'Server error while creating tenant'
+                success: false,
+                message: 'Server error while creating company',
+                error: process.env.NODE_ENV === 'development' ? err.message : undefined
             });
         }
     },

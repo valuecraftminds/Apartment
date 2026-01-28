@@ -19,7 +19,17 @@ function makeCookieOptions(maxAge, sameSite = isProd ? 'none' : 'lax', secure = 
     sameSite,
     maxAge
   };
-  if (COOKIE_DOMAIN) opts.domain = COOKIE_DOMAIN;
+
+  if (COOKIE_DOMAIN && COOKIE_DOMAIN !== 'localhost') {
+    opts.domain = COOKIE_DOMAIN;
+  }
+  
+  // if (COOKIE_DOMAIN) opts.domain = COOKIE_DOMAIN;
+
+  // For production with subdomains, use .domain.com
+  if (isProd && COOKIE_DOMAIN && !COOKIE_DOMAIN.startsWith('.')) {
+    opts.domain = `.${COOKIE_DOMAIN}`;
+  }
   return opts;
 }
 
@@ -478,51 +488,179 @@ router.post('/login-unified', async (req, res) => {
 });
 
 /* refresh token */
+// router.post('/refresh', async (req, res) => {
+//   try {
+//     const token = req.cookies.refreshToken;
+//     if (!token) return res.status(401).json({ message: 'No refresh token' });
+
+//     let payload;
+//     try {
+//       payload = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
+//     } catch (e) {
+//       return res.status(403).json({ message: 'Invalid refresh token' });
+//     }
+
+//     const [rows] = await pool.execute(
+//       `SELECT u.id, u.refresh_token, u.email, u.company_id, r.role_name, u.role_id 
+//        FROM users u 
+//        LEFT JOIN roles r ON u.role_id = r.id 
+//        WHERE u.id = ?`,
+//       [payload.id]
+//     );
+    
+//     const user = rows[0];
+//     if (!user || user.refresh_token !== token) return res.status(403).json({ message: 'Refresh token not valid' });
+
+//     const accessToken = signAccessToken(user);
+//     const newRefresh = signRefreshToken(user);
+//     await pool.execute('UPDATE users SET refresh_token = ? WHERE id = ?', [newRefresh, user.id]);
+
+//     // Set cookies with production-safe options
+//     res.cookie('refreshToken', newRefresh, makeCookieOptions(1000 * 60 * 60 * 24 * 7, isProd ? 'none' : 'strict'));
+//     res.cookie('accessToken', accessToken, makeCookieOptions(1000 * 60 * 15));
+
+//     res.json({ 
+//       accessToken, 
+//       user: { 
+//         id: user.id, 
+//         firstname: user.firstname,
+//         email: user.email, 
+//         role: user.role_name, 
+//         role_id: user.role_id,
+//         company_id: user.company_id 
+//       } 
+//     });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
+
+/* refresh token */
 router.post('/refresh', async (req, res) => {
   try {
-    const token = req.cookies.refreshToken;
-    if (!token) return res.status(401).json({ message: 'No refresh token' });
+    // Try multiple ways to get the token
+    let token = req.cookies?.refreshToken || 
+                req.body?.refreshToken || 
+                req.headers['x-refresh-token'] ||
+                req.headers['authorization']?.replace('Bearer ', '');
+
+    console.log('Refresh attempt - Token present:', !!token); // Debug log
+    
+    if (!token) {
+      console.log('No refresh token found in request');
+      return res.status(401).json({ 
+        success: false,
+        message: 'No refresh token provided',
+        requiresLogin: true
+      });
+    }
 
     let payload;
     try {
       payload = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
+      console.log('Token verified for user:', payload.id); // Debug
     } catch (e) {
-      return res.status(403).json({ message: 'Invalid refresh token' });
-    }
+      console.error('Token verification failed:', e.message);
 
-    const [rows] = await pool.execute(
-      `SELECT u.id, u.refresh_token, u.email, u.company_id, r.role_name, u.role_id 
+      // Clear invalid refresh token cookies
+      res.clearCookie('refreshToken', { 
+        httpOnly: true, 
+        sameSite: isProd ? 'none' : 'lax', 
+        secure: isProd,
+        domain: COOKIE_DOMAIN 
+      });
+      
+      return res.status(401).json({ 
+        success: false,
+        message: 'Invalid refresh token',
+        requiresLogin: true 
+      });
+    }
+      
+
+    // Check both users and houseowner tables
+    const [userRows] = await pool.execute(
+      `SELECT u.id, u.refresh_token, u.email, u.company_id, r.role_name, u.role_id, 'user' as user_type
        FROM users u 
        LEFT JOIN roles r ON u.role_id = r.id 
        WHERE u.id = ?`,
       [payload.id]
     );
     
-    const user = rows[0];
-    if (!user || user.refresh_token !== token) return res.status(403).json({ message: 'Refresh token not valid' });
+    let user = userRows[0];
+    let userType = 'user';
+    
+    if (!user) {
+      // Check houseowner table
+      const [ownerRows] = await pool.execute(
+        `SELECT id, email, refresh_token, company_id, 'houseowner' as user_type
+         FROM houseowner WHERE id = ?`,
+        [payload.id]
+      );
+      
+      if (ownerRows.length > 0) {
+        user = ownerRows[0];
+        userType = 'houseowner';
+        user.role_name = 'houseowner';
+      }
+    }
+    
+    if (!user) {
+      console.log('User not found in database');
+      return res.status(403).json({ 
+        success: false,
+        message: 'Refresh token not valid' 
+      });
+    }
 
+    // Compare token hash if stored, or compare plain token
+    if (user.refresh_token !== token) {
+      console.log('Token mismatch - stored vs received');
+      return res.status(403).json({ 
+        success: false,
+        message: 'Refresh token not valid' 
+      });
+    }
+
+    // Generate new tokens
     const accessToken = signAccessToken(user);
-    const newRefresh = signRefreshToken(user);
-    await pool.execute('UPDATE users SET refresh_token = ? WHERE id = ?', [newRefresh, user.id]);
+    const newRefreshToken = signRefreshToken(user);
+    
+    // Update refresh token in correct table
+    if (userType === 'user') {
+      await pool.execute('UPDATE users SET refresh_token = ? WHERE id = ?', [newRefreshToken, user.id]);
+    } else {
+      await pool.execute('UPDATE houseowner SET refresh_token = ? WHERE id = ?', [newRefreshToken, user.id]);
+    }
 
-    // Set cookies with production-safe options
-    res.cookie('refreshToken', newRefresh, makeCookieOptions(1000 * 60 * 60 * 24 * 7, isProd ? 'none' : 'strict'));
-    res.cookie('accessToken', accessToken, makeCookieOptions(1000 * 60 * 15));
+    // Set cookies with secure options
+    const refreshCookieOpts = makeCookieOptions(1000 * 60 * 60 * 24 * 7);
+    const accessCookieOpts = makeCookieOptions(1000 * 60 * 15);
+    
+    res.cookie('refreshToken', newRefreshToken, refreshCookieOpts);
+    res.cookie('accessToken', accessToken, accessCookieOpts);
 
+    // Also send in response for clients that can't use cookies
     res.json({ 
+      success: true,
       accessToken, 
+      refreshToken: newRefreshToken,
       user: { 
         id: user.id, 
-        firstname: user.firstname,
         email: user.email, 
         role: user.role_name, 
-        role_id: user.role_id,
-        company_id: user.company_id 
+        company_id: user.company_id,
+        user_type: userType
       } 
     });
+    
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Refresh token error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error during refresh' 
+    });
   }
 });
 

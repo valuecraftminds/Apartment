@@ -75,7 +75,7 @@
           @apply bg-gradient-to-t from-blue-200 to-blue-100 font-bold 
          rounded-lg shadow-lg hover:bg-gradient-to-t hover:from-blue-300 hover:to-blue-200 
          border border-white/50 hover:border-white
-         hover:scale-105 transition-all duration-300 hover:text-blue-800
+         hover:scale-105 transition-all duration-300 hover:text-blue-800 text-black
          active:scale-95;
 }
 

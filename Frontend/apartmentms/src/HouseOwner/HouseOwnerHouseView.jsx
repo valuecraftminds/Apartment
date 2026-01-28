@@ -25,7 +25,7 @@ export default function HouseOwnerHouseView() {
       setError(null);
       
       if (auth.accessToken) {
-        console.log('Fetching houses with all details...');
+       // console.log('Fetching houses with all details...');
         
         const res = await api.get(`/houses/owner/me`, {
           headers: { 
@@ -34,7 +34,7 @@ export default function HouseOwnerHouseView() {
           }
         });
         
-        console.log('API Response with details:', res.data);
+        //console.log('API Response with details:', res.data);
         
         if (res.data.success) {
           const housesData = res.data.data || [];

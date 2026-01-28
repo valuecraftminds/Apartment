@@ -82,7 +82,7 @@ export default function CombinedRegistration() {
   //   }
   // };
 
-const handleCountryChange = (e) => {
+  const handleCountryChange = (e) => {
   const countryName = e.target.value;
   const selectedCountry = countries.find(c => c.country === countryName);
   
@@ -90,16 +90,13 @@ const handleCountryChange = (e) => {
     setUserData(prev => ({
       ...prev,
       country: selectedCountry.country,
-      mobile: selectedCountry.international_dialing + ' '
+      mobile: selectedCountry.international_dialing + ' ' 
     }));
   }
 };
-
-// Error message state for persistent error display
-const [submitError, setSubmitError] = useState("");
-
-const navigate = useNavigate();
-const totalSteps = 3;
+  
+  const navigate = useNavigate();
+  const totalSteps = 3;
 
   // Validation rules
   const validateField = (name, value) => {
@@ -257,7 +254,7 @@ const totalSteps = 3;
     if (validateStep(currentStep)) {
       setCurrentStep(currentStep + 1);
     } else {
-      toast.error("Please fix the validation errors before proceeding");
+      toast.warn("Please fix the validation errors before proceeding");
     }
   };
 
@@ -281,10 +278,10 @@ async function submit(e) {
     }
   }
 
-  if (!allValid) {
-    toast.error("Please fix all validation errors before submitting");
-    return;
-  }
+  // if (!allValid) {
+  //   toast.error("Please fix all validation errors before submitting");
+  //   return;
+  // }
 
   try {
     // Prepare company data
@@ -315,7 +312,7 @@ async function submit(e) {
       company_id: companyId
     });
 
-    console.log('User registration successful:', userResponse.data);
+    //console.log('User registration successful:', userResponse.data);
 
     toast.success("Registration successful! Company and user account created. Please check your email to verify your account.");
     setTimeout(() => navigate('/login'), 3000);

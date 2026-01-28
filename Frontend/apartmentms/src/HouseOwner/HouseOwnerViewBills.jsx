@@ -600,7 +600,7 @@ export default function HouseOwnerViewBills() {
                     </div>
 
                     {/* House Filter */}
-                    <div>
+                    {/* <div>
                       <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                         House
                       </label>
@@ -616,7 +616,7 @@ export default function HouseOwnerViewBills() {
                           </option>
                         ))}
                       </select>
-                    </div>
+                    </div> */}
                   </div>
 
                   <div className="flex justify-end mt-4">

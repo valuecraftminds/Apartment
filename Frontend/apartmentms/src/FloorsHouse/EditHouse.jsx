@@ -538,8 +538,9 @@ export default function EditHouse({ house, onClose, onUpdated, apartment_id, flo
     useEffect(() => {
         const fetchCountries = async () => {
             try {
-                const res = await api.get('/countries/external');
-                setCountries(res.data.data);
+                const res = await fetch('https://general.apivcm.shop/countries');
+                const data = await res.json();
+                setCountries(data.data);
             } catch (err) {
                 console.error("Error fetching countries:", err);
             }
@@ -967,7 +968,8 @@ export default function EditHouse({ house, onClose, onUpdated, apartment_id, flo
                                             <option value="">Select country *</option>
                                             {countries.map(country => (
                                                 <option key={country.country} value={country.country}>
-                                                    {country.country} ({country.international_dialing})
+                                                    {country.country} 
+                                                    {/*({country.international_dialing})*/}
                                                 </option>
                                             ))}
                                         </select>

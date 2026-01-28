@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom';
-import Navbar from '../../components/Navbar';
+import Navbar from '../../components/navbar';
 import Sidebar from '../../components/Sidebar';
 import { ChevronLeft, Workflow } from 'lucide-react';
 import StartWork from './StartWork';

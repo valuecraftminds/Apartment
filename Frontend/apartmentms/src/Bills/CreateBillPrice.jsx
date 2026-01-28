@@ -15,7 +15,7 @@ export default function CreateBillPrice({ bill_id, billrange_id, onClose, onCrea
 
   // Add this useEffect to debug the props
   React.useEffect(() => {
-    console.log('CreateBillPrice props:', { bill_id, billrange_id });
+    //console.log('CreateBillPrice props:', { bill_id, billrange_id });
   }, [bill_id, billrange_id]);
 
   const handleChange = (e) => {
@@ -38,7 +38,7 @@ export default function CreateBillPrice({ bill_id, billrange_id, onClose, onCrea
       billrange_id,
     };
     
-    console.log('Submitting bill price data:', requestData);
+    //console.log('Submitting bill price data:', requestData);
 
     try {
       const result = await api.post(

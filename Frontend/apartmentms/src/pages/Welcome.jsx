@@ -17,14 +17,14 @@ export default function Welcome() {
           onClick={() => navigate("/login")} 
           className="signInSignUp text-xs sm:text-sm md:text-base px-3 py-2 sm:px-4 sm:py-2 md:px-6 md:py-3 whitespace-nowrap"
         >
-          Sign In
+          Login In
         </button>
-        <button 
+        {/* <button 
           onClick={() => navigate("/register")} 
           className="signInSignUp text-xs sm:text-sm md:text-base px-3 py-2 sm:px-4 sm:py-2 md:px-6 md:py-3 whitespace-nowrap"
         >
           Sign Up
-        </button>
+        </button> */}
       </div>
       
       {/* Main Card with improved mobile responsiveness */}

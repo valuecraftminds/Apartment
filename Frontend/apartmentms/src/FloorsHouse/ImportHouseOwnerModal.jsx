@@ -174,7 +174,7 @@ Important:
                     {!results ? (
                         <div className="space-y-6">
                             {/* Context Information */}
-                            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                            {/* <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                                 <h3 className="font-medium text-blue-800 dark:text-blue-300 mb-2">
                                     Importing for:
                                 </h3>
@@ -182,7 +182,7 @@ Important:
                                     <div>
                                         <span className="text-blue-600 dark:text-blue-400">Apartment:</span>
                                         <p className="font-medium text-blue-800 dark:text-blue-300">
-                                            {apartment_id ? `Apartment ID: ${apartment_id}` : 'Not specified'}
+                                            {apartment_id ? `Apartment ID: ${apartment_id.na}` : 'Not specified'}
                                         </p>
                                     </div>
                                     {house_id && (
@@ -202,7 +202,7 @@ Important:
                                         </div>
                                     )}
                                 </div>
-                            </div>
+                            </div> */}
 
                             {/* Download Template */}
                             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
