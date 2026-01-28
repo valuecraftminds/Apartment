@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ChevronLeft, Loader, FileText, Edit, Trash2, Plus } from "lucide-react";
 import api from "../api/axios";
 import Sidebar from "../components/Sidebar";
-import Navbar from "../components/Navbar";
+import Navbar from "../components/navbar";
 import { ToastContainer, toast } from "react-toastify";
 import CreateBillPrice from "./CreateBillPrice";
 import EditBillPrice from "./EditBillPrice";
@@ -22,7 +22,7 @@ export default function BillPrice() {
 
   // Add this useEffect to debug the route parameters
   React.useEffect(() => {
-    console.log('Route parameters:', { bill_id, billrange_id });
+    //console.log('Route parameters:', { bill_id, billrange_id });
   }, [bill_id, billrange_id]);
 
   // Fetch bill prices for this range
@@ -31,12 +31,12 @@ export default function BillPrice() {
       setLoading(true);
       setError(null);
       
-      console.log('Loading bill prices with:', { bill_id, billrange_id });
+      // console.log('Loading bill prices with:', { bill_id, billrange_id });
       
       // Use the correct API endpoint with query parameters
       const res = await api.get(`/billprice?bill_id=${bill_id}&billrange_id=${billrange_id}`);
       
-      console.log('API Response:', res.data);
+      //console.log('API Response:', res.data);
 
       if (res.data.success) {
         setBillPrices(res.data.data || []);

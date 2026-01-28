@@ -2,7 +2,9 @@
 const express = require('express');
 const router = express.Router();
 const houseOwnerController = require('../controllers/houseOwnerController')
+const houseController = require('../controllers/houseController');
 const { authenticateToken } = require('../middleware/auth');
+const { authenticateHouseOwner } = require('../middleware/houseOwnerAuth');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -36,8 +38,106 @@ const upload = multer({
     }
 });
 
-// Apply authentication to ALL apartment routes
-router.use(authenticateToken);
+const excelStorage = multer.memoryStorage(); // Use memory storage for Excel files
+
+const uploadExcel = multer({ 
+    storage: excelStorage,
+    limits: {
+        fileSize: 10 * 1024 * 1024 // 10MB limit
+    },
+    fileFilter: function (req, file, cb) {
+        // Allow Excel and CSV files
+        const allowedMimeTypes = [
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.ms-excel',
+            'text/csv',
+            'application/vnd.oasis.opendocument.spreadsheet'
+        ];
+        
+        if (allowedMimeTypes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only Excel/CSV files are allowed!'), false);
+        }
+    }
+});
+
+
+router.post('/parse-excel', authenticateToken, uploadExcel.single('excelFile'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'No file uploaded'
+            });
+        }
+
+        const xlsx = require('xlsx');
+        const workbook = xlsx.readFile(req.file.path);
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = xlsx.utils.sheet_to_json(worksheet);
+        
+        if (!jsonData || jsonData.length === 0) {
+            // Clean up the temp file
+            fs.unlinkSync(req.file.path);
+            return res.status(400).json({
+                success: false,
+                message: 'No data found in Excel file'
+            });
+        }
+
+        // Take the first row
+        const firstRow = jsonData[0];
+        const extractedData = {
+            name: firstRow.name || firstRow.Name || firstRow.NAME || '',
+            nic: firstRow.nic || firstRow.NIC || firstRow.id || firstRow.ID || '',
+            occupation: firstRow.occupation || firstRow.Occupation || firstRow.OCCUPATION || '',
+            country: firstRow.country || firstRow.Country || firstRow.COUNTRY || '',
+            mobile: firstRow.mobile || firstRow.Mobile || firstRow.MOBILE || firstRow.phone || '',
+            email: firstRow.email || firstRow.Email || firstRow.EMAIL || '',
+            occupied_way: firstRow.occupied_way || firstRow['occupied way'] || 'own'
+        };
+
+        // Clean up the temp file
+        fs.unlinkSync(req.file.path);
+
+        res.json({
+            success: true,
+            data: extractedData
+        });
+    } catch (error) {
+        console.error('Excel parsing error:', error);
+        
+        // Clean up temp file on error
+        if (req.file && fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
+        }
+        
+        res.status(500).json({
+            success: false,
+            message: 'Failed to parse Excel file'
+        });
+    }
+});
+
+router.post('/import-from-excel', authenticateToken, uploadExcel.single('excelFile'), houseOwnerController.importHouseOwnerFromExcel);
+
+// router.use(authenticateToken);
+router.get('/health-check', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    message: 'House owner route is working',
+    timestamp: new Date().toISOString()
+  });
+});
+
+router.get('/my-profile', authenticateHouseOwner, houseOwnerController.getMyProfile);
+router.put('/my-profile', authenticateHouseOwner, upload.single('proof'), houseOwnerController.updateMyProfile);
+
+
+// Add this route in houseOwner.js
+router.get('/my-houses', authenticateHouseOwner, houseController.getHousesByAuthenticatedOwner);
 
 // Routes
 router.post('/', upload.single('proof'), houseOwnerController.createHouseOwner);
@@ -52,14 +152,63 @@ router.get('/download-proof/:id', houseOwnerController.downloadProof);
 // In routes/houseOwner.js, add this route:
 router.get('/view-proof/:id', houseOwnerController.viewProof);
 
+// routes/houseOwner.js - Add this route
+router.get('/available-roles', authenticateToken, async (req, res) => {
+    try {
+        const company_id = req.user.company_id;
+        
+        const [roles] = await pool.execute(
+            'SELECT id, role_name FROM roles WHERE company_id = ? AND is_active = 1 AND (role_name LIKE "%owner%" OR role_name LIKE "%Owner%")',
+            [company_id]
+        );
+        
+        res.json({
+            success: true,
+            data: roles
+        });
+    } catch (err) {
+        console.error('Error fetching roles:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching roles'
+        });
+    }
+});
+
 // Error handling middleware for multer
+// router.use((error, req, res, next) => {
+//     if (error instanceof multer.MulterError) {
+//         if (error.code === 'LIMIT_FILE_SIZE') {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: 'File too large. Maximum size is 5MB.'
+//             });
+//         }
+//     }
+//     if (error) {
+//         return res.status(400).json({
+//             success: false,
+//             message: error.message
+//         });
+//     }
+//     next();
+// });
+
 router.use((error, req, res, next) => {
     if (error instanceof multer.MulterError) {
         if (error.code === 'LIMIT_FILE_SIZE') {
-            return res.status(400).json({
-                success: false,
-                message: 'File too large. Maximum size is 5MB.'
-            });
+            // Check which upload type it is based on the route
+            if (req.originalUrl.includes('/import-from-excel') || req.originalUrl.includes('/parse-excel')) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Excel file too large. Maximum size is 10MB.'
+                });
+            } else {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Image file too large. Maximum size is 5MB.'
+                });
+            }
         }
     }
     if (error) {
@@ -69,6 +218,59 @@ router.use((error, req, res, next) => {
         });
     }
     next();
+})
+
+//remove once error fixed
+// Add this route for testing
+router.get('/test-auth-flow', async (req, res) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  if (!token) {
+    return res.json({ message: 'No token provided' });
+  }
+  
+  try {
+    // 1. Decode JWT
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    const houseOwnerId = decoded.houseowner_id || decoded.id;
+    
+    // 2. Direct database query
+    const [result] = await pool.execute(
+      'SELECT id, email, name, is_active FROM houseowner WHERE id = ?',
+      [houseOwnerId]
+    );
+    
+    if (result.length === 0) {
+      // Try with different query
+      const [allResults] = await pool.execute(
+        'SELECT id, email FROM houseowner LIMIT 5'
+      );
+      
+      return res.json({
+        success: false,
+        message: 'Houseowner not found in direct query',
+        searchedId: houseOwnerId,
+        first5HouseOwners: allResults,
+        decodedToken: decoded
+      });
+    }
+    
+    return res.json({
+      success: true,
+      message: 'Authentication flow works!',
+      houseowner: result[0],
+      decodedToken: decoded
+    });
+    
+  } catch (error) {
+    return res.json({
+      success: false,
+      message: 'Error in auth flow',
+      error: error.message,
+      errorName: error.name
+    });
+  }
 });
 
 module.exports = router;

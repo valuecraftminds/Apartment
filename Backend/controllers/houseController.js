@@ -178,6 +178,77 @@ const houseController = {
         }
     },
 
+    async getHouseByOwnerId(req, res) {
+        try {
+            const { houseowner_id } = req.query;
+            
+            if (!houseowner_id) {
+                // If no ID provided in query, try to get from authenticated user
+                if (req.user && req.user.role === 'houseowner') {
+                    const houses = await House.findByHouseOwnerId(req.user.id);
+                    return res.json({
+                        success: true,
+                        data: houses
+                    });
+                }
+                return res.status(400).json({
+                    success: false,
+                    message: 'House owner ID is required'
+                });
+            }
+            
+            const houses = await House.findByHouseOwnerId(houseowner_id);
+            
+            if (!houses || houses.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'No houses found for this owner'
+                });
+            }
+            
+            res.json({
+                success: true,
+                data: houses,
+                count: houses.length
+            });
+        } catch (err) {
+            console.error('Get houses by owner ID error:', err);
+            res.status(500).json({
+                success: false,
+                message: 'Server error while fetching houses'
+            });
+        }
+    },
+
+    // Get houses for the authenticated house owner
+    async getMyHouses(req, res) {
+        try {
+            // Get house owner ID from the authenticated user
+            const houseowner_id = req.houseowner.id;
+            
+            if (!houseowner_id) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'User not authenticated as house owner'
+                });
+            }
+
+            const houses = await House.findByHouseOwnerId(houseowner_id);
+            
+            res.json({
+                success: true,
+                data: houses,
+                count: houses.length
+            });
+        } catch (err) {
+            console.error('Get my houses error:', err);
+            res.status(500).json({
+                success: false,
+                message: 'Server error while fetching houses'
+            });
+        }
+    },
+
      
     async updateHouse(req, res) {
         try {
@@ -302,6 +373,131 @@ const houseController = {
             res.status(500).json({
                 success:false,
                 message:'Server error while deleting house'
+            });
+        }
+    },
+
+    // async getHousesByAuthenticatedOwner(req, res) {
+    //     try {
+    //         // Get house owner ID from req.houseowner (from authenticateHouseOwner middleware)
+    //         const houseowner_id = req.houseowner.houseowner_id || req.houseowner.id;
+            
+    //         if (!houseowner_id) {
+    //             return res.status(400).json({
+    //                 success: false,
+    //                 message: 'House owner ID not found'
+    //             });
+    //         }
+
+    //         const houses = await House.findByHouseOwnerId(houseowner_id);
+            
+    //         if (!houses || houses.length === 0) {
+    //             return res.status(200).json({
+    //                 success: true,
+    //                 message: 'No houses found for this owner',
+    //                 data: [],
+    //                 count: 0
+    //             });
+    //         }
+            
+    //         res.json({
+    //             success: true,
+    //             data: houses,
+    //             count: houses.length
+    //         });
+    //     } catch (err) {
+    //         console.error('Get houses by authenticated owner error:', err);
+    //         res.status(500).json({
+    //             success: false,
+    //             message: 'Server error while fetching houses'
+    //         });
+    //     }
+    // }
+
+    async getHousesByAuthenticatedOwner(req, res) {
+        try {
+            const houseowner_id = req.houseowner.houseowner_id || req.houseowner.id;
+            
+            if (!houseowner_id) {
+            return res.status(400).json({
+                success: false,
+                message: 'House owner ID not found'
+            });
+            }
+
+            // Get houses with all related data in one query
+            const query = `
+            SELECT 
+                h.*,
+                a.name as apartment_name,
+                a.address as apartment_address,
+                a.city as apartment_city,
+                f.floor_id as floor_number,
+                ht.name as house_type_name,
+                ht.sqrfeet,
+                ht.rooms,
+                ht.bathrooms
+            FROM houses h
+            LEFT JOIN apartments a ON h.apartment_id = a.id
+            LEFT JOIN floors f ON h.floor_id = f.id
+            LEFT JOIN housetype ht ON h.housetype_id = ht.id
+            WHERE h.houseowner_id = ?
+            ORDER BY h.created_at DESC
+            `;
+            
+            console.log('Fetching houses with details for houseowner:', houseowner_id);
+            const [houses] = await pool.execute(query, [houseowner_id]);
+            
+            console.log('Found houses:', houses.length);
+            
+            if (!houses || houses.length === 0) {
+            return res.status(200).json({
+                success: true,
+                message: 'No houses found for this owner',
+                data: [],
+                count: 0
+            });
+            }
+            
+            // Format the response
+            const formattedHouses = houses.map(house => ({
+            id: house.id,
+            house_id: house.house_id,
+            status: house.status,
+            is_active: house.is_active,
+            created_at: house.created_at,
+            updated_at: house.updated_at,
+            // Apartment details
+            apartment_id: house.apartment_id,
+            apartment_name: house.apartment_name,
+            apartment_address: house.apartment_address,
+            apartment_city: house.apartment_city,
+            // Floor details
+            floor_id: house.floor_id,
+            floor_number: house.floor_number,
+            // House type details
+            housetype_id: house.housetype_id,
+            house_type_name: house.house_type_name,
+            house_type_sqrfeet: house.sqrfeet,
+            house_type_rooms: house.rooms,
+            house_type_bathrooms: house.bathrooms,
+            // Other fields
+            company_id: house.company_id,
+            family_id: house.family_id
+            }));
+            
+            res.json({
+            success: true,
+            data: formattedHouses,
+            count: formattedHouses.length
+            });
+            
+        } catch (err) {
+            console.error('Get houses with details error:', err);
+            res.status(500).json({
+            success: false,
+            message: 'Server error while fetching houses',
+            error: err.message
             });
         }
     }

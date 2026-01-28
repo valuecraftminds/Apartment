@@ -226,6 +226,14 @@ const apartmentController = {
                 });
             }
 
+            // Authorization: only users from the same company can toggle
+            if (!req.user || String(req.user.company_id) !== String(apartment.company_id)) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Access denied'
+                });
+            }
+
             let updatedApartment;
             if (apartment.is_active) {
                 await Apartment.deactivate(id);

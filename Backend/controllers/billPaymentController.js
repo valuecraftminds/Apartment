@@ -229,6 +229,120 @@ const billPaymentController = {
                 message: 'Server error while deleting payment'
             });
         }
+    },
+
+    async getMyBillPayments(req, res) {
+        try {
+            console.log('🔍 [DEBUG] getMyBillPayments called');
+            
+            // Get house owner ID from authenticated user
+            const houseowner_id = req.houseowner?.id || req.houseowner?.houseowner_id;
+            
+            console.log('🔍 [DEBUG] houseowner_id extracted:', houseowner_id);
+            
+            if (!houseowner_id) {
+                console.error('❌ [DEBUG] No houseowner_id found in request');
+                return res.status(400).json({
+                    success: false,
+                    message: 'House owner ID not found. Please log in again.'
+                });
+            }
+
+            const { 
+                payment_status, 
+                month, 
+                year,
+                house_id
+            } = req.query;
+
+            const filters = {};
+            if (payment_status) filters.payment_status = payment_status;
+            if (month) filters.month = month;
+            if (year) filters.year = year;
+            if (house_id) filters.house_id = house_id;
+
+            console.log('🔍 [DEBUG] Filters:', filters);
+            console.log('🔍 [DEBUG] Calling BillPayment.findAllByHouseOwner with:', { houseowner_id, filters });
+
+            // First, get the houses for this house owner
+            const houses = await BillPayment.getHouseOwnerHouses(houseowner_id);
+            
+            if (houses.length === 0) {
+                return res.json({
+                    success: true,
+                    data: [],
+                    houses: [],
+                    summary: {
+                        totalBills: 0,
+                        totalAmount: 0,
+                        paidAmount: 0,
+                        pendingAmount: 0
+                    },
+                    message: 'No houses assigned to your account'
+                });
+            }
+
+            // Get bill payments for all houses of this house owner
+            const payments = await BillPayment.findAllByHouseOwner(houseowner_id, filters);
+            
+            console.log('✅ [DEBUG] Payments found:', payments.length);
+
+            // Format the response
+            const formattedPayments = payments.map(payment => ({
+                id: payment.id,
+                bill_name: payment.bill_name,
+                billtype: payment.billtype,
+                month: payment.month,
+                year: payment.year,
+                generated_total_amount: payment.generated_total_amount,
+                totalAmount: payment.generated_total_amount, // For frontend compatibility
+                paidAmount: payment.paidAmount,
+                pendingAmount: payment.pendingAmount,
+                payment_status: payment.payment_status,
+                due_date: payment.due_date,
+                paid_at: payment.paid_at,
+                created_at: payment.created_at,
+                updated_at: payment.updated_at,
+                // House details
+                apartment_id: payment.apartment_id,
+                apartment_name: payment.apartment_name,
+                floor_id: payment.floor_id,
+                house_id: payment.house_id,
+                house_number: payment.house_number,
+                house_type: payment.house_type,
+                // Bill source
+                bill_source_type: payment.bill_source_type,
+                // Owner details
+                houseowner_id: houseowner_id,
+                houseowner_name: payment.houseowner_name,
+                houseowner_email: payment.houseowner_email,
+                description: `${payment.bill_name} bill for ${payment.month} ${payment.year}`
+            }));
+
+            // Calculate summary
+            const summary = {
+                totalBills: payments.length,
+                totalAmount: payments.reduce((sum, p) => sum + (parseFloat(p.generated_total_amount) || 0), 0),
+                paidAmount: payments.reduce((sum, p) => sum + (parseFloat(p.paidAmount) || 0), 0),
+                pendingAmount: payments.reduce((sum, p) => sum + (parseFloat(p.pendingAmount) || 0), 0)
+            };
+
+            res.json({
+                success: true,
+                data: formattedPayments,
+                houses: houses,
+                summary: summary,
+                count: payments.length
+            });
+        } catch (err) {
+            console.error('❌ [ERROR] Get my bill payments error:', err);
+            console.error('❌ [ERROR] Stack trace:', err.stack);
+            res.status(500).json({
+                success: false,
+                message: 'Server error while fetching bill payments',
+                error: err.message
+            });
+        }
     }
 }
 module.exports=billPaymentController;

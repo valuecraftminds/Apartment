@@ -299,7 +299,7 @@ class GenerateMeasurableBill {
     // Create bill payment record (similar to your reference)
     static async createBillPayment(billPaymentData) {
         const {
-            id, company_id, apartment_id, floor_id, house_id, bill_id, 
+            id, company_id, apartment_id, floor_id, house_id, houseowner_id, bill_id, 
             generateMeasurable_bills_id, pendingAmount, due_date
         } = billPaymentData;
         
@@ -309,12 +309,12 @@ class GenerateMeasurableBill {
         
         const [result] = await pool.execute(
             `INSERT INTO bill_payments 
-            (id, company_id, apartment_id, floor_id, house_id, bill_id, 
+            (id, company_id, apartment_id, floor_id, house_id, houseowner_id, bill_id, 
             generateMeasurable_bills_id, pendingAmount, due_date, 
             payment_status, paidAmount, created_at, updated_at) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', 0.00, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', 0.00, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
             [
-                id, company_id, apartment_id, floor_id, house_id, bill_id,
+                id, company_id, apartment_id, floor_id, house_id, houseowner_id, bill_id,
                 generateMeasurable_bills_id, pendingAmount, due_date
             ]
         );
@@ -341,6 +341,21 @@ class GenerateMeasurableBill {
             [id]
         );
         return rows[0];
+    }
+    
+    static async getHouseOwnerId(house_id) {
+        if (!house_id) return null;
+        
+        try {
+            const [rows] = await pool.execute(
+                'SELECT houseowner_id FROM houses WHERE id = ?',
+                [house_id]
+            );
+            return rows[0]?.houseowner_id || null;
+        } catch (error) {
+            console.error('Error getting house owner:', error);
+            return null;
+        }
     }
 }
 module.exports = GenerateMeasurableBill;

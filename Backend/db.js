@@ -38,13 +38,16 @@ pool.on('error', function (err) {
 });
 
 // Test the connection
-pool.getConnection((err, connection) => {
-  if (err) {
-    console.error('Error connecting to database:', err);
-    return;
-  }
-  console.log('Successfully connected to MySQL database');
-  connection.release();
-});
+async function testConnection() {
+    try {
+        const connection = await pool.getConnection();
+        console.log('Successfully connected to MySQL database');
+        connection.release();
+    } catch (err) {
+        console.error('Error connecting to database:', err);
+    }
+}
+
+testConnection();
 
 module.exports = pool;

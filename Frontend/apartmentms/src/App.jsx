@@ -38,6 +38,18 @@ import CalculateMeasurableBill from './Apartment_Technician/BillManagement/Calcu
 import MyBills from './Users/MyBills'
 import HouseBillMeter from './Apartment_Technician/BillManagement/HouseBillMeter'
 import BillPaymentSettle from './Bills/BillPaymentSettle'
+import HouseOwnerLogin from './HouseOwner/HouseOwnerLogin'
+import HouseOwnerDashboard from './pages/HouseOwnerDashboard'
+import HouseOwnerVerify from './HouseOwner/HouseOwnerVerify'
+import HouseOwnerHouseView from './HouseOwner/HouseOwnerHouseView'
+import HouseOwnerViewBills from './HouseOwner/HouseOwnerViewBills'
+import HouseOwnerComplaints from './HouseOwner/HouseOwnerComplaint'
+import ViewComplaint from './Apartment_Technician/ComplaintManagament/ViewComplaint'
+import MyComplaints from './Users/MyComplaints'
+import HouseOwnerProfilePage from './HouseOwner/HouseOwnerProfilePage'
+import StartWork from './Apartment_Technician/ComplaintManagament/StartWork'
+import MyWork from './Apartment_Technician/ComplaintManagament/MyWork'
+import ComplaintCategories from './Apartment_Technician/ComplaintManagament/ComplaintCategories'
 
 export default function App() {
   return (
@@ -46,7 +58,6 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Welcome />} />
         <Route path='/login' element={<Login />} />
-        {/* <Route path='/companyregistration' element={<CompanyRegistration />}/> */}
         <Route path='/register' element={<Register />}/>
         <Route path='/verify' element={<Verify />}/>
         <Route path='/sidebar' element={<Sidebar/>}/>
@@ -59,16 +70,13 @@ export default function App() {
         <Route path='/housetype/:apartment_id' element={<HouseTypes/>}/>
         <Route path='/viewhouse/:apartment_id/:floor_id/:id' element={<ViewHouse/>}/>
         <Route path='/bills/:apartment_id' element={<Bills/>}/>
-        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path='/complete-registration' element={<CompleteRegistration/>}/>
         <Route path='/manage-bills' element={<ManageBills/>}/>
         <Route path='/bills-and-calculations' element={<BillsAndCalculations/>}/>
         <Route path="/billranges/:bill_id" element={<BillRange />} />
         <Route path="/billprice/:bill_id/:billrange_id" element={<BillPrice />} />        
-        {/* <Route path="/owner-dashboard" element={<OwnerDashboard />} />
-        <Route path="/manager-dashboard" element={<ManagerDashboard />} />
-        <Route path="/tech-dashboard" element={<TechDashboard/>} /> */}
         <Route path='/employee-dashboard' element={<EmployeeDashboard/>}/>
         <Route path='/role' element={<Role/>}/>
         <Route path='/profile-page' element={<ProfilePage/>}/>
@@ -80,6 +88,18 @@ export default function App() {
         <Route path='/my-bills' element={<MyBills/>}/>
         <Route path='/house-bill-meter/:bill_id' element={<HouseBillMeter/>}/>
         <Route path='/bill-payment-settle' element={<BillPaymentSettle/>}/>
+        <Route path='/houseowner/login' element= {<HouseOwnerLogin/>}/>
+        <Route path='/houseowner/verify' element= {<HouseOwnerVerify/>}/>
+        <Route path='/houseowner/dashboard' element= {<HouseOwnerDashboard/>}/>
+        <Route path='/houseowner/houseowner-houseview' element= {<HouseOwnerHouseView/>}/>
+        <Route path='/houseowner/houseowner-billview' element= {<HouseOwnerViewBills/>}/>
+        <Route path='/houseowner/complaints' element= {<HouseOwnerComplaints/>}/>
+        <Route path="/houseowner/houseowner-profile" element={<HouseOwnerProfilePage />} />
+        <Route path='/view-complaints' element= {<ViewComplaint/>}/>
+        <Route path='/my-complaints' element= {<MyComplaints/>}/>
+        <Route path='/my-work/:complaintId' element={<MyWork />} />
+        <Route path= '/start-work' element={<StartWork />} />
+        <Route path= '/complaint-categories' element={<ComplaintCategories/>}/>
       </Routes>
       </AuthProvider>
     </BrowserRouter>

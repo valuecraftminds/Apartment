@@ -58,8 +58,10 @@ export default function CombinedRegistration() {
   useEffect(() => {
     const fetchCountries = async () => {
       try {
-        const res = await api.get('/countries');
-        setCountries(res.data.data);
+        // const res = await api.get('/countries/external');
+        const res = await fetch('https://general.apivcm.shop/countries');
+        const data = await res.json();
+        setCountries(data.data);
       } catch (err) {
         console.error("Error fetching countries:", err);
       }
@@ -67,18 +69,31 @@ export default function CombinedRegistration() {
     fetchCountries();
   }, []);
 
-  const handleCountryChange = (e) => {
-    const countryId = e.target.value;
-    const selectedCountry = countries.find(c => c.id.toString() === countryId);
+  // const handleCountryChange = (e) => {
+  //   const countryId = e.target.value;
+  //   const selectedCountry = countries.find(c => c.id.toString() === countryId);
 
-    if (selectedCountry) {
-      setUserData(prev => ({
-        ...prev,
-        country: selectedCountry.country_name, //set country
-        mobile: selectedCountry.phone_code // auto set phone code
-      }));
-    }
-  };
+  //   if (selectedCountry) {
+  //     setUserData(prev => ({
+  //       ...prev,
+  //      country: selectedCountry.country_name, //set country
+  //       mobile: selectedCountry.phone_code // auto set phone code
+  //     }));
+  //   }
+  // };
+
+  const handleCountryChange = (e) => {
+  const countryName = e.target.value;
+  const selectedCountry = countries.find(c => c.country === countryName);
+  
+  if (selectedCountry) {
+    setUserData(prev => ({
+      ...prev,
+      country: selectedCountry.country,
+      mobile: selectedCountry.international_dialing + ' ' 
+    }));
+  }
+};
   
   const navigate = useNavigate();
   const totalSteps = 3;
@@ -107,10 +122,16 @@ export default function CombinedRegistration() {
         if (!value.trim()) error = 'Country is required';
         break;
 
+      // case 'mobile':
+      //   if (!value.trim()) error = 'Mobile Number is required';
+      //   else if (!/^\+\d{2} \d{9}$/.test(value)) error = 'Mobile must be in format +XX XXXXXXXXX';
+      //   else if (value.length > 15) error = 'Mobile cannot exceed 15 digits';
+      //   break;
+
       case 'mobile':
         if (!value.trim()) error = 'Mobile Number is required';
-        else if (!/^\+\d{2} \d{9}$/.test(value)) error = 'Mobile must be in format +XX XXXXXXXXX';
-        else if (value.length > 15) error = 'Mobile cannot exceed 15 digits';
+        else if (!/^\+\d{1,4} \d{9,10}$/.test(value)) error = 'Mobile must be in format +XXX XXXXXXXXXX (country code followed by 9-10 digits)';
+        else if (value.length > 20) error = 'Mobile cannot exceed 20 digits';
         break;
 
         
@@ -233,7 +254,7 @@ export default function CombinedRegistration() {
     if (validateStep(currentStep)) {
       setCurrentStep(currentStep + 1);
     } else {
-      toast.error("Please fix the validation errors before proceeding");
+      toast.warn("Please fix the validation errors before proceeding");
     }
   };
 
@@ -241,68 +262,6 @@ export default function CombinedRegistration() {
     setCurrentStep(currentStep - 1);
   };
 
-//   async function submit(e) {
-//     e.preventDefault();
-  
-//     // Validate all steps before submitting
-//     let allValid = true;
-//     for (let step = 1; step <= totalSteps; step++) {
-//       if (!validateStep(step)) {
-//         allValid = false;
-//         if (step !== currentStep) {
-//           setCurrentStep(step);
-//         }
-//         break;
-//       }
-//     }
-
-//     if (!allValid) {
-//       toast.error("Please fix all validation errors before submitting");
-//       return;
-//     }
-
-//     try {
-//       // Prepare company data
-//       const companyPayload = {
-//         regNo: companyData.regNo,
-//         name: companyData.name,
-//         address: companyData.address,
-//         employees: parseInt(companyData.employees, 10)
-//       };
-
-//     console.log('Sending company data to /tenants:', companyPayload);
-    
-//     // First register the company
-//     const companyResponse = await api.post('/tenants', companyPayload);
-//     console.log('Company registration successful:', companyResponse.data);
-
-//     // Create default admin role for the company
-//     const defaultRoleResponse = await api.post('/roles', {
-//       role_name: 'Admin'
-//     }, {
-//       headers: {
-//         Authorization: `Bearer ${companyResponse.data.accessToken}` // You might need to adjust this
-//       }
-//     });
-
-//     // Then register the user with the company ID
-//     const userResponse = await api.post('/auth/register', {
-//       firstname: userData.firstname,
-//       lastname: userData.lastname,
-//       country: userData.country,
-//       mobile:userData.mobile,
-//       email: userData.email,
-//       password: userData.password,
-//       company_id: companyResponse.data.data.id // Send as company_id (not companyId)
-//     });
-
-//       toast.success("Registration successful! Company and user account created.");
-//       setTimeout(() => navigate('/login'), 2000);
-//     } catch (err) {
-//       console.error('Registration error:', err);
-//       toast.error(err.response?.data?.message || "❌ Registration failed");
-//     }
-// }
 
 async function submit(e) {
   e.preventDefault();
@@ -319,10 +278,10 @@ async function submit(e) {
     }
   }
 
-  if (!allValid) {
-    toast.error("Please fix all validation errors before submitting");
-    return;
-  }
+  // if (!allValid) {
+  //   toast.error("Please fix all validation errors before submitting");
+  //   return;
+  // }
 
   try {
     // Prepare company data
@@ -332,11 +291,12 @@ async function submit(e) {
       address: companyData.address
     };
 
-    console.log('Sending company data to /tenants:', companyPayload);
+    //console.log('Sending company data to /tenants:', companyPayload);
     
     // First register the company
     const companyResponse = await api.post('/tenants', companyPayload);
-    console.log('Company registration successful:', companyResponse.data);
+    //console.log('Company registration successful:', companyResponse.data);
+
 
     // Get the company ID from the response
     const companyId = companyResponse.data.data.id;
@@ -352,7 +312,7 @@ async function submit(e) {
       company_id: companyId
     });
 
-    console.log('User registration successful:', userResponse.data);
+    //console.log('User registration successful:', userResponse.data);
 
     toast.success("Registration successful! Company and user account created. Please check your email to verify your account.");
     setTimeout(() => navigate('/login'), 3000);
@@ -569,7 +529,7 @@ async function submit(e) {
                   )} */}
                 </div>
 
-                <div>
+                {/* <div>
                   <select
                     name="country"
                     value={countries.find(c => c.country_name === userData.country)?.id || ''}
@@ -589,16 +549,68 @@ async function submit(e) {
                       <X size={14} className="mr-1" /> {errors.country}
                     </div>
                   )}
+                </div> */}
+
+                <div>
+                  <select
+                    name="country"
+                    value={userData.country || ''}
+                    onChange={handleCountryChange}
+                    onBlur={(e) => handleBlur(e, false)}
+                    className={`loginInput ${errors.country ? 'border-red-500' : touched.country && 'border-green-500'}`}
+                  >
+                    <option value="">Select country *</option>
+                    {countries.map(country => (
+                      <option key={country.country} value={country.country}>
+                        {country.country}
+                      </option>
+                    ))}
+                  </select>
+                  {touched.country && errors.country && (
+                    <div className="text-red-500 text-sm mt-1 flex items-center">
+                      <X size={14} className="mr-1" /> {errors.country}
+                    </div>
+                  )}
                 </div>
 
 
-                <div>
+                {/* <div>
                   <input
                     name="mobile"
                     value={userData.mobile}
                     onChange={(e) => handleInputChange(e, false)}
                     onBlur={(e) => handleBlur(e, false)}
                     placeholder="Mobile *"
+                    className={`loginInput ${errors.mobile ? 'border-red-500' : touched.mobile && 'border-green-500'}`}
+                  />
+                  {touched.mobile && errors.mobile && (
+                    <div className="text-red-500 text-sm mt-1 flex items-center">
+                      <X size={14} className="mr-1" /> {errors.mobile}
+                    </div>
+                  )}
+                </div> */}
+
+                <div>
+                  <input
+                    name="mobile"
+                    value={userData.mobile}
+                    onChange={(e) => {
+                      // Allow only numbers and + sign after the country code
+                      const countryCode = userData.mobile.split(' ')[0] || '';
+                      const userNumber = e.target.value.replace(countryCode + ' ', '');
+                      const newValue = countryCode + (userNumber ? ' ' + userNumber.replace(/\D/g, '') : '');
+                      
+                      // Update state
+                      const event = {
+                        target: {
+                          name: 'mobile',
+                          value: newValue
+                        }
+                      };
+                      handleInputChange(event, false);
+                    }}
+                    onBlur={(e) => handleBlur(e, false)}
+                    placeholder="Mobile * (e.g., +94 771234567)"
                     className={`loginInput ${errors.mobile ? 'border-red-500' : touched.mobile && 'border-green-500'}`}
                   />
                   {touched.mobile && errors.mobile && (

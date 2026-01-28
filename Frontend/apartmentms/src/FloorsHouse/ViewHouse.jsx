@@ -2,19 +2,20 @@ import React, { useEffect, useState } from 'react';
 import api from '../api/axios';
 import { Bath, Bed, Briefcase, BriefcaseIcon, Calendar, ChevronLeft, CreditCard, DollarSign, Download, Edit, FileText, Globe, Home, House, IdCard, Loader, Mail, MailIcon, Phone, PhoneCall, Square, Trash2, User, UserPlus, Users } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
-import Navbar from '../components/Navbar';
 import { useNavigate, useParams } from 'react-router-dom';
 import EditHouseOwner from './EditHouseOwner';
 import NewMember from '../Residents/NewMember';
 import EditMember from '../Residents/EditMember';
+import Navbar from '../components/navbar';
+import { toast, ToastContainer } from 'react-toastify';
 
 export default function ViewHouse() {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [activeTab, setActiveTab] = useState("type");
     const { apartment_id, floor_id, id } = useParams();
-    console.log('Apartment Id:',apartment_id);
-    console.log('Floor ID: ',floor_id);
-    console.log("House ID: ",id);
+    //console.log('Apartment Id:',apartment_id);
+    //console.log('Floor ID: ',floor_id);
+    //console.log("House ID: ",id);
     const [apartment, setApartment] = useState(null);
     const [floor, setFloor] = useState(null);
     const [house, setHouse] = useState(null);
@@ -141,20 +142,21 @@ export default function ViewHouse() {
     // Handle proof document download
     const handleDownloadProof = async () => {
     if (!houseowner?.id) {
-        alert('House owner information not available');
+        toast.warning('House owner information not available');
         return;
     }
     
     try {
         setDownloadingProof(true);
         
-        console.log('Downloading proof for houseowner ID:', houseowner.id);
-        console.log('Proof path in database:', houseowner.proof);
+       // console.log('Downloading proof for houseowner ID:', houseowner.id);
+        //console.log('Proof path in database:', houseowner.proof);
         
         // Make a HEAD request first to check if file exists
         try {
             const headResponse = await api.head(`/houseowner/download-proof/${houseowner.id}`);
-            console.log('HEAD request successful:', headResponse.status);
+            //console.log('HEAD request successful:', headResponse.status);
+            toast.info('Proof document found, starting download...');
         } catch (headError) {
             console.error('HEAD request failed:', headError.response?.status || headError.message);
         }
@@ -164,14 +166,14 @@ export default function ViewHouse() {
             responseType: 'blob'
         });
         
-        console.log('Download response status:', response.status);
-        console.log('Response headers:', response.headers);
+        toast.info(`Download response status: ${response.status}`);
+        //console.log('Response headers:', response.headers);
         
         if (response.status !== 200) {
             // Try to read error message from response
             const errorText = await response.data.text();
-            console.error('Error response:', errorText);
-            
+            //console.error('Error response:', errorText);
+            toast.error(`Error response: ${errorText}`);
             let errorMessage = `Download failed with status ${response.status}`;
             try {
                 const errorData = JSON.parse(errorText);
@@ -200,7 +202,7 @@ export default function ViewHouse() {
             const match = contentDisposition.match(/filename="?([^"]+)"?/);
             if (match) {
                 filename = match[1];
-                console.log('Filename from header:', filename);
+                toast.info(`Filename from header: ${filename}`);
             }
         } else {
             // Try to extract from URL or use database path
@@ -220,10 +222,10 @@ export default function ViewHouse() {
             window.URL.revokeObjectURL(url);
         }, 100);
         
-        console.log('Download successful');
+        toast.success('Download successful');
         
     } catch (error) {
-        console.error('Error downloading proof:', error);
+        toast.error('Error downloading proof');
         console.error('Error details:', {
             name: error.name,
             message: error.message,
@@ -250,7 +252,7 @@ export default function ViewHouse() {
         if (house?.houseowner_id) {
             setNewMemberModalOpen(true);
         } else {
-            alert('House owner information is required before adding family members.');
+            toast.warning('House owner information is required before adding family members.');
         }
     };
 
@@ -270,8 +272,7 @@ export default function ViewHouse() {
                     fetchFamilyMembers(house.houseowner_id);
                 }
             } catch (error) {
-                console.error('Error deleting family member:', error);
-                alert('Failed to delete family member');
+                toast.error('Failed to delete family member');
             }
         }
     };
@@ -424,6 +425,13 @@ export default function ViewHouse() {
                                                 <h4 className="text-2xl font-bold text-gray-800 dark:text-white">{houseowner.name}</h4>
                                                 <p className="text-gray-600 dark:text-gray-400">Owner</p>
                                             </div>
+                                            {houseowner.houseowner_id && (
+                                                <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+                                                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                                                        <span className="font-semibold">Role:</span> House Owner
+                                                    </p>
+                                                </div>
+                                            )}
                                             <div className="flex space-x-2">
                                             <button
                                                 onClick={() => setEditOwnerModalOpen(true)}
@@ -779,6 +787,7 @@ export default function ViewHouse() {
                     }}
                 />
             )}
+            <ToastContainer position='top-center' autoClose={3000}/>
         </div>
     );
 }

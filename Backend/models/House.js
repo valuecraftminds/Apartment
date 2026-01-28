@@ -10,7 +10,8 @@ class House{
         'SELECT COUNT(*) as count FROM houses WHERE company_id = ? AND apartment_id = ? and floor_id = ?',
         [company_id, apartment_id,floor_id]
     );
-    const nextNumber = (countResult[0].count + 1).toString().padStart(3, '0');
+    // const nextNumber = (countResult[0].count + 1).toString().padStart(3, '0');
+    const nextNumber = uuidv4().replace(/-/g, '').substring(0, 3);
     const id = `${floor_id}-${nextNumber}`;
 
     const [result] = await pool.execute(
@@ -108,6 +109,22 @@ class House{
             [id]
         );
         return true;
+    }
+
+   static async findByHouseOwnerId(houseowner_id) {
+        const [rows] = await pool.execute(
+            'SELECT * FROM houses WHERE houseowner_id = ? ORDER BY created_at DESC',
+            [houseowner_id]
+        );
+        return rows; 
+    }
+
+    static async findPrimaryHouseByOwnerId(houseowner_id) {
+        const [rows] = await pool.execute(
+            'SELECT * FROM houses WHERE houseowner_id = ? ORDER BY created_at ASC LIMIT 1',
+            [houseowner_id]
+        );
+        return rows[0] || null;
     }
 }
 

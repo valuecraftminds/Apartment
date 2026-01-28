@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Check, Square, CheckSquare, Save, Shield, User, Building, Wrench, Package, BarChart3, CreditCard, FileText, Home } from 'lucide-react';
 import api from '../api/axios';
+import { toast, ToastContainer } from 'react-toastify';
 
 const RoleAssignmentModal = ({ role, onClose, onAssign }) => {
   const [selectedComponents, setSelectedComponents] = useState([]);
@@ -77,6 +78,13 @@ const RoleAssignmentModal = ({ role, onClose, onAssign }) => {
       description: 'View and manage your bills',
       category: 'Financial',
       icon: 'CreditCard',
+    },
+    {
+      id: 'my_complaints',
+      name: 'My Complaints',
+      description: 'View and manage your complaints',
+      category: 'Personal',
+      icon: 'ClipboardList',
     }
   ];
 
@@ -155,7 +163,7 @@ const handleSave = async () => {
     
     if (response.data.success) {
       // Show success message
-      alert('Components assigned successfully! The sidebar will refresh for affected users.');
+      toast.success('Components assigned successfully! The sidebar will refresh for affected users.');
       
       // Call the onAssign callback
       onAssign(role.id, selectedComponents);
@@ -345,6 +353,7 @@ const handleSave = async () => {
           </div>
         </div>
       </div>
+      <ToastContainer position='top-center' autoClose={3000} />
     </div>
   );
 };

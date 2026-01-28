@@ -83,9 +83,9 @@ export default function CompanyRegistration() {
       employees: parseInt(formData.employees, 10) // Convert to number
     };
     
-    console.log('Sending data to server:', dataToSend);
+    //console.log('Sending data to server:', dataToSend);
     const response = await api.post('/tenants', dataToSend);
-    console.log('Server response:', response.data);
+    //console.log('Server response:', response.data);
     toast.success("Enterprise Registered Successfully");
     setTimeout(() => navigate('/admin/register'), 2000);
   } catch (err) {

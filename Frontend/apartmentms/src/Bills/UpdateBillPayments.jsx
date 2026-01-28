@@ -95,10 +95,10 @@ export default function UpdateBillPayments({ payment, onClose, onUpdate }) {
         updateData.paid_at = new Date().toISOString().split('T')[0];
       }
 
-      console.log('Sending update data:', updateData); // Debug log
-      console.log('Current paid:', currentPaidAmount);
-      console.log('Additional:', additionalAmount);
-      console.log('New total paid:', newPaidAmount);
+      // console.log('Sending update data:', updateData); // Debug log
+      // console.log('Current paid:', currentPaidAmount);
+      // console.log('Additional:', additionalAmount);
+      // console.log('New total paid:', newPaidAmount);
 
       const response = await api.patch(`/bill-payments/${payment.id}/status`, updateData);
       

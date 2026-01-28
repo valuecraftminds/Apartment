@@ -15,7 +15,7 @@ export default function CreateBillPrice({ bill_id, billrange_id, onClose, onCrea
 
   // Add this useEffect to debug the props
   React.useEffect(() => {
-    console.log('CreateBillPrice props:', { bill_id, billrange_id });
+    //console.log('CreateBillPrice props:', { bill_id, billrange_id });
   }, [bill_id, billrange_id]);
 
   const handleChange = (e) => {
@@ -38,7 +38,7 @@ export default function CreateBillPrice({ bill_id, billrange_id, onClose, onCrea
       billrange_id,
     };
     
-    console.log('Submitting bill price data:', requestData);
+    //console.log('Submitting bill price data:', requestData);
 
     try {
       const result = await api.post(
@@ -119,8 +119,8 @@ export default function CreateBillPrice({ bill_id, billrange_id, onClose, onCrea
               className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 mt-1 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-purple-500"
               placeholder="Enter year"
               required
-              min="2000"
-              max="2100"
+              min="2025"
+              max="2030"
             />
           </div>
 

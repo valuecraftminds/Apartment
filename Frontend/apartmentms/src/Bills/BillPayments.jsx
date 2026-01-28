@@ -3,7 +3,7 @@ import { Search, Filter, Download, Eye, Edit, DollarSign, Calendar, Home, Buildi
 import api from '../api/axios';
 import { toast, ToastContainer } from 'react-toastify';
 import Sidebar from '../components/Sidebar';
-import Navbar from '../components/Navbar';
+import Navbar from '../components/navbar';
 import UpdateBillPayments from './UpdateBillPayments';
 
 export default function BillPayments() {
@@ -130,11 +130,11 @@ export default function BillPayments() {
         if (value) params.append(key, value);
       });
 
-      console.log('Loading payments with filters:', Object.fromEntries(params));
+      //console.log('Loading payments with filters:', Object.fromEntries(params));
       const response = await api.get(`/bill-payments?${params}`);
       if (response.data.success) {
         setPayments(response.data.data);
-        console.log('Payments loaded:', response.data.data.length);
+        //console.log('Payments loaded:', response.data.data.length);
       }
     } catch (error) {
       console.error('Error loading payments:', error);
@@ -490,8 +490,8 @@ export default function BillPayments() {
                     type="number"
                     value={filters.year}
                     onChange={(e) => handleFilterChange('year', e.target.value)}
-                    min="2000"
-                    max="2100"
+                    min="2025"
+                    max="2030"
                     className="w-full px-3 py-2 text-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
                     placeholder="Enter year"
                     required

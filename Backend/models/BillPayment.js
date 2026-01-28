@@ -170,55 +170,6 @@ class BillPayment{
         return rows;
     }
 
-    // static async updatePaymentStatus(id, payment_status, paidAmount = null, paid_at = null) {
-    //     // First get the current bill payment to check its type
-    //     const currentPayment = await this.findById(id);
-    //     if (!currentPayment) {
-    //         throw new Error('Payment not found');
-    //     }
-        
-    //     let query = 'UPDATE bill_payments SET payment_status = ?';
-    //     const params = [payment_status];
-        
-    //     if (paidAmount !== null) {
-    //         // Get the total amount from the appropriate generated bill table
-    //         if (currentPayment.generateMeasurable_bills_id) {
-    //             // For measurable bills: Use totalAmount
-    //             query += ', paidAmount = ?, pendingAmount = (SELECT totalAmount FROM generateMeasurable_bills WHERE id = ?) - ?';
-    //             params.push(paidAmount, currentPayment.generateMeasurable_bills_id, paidAmount);
-    //         } else if (currentPayment.generate_bills_id) {
-    //             // For shared bills: Use unitPrice
-    //             query += ', paidAmount = ?, pendingAmount = (SELECT unitPrice FROM generate_bills WHERE id = ?) - ?';
-    //             params.push(paidAmount, currentPayment.generate_bills_id, paidAmount);
-    //         } else {
-    //             // Fallback: Try to get amount from payment record itself
-    //             query += ', paidAmount = ?, pendingAmount = unitPrice - ?';
-    //             params.push(paidAmount, paidAmount);
-    //         }
-    //     }
-        
-    //     // Handle paid_at date
-    //     if (paid_at) {
-    //         query += ', paid_at = ?';
-    //         params.push(paid_at);
-    //     } else if (payment_status === 'Paid') {
-    //         query += ', paid_at = CURRENT_TIMESTAMP';
-    //     } else if (payment_status === 'Pending' && paidAmount === 0) {
-    //         query += ', paid_at = NULL';
-    //     }
-    //     // For Partial payments
-    //     else if (payment_status === 'Partial' && paidAmount > 0) {
-    //         query += ', paid_at = COALESCE(paid_at, CURRENT_TIMESTAMP)';
-    //     }
-        
-    //     query += ' WHERE id = ?';
-    //     params.push(id);
-        
-    //     await pool.execute(query, params);
-        
-    //     return this.findById(id);
-    // }
-
     static async updatePaymentStatus(id, payment_status, paidAmount = null, paid_at = null) {
         // First get the current bill payment to check its type
         const currentPayment = await this.findById(id);
@@ -358,7 +309,198 @@ class BillPayment{
             [id]
         );
         return result.affectedRows > 0;
-    }    
+    } 
+
+//     static async findAllByHouseOwner(houseowner_id, filters = {}) {
+//     // First, get the houses assigned to this house owner
+//     const [houses] = await pool.execute(
+//         'SELECT id FROM houses WHERE houseowner_id = ?',
+//         [houseowner_id]
+//     );
+    
+//     if (houses.length === 0) {
+//         return [];
+//     }
+    
+//     const houseIds = houses.map(house => house.id);
+    
+//     let query = `
+//         SELECT 
+//             bp.*,
+//             b.bill_name,
+//             b.billtype,
+//             COALESCE(gb.month, gmb.month) as month,
+//             COALESCE(gb.year, gmb.year) as year,
+//             COALESCE(gb.unitPrice, gmb.totalAmount) as unitPrice,
+//             COALESCE(gb.totalAmount, gmb.totalAmount) as generated_total_amount,
+//             a.name as apartment_name,
+//             f.floor_id as floor_number,
+//             h.house_id as house_number,
+//             h.id as house_id,
+//             ht.name as house_type,
+//             ho.name as houseowner_name,
+//             ho.email as houseowner_email,
+//             CASE 
+//                 WHEN bp.generateMeasurable_bills_id IS NOT NULL THEN 'Measurable'
+//                 WHEN bp.generate_bills_id IS NOT NULL THEN 'Shared'
+//                 ELSE 'Unknown'
+//             END as bill_source_type
+//         FROM bill_payments bp
+//         LEFT JOIN bills b ON bp.bill_id = b.id
+//         LEFT JOIN generate_bills gb ON bp.generate_bills_id = gb.id
+//         LEFT JOIN generateMeasurable_bills gmb ON bp.generateMeasurable_bills_id = gmb.id
+//         LEFT JOIN apartments a ON bp.apartment_id = a.id
+//         LEFT JOIN floors f ON bp.floor_id = f.id
+//         LEFT JOIN houses h ON bp.house_id = h.id
+//         LEFT JOIN housetype ht ON h.housetype_id = ht.id
+//         LEFT JOIN houseowner ho ON h.houseowner_id = ho.id
+//         WHERE bp.house_id IN (?)
+//     `;
+    
+//     const params = [houseIds];
+    
+//     // Add filters
+//     if (filters.payment_status && filters.payment_status !== 'all') {
+//         query += ' AND bp.payment_status = ?';
+//         params.push(filters.payment_status);
+//     }
+    
+//     if (filters.month && filters.month !== 'all') {
+//         query += ' AND (gb.month = ? OR gmb.month = ?)';
+//         params.push(filters.month, filters.month);
+//     }
+    
+//     if (filters.year && filters.year !== 'all') {
+//         query += ' AND (gb.year = ? OR gmb.year = ?)';
+//         params.push(filters.year, filters.year);
+//     }
+
+//     if (filters.house_id && filters.house_id !== 'all') {
+//         query += ' AND bp.house_id = ?';
+//         params.push(filters.house_id);
+//     }
+
+//     query += ' ORDER BY COALESCE(gb.year, gmb.year) DESC, FIELD(COALESCE(gb.month, gmb.month), "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December") DESC, bp.created_at DESC';
+    
+//     const [rows] = await pool.execute(query, params);
+//     return rows;
+// }
+static async findAllByHouseOwner(houseowner_id, filters = {}) {
+    console.log('🔍 [Backend] findAllByHouseOwner called with:', { houseowner_id, filters });
+    
+    // First, get the houses assigned to this house owner
+    const [houses] = await pool.execute(
+        'SELECT id, house_id FROM houses WHERE houseowner_id = ?',
+        [houseowner_id]
+    );
+    
+    console.log('🔍 [Backend] Houses found for owner:', houses);
+    
+    if (houses.length === 0) {
+        console.log('❌ [Backend] No houses found for this owner');
+        return [];
+    }
+    
+    const houseIds = houses.map(house => house.id);
+    const houseNumbers = houses.map(house => house.house_id);
+    
+    console.log('🔍 [Backend] House IDs:', houseIds);
+    console.log('🔍 [Backend] House numbers:', houseNumbers);
+    
+    let query = `
+        SELECT 
+            bp.*,
+            b.bill_name,
+            b.billtype,
+            COALESCE(gb.month, gmb.month) as month,
+            COALESCE(gb.year, gmb.year) as year,
+            COALESCE(gb.unitPrice, gmb.totalAmount) as unitPrice,
+            COALESCE(gb.totalAmount, gmb.totalAmount) as generated_total_amount,
+            a.name as apartment_name,
+            f.floor_id as floor_number,
+            h.house_id as house_number,
+            h.id as house_db_id,
+            ht.name as house_type,
+            ho.name as houseowner_name,
+            ho.email as houseowner_email,
+            CASE 
+                WHEN bp.generateMeasurable_bills_id IS NOT NULL THEN 'Measurable'
+                WHEN bp.generate_bills_id IS NOT NULL THEN 'Shared'
+                ELSE 'Unknown'
+            END as bill_source_type
+        FROM bill_payments bp
+        LEFT JOIN bills b ON bp.bill_id = b.id
+        LEFT JOIN generate_bills gb ON bp.generate_bills_id = gb.id
+        LEFT JOIN generateMeasurable_bills gmb ON bp.generateMeasurable_bills_id = gmb.id
+        LEFT JOIN apartments a ON bp.apartment_id = a.id
+        LEFT JOIN floors f ON bp.floor_id = f.id
+        LEFT JOIN houses h ON bp.house_id = h.id
+        LEFT JOIN housetype ht ON h.housetype_id = ht.id
+        LEFT JOIN houseowner ho ON h.houseowner_id = ho.id
+        WHERE h.houseowner_id = ?  -- Changed from bp.house_id IN (?)
+    `;
+    
+    const params = [houseowner_id];
+    
+    // Add filters
+    if (filters.payment_status && filters.payment_status !== 'all') {
+        query += ' AND bp.payment_status = ?';
+        params.push(filters.payment_status);
+    }
+    
+    if (filters.month && filters.month !== 'all') {
+        query += ' AND (gb.month = ? OR gmb.month = ?)';
+        params.push(filters.month, filters.month);
+    }
+    
+    if (filters.year && filters.year !== 'all') {
+        query += ' AND (gb.year = ? OR gmb.year = ?)';
+        params.push(filters.year, filters.year);
+    }
+
+    if (filters.house_id && filters.house_id !== 'all') {
+        query += ' AND h.id = ?';  // Changed from bp.house_id = ?
+        params.push(filters.house_id);
+    }
+
+    console.log('🔍 [Backend] Final query:', query);
+    console.log('🔍 [Backend] Query params:', params);
+    
+    const [rows] = await pool.execute(query, params);
+    
+    console.log('✅ [Backend] Query results count:', rows.length);
+    if (rows.length > 0) {
+        console.log('✅ [Backend] Sample result:', {
+            id: rows[0].id,
+            bill_name: rows[0].bill_name,
+            house_id: rows[0].house_id,
+            house_db_id: rows[0].house_db_id,
+            month: rows[0].month,
+            year: rows[0].year
+        });
+    }
+    
+    return rows;
+}
+
+static async getHouseOwnerHouses(houseowner_id) {
+    const [rows] = await pool.execute(
+        `SELECT 
+            h.*,
+            a.name as apartment_name,
+            f.floor_id,
+            f.id,
+            ht.name as house_type
+        FROM houses h
+        LEFT JOIN apartments a ON h.apartment_id = a.id
+        LEFT JOIN floors f ON h.floor_id = f.id
+        LEFT JOIN housetype ht ON h.housetype_id = ht.id
+        WHERE h.houseowner_id = ?`,
+        [houseowner_id]
+    );
+    return rows;
+}
+
 }
 
 module.exports=BillPayment;

@@ -100,13 +100,6 @@ export default function Sidebar() {
       icon: Users, 
       isConstant: false 
     },
-    role_management: { 
-      id: 'role_management', 
-      name: 'Roles', 
-      path: '/role', 
-      icon: UserCog, 
-      isConstant: false 
-    },
     apartments_management: { 
       id: 'apartments_management', 
       name: 'Apartments', 
@@ -124,6 +117,16 @@ export default function Sidebar() {
         { name: 'Bill Review', path: '/bill-payments' },
         { name: 'Bill Payments',  path: '/bill-payment-settle' }
       ] 
+    },
+    complaint_management: { 
+      id: 'complaint_management', 
+      name: 'Complaints',
+      icon: ClipboardList,
+      isConstant: false,
+      children: [
+        { name: 'Complaint Categories', path: '/complaint-categories' },
+        { name: 'All Complaints', path:'/view-complaints'},
+      ]
     },
     tenant_management: { 
       id: 'tenant_management', 
@@ -145,6 +148,13 @@ export default function Sidebar() {
       path: '/my-bills',
       icon: CreditCard,
       isConstant: false
+    },
+    my_complaints: {
+      id: 'my_complaints',
+      name: 'My Complaints',
+      path: '/my-complaints',
+      icon: ClipboardList,
+      isConstant: false
     }
   };
 
@@ -152,9 +162,9 @@ export default function Sidebar() {
   const getAdminNavigationItems = () => [
     'admin_dashboard',
     'users_management', 
-    'role_management',
     'apartments_management',
     'expenses_management',
+    'complaint_management',
     'admin_profile'
   ];
 
@@ -162,7 +172,6 @@ export default function Sidebar() {
   const fetchUserComponents = async () => {
     try {
       setLoading(true);
-      console.log('Fetching components for role:', userRole);
       
       if (userRole === 'Admin') {
         // For Admin, use predefined admin components
@@ -174,11 +183,9 @@ export default function Sidebar() {
       // For non-admin roles, always fetch fresh from API
       try {
         const response = await api.get('/role-components/user/components');
-        console.log('API Response:', response.data);
         
         if (response.data.success) {
           const apiComponents = response.data.data || [];
-          console.log('Components from API:', apiComponents);
           
           // Filter out constant components that might come from API to avoid duplicates
           const customComponents = apiComponents.filter(comp => 
@@ -186,7 +193,6 @@ export default function Sidebar() {
           );
           
           const finalComponents = [...CONSTANT_COMPONENTS, ...customComponents];
-          console.log('Final components to set:', finalComponents);
           setAssignedComponents(finalComponents);
         } else {
           console.error('API returned error:', response.data.message);
@@ -223,7 +229,6 @@ export default function Sidebar() {
       .map(componentId => allComponents[componentId])
       .filter(Boolean); // Remove any undefined components
     
-    console.log('Built navigation items:', items);
     return items;
   };
 
@@ -278,12 +283,12 @@ export default function Sidebar() {
             <img className="h-8 w-8" src="/favicon.ico" alt="Logo" />
           </div>
         )}
-        <button
+        {/* <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 text-purple-700 dark:text-purple-400"
         >
           {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
-        </button>
+        </button> */}
       </div>
 
       {/* Navigation */}

@@ -2,18 +2,6 @@ const pool = require('../db');
 const { v4: uuidv4 } = require('uuid');
 
 class Apartment {
-    // static async create(apartmentData) {
-    //     const { apartment_id,name, address, city, picture,company_id } = apartmentData;
-    //     const id = uuidv4().replace(/-/g, '').substring(0, 6);
-
-    //     const [result] = await pool.execute(
-    //         'INSERT INTO apartments (id,apartment_id, name, address, city,  picture, is_active, company_id) VALUES (?, ?, ?, ?, ?, ?, 1, ?)',
-    //         [id,apartment_id, name, address, city, picture, company_id]
-
-    //     );
-    //     return {id, ...apartmentData };
-    // }
-
     static async create(apartmentData) {
         const { apartment_id, name, address, city, picture, company_id } = apartmentData;
         
@@ -23,7 +11,8 @@ class Apartment {
             [company_id]
         );
         
-        const nextNumber = (countResult[0].count + 1).toString().padStart(3, '0');
+        // const nextNumber = (countResult[0].count + 1).toString().padStart(3, '0');
+        const nextNumber = uuidv4().replace(/-/g, '').substring(0, 3);
         const id = `${company_id}-${nextNumber}`;
 
         const [result] = await pool.execute(

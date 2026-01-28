@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import Sidebar from '../components/Sidebar';
-import Navbar from '../components/Navbar';
 import { Edit, Image, Loader, Plus, Settings, Trash2, UserCog } from 'lucide-react';
 import api from '../api/axios';
 import CreateRoles from '../Roles/CreateRoles';
@@ -134,7 +133,7 @@ export default function Role() {
     // Add this function to handle assignment completion
     const handleAssignmentComplete = (roleId, components) => {
         // You can update local state if needed
-        console.log(`Components assigned to role ${roleId}:`, components);
+        toast.success('Components assigned successfully!');
     };
 
     const formatDate = (dateString) => {
@@ -147,27 +146,17 @@ export default function Role() {
 
 
 
-  return (
-    <div className='flex h-screen bg-gray-100 dark:bg-gray-900 w-screen transition-colors duration-200'>
-        <Sidebar onCollapse={setIsSidebarCollapsed} />
-        <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${isSidebarCollapsed ? 'ml-20' : 'ml-64'}`}>
-            <Navbar/>
-            <div className='flex-1 overflow-y-auto p-6'>
-                <div className='mx-auto max-w-7xl'>
-                    <div className='flex items-center justify-between bg-white dark:bg-gray-800 rounded-2xl p-4 mb-6'>
-                        <div className='flex items-center'>
-                            <UserCog size={40} className='text-purple-600 dark:text-purple-400 mr-3'/>
-                            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Role Management</h1>
-                        </div>
-                        <div className='flex gap-3'>
-                            <button  
-                                onClick={handleAddNew}
-                                className='flex items-center gap-2 px-4 py-2 rounded-lg font-semibold shadow-md transition-all duration-300 text-white bg-purple-600 hover:bg-purple-700 hover:scale-105'>
-                                <Plus size={20}/>
-                                <span>Add New</span>
-                            </button>
-                        </div>
-                    </div>
+  return (     
+            <div className='flex-1 overflow-y-auto'>                    
+                <div className='flex gap-3'>
+                    <button  
+                        onClick={handleAddNew}
+                        className='flex items-center gap-2 px-4 py-2 rounded-lg font-semibold shadow-md transition-all duration-300 text-white bg-purple-600 hover:bg-purple-700 hover:scale-105'>
+                        <Plus size={20}/>
+                        <span>Add Role</span>
+                    </button>
+                </div>
+                    
                     <div className='bg-white dark:bg-gray-800 rounded-2xl p-6'>
                         {loading ? (
                             <div className="flex justify-center items-center py-12">
@@ -263,10 +252,7 @@ export default function Role() {
                         )}
                     </div>
 
-                </div>
 
-            </div>
-        </div>
         {showCreateModal && (
             <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md relative">

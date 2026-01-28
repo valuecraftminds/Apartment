@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { Building2, Plus, Edit, Trash2, Eye, Image, Loader, ToggleRight, ToggleLeft } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
-import Navbar from '../components/Navbar';
+import Navbar from '../components/navbar';
 import { AuthContext } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
@@ -24,72 +24,23 @@ export default function ManageBills() {
     const [showDeactivateModal,setShowDeactivateModal] = useState(false);
     const [deactivatingApartment, setDeactivatingApartment] = useState(null);
 
-
-//      const handleAddNew = () => {
-//     setShowCreateModal(true);
-//   };
-
-//   const handleEdit = (apartment) => {
-//   setEditingApartment(apartment);
-//   setShowEditModal(true);
-// };
-
   const handleBillView = (apartment) => {
     navigate(`/bills-and-calculations/${apartment.id}`);
 };
-
-    // const handleViewModalClose = () => {
-    //     setShowViewModal(false);
-    //     setViewingApartment(null);
-    // };
-
-//   const handleCloseModal = () => {
-//     setShowCreateModal(false);
-//   };
-
-//   const handleEditModalClose = () => {
-//   setShowEditModal(false);
-//   setEditingApartment(null);
-// };
-
-//    const handleApartmentCreated = () => {
-//         // Refresh the apartments list
-//         loadApartments();
-//         // Close the modal
-//         setShowCreateModal(false);
-//         // Show success message
-//         toast.success('Apartment created successfully!');
-//     };
-
-//     const handleApartmentEdited = () => {
-//         loadApartments(); // Refresh the list
-//         setShowEditModal(false);
-//         setEditingApartment(null);
-//         toast.success('Apartment updated successfully!');
-//     };
-
-//     const confirmDeactivate = (apartment) => {
-//         setDeactivatingApartment(apartment);
-//         setShowDeactivateModal(true);
-//     };
-
-//     const cancelDeactivate = () => {
-//         setShowDeactivateModal(false);
-//     }
 
     const loadApartments = async () => {
     try {
         setLoading(true);
         setError(null);
         const result = await api.get('/apartments')
-        console.log('API Response:', result.data);
+        //console.log('API Response:', result.data);
 
         if (result.data.success && Array.isArray(result.data.data)) {
             setApartments(result.data.data);
         } else if (Array.isArray(result.data)) {
             setApartments(result.data);
         } else {
-            console.warn('Unexpected response format:', result.data);
+            //console.warn('Unexpected response format:', result.data);
             setApartments([]);
         }
     } catch (err) {
@@ -110,17 +61,6 @@ export default function ManageBills() {
     useEffect(() => {
         loadApartments();
     }, []);
-
-//     const handleToggle = async (apartment) => {
-//     try {
-//         const result = await api.patch(`/apartments/${apartment.id}/toggle`);
-//         toast.success(result.data.message);
-//         loadApartments(); // refresh list
-//     } catch (err) {
-//         console.error('Error toggling apartment:', err);
-//         toast.error('Failed to toggle apartment status');
-//     }
-// };
     
     return (
         <div className="flex h-screen bg-gray-100 dark:bg-gray-900 w-screen transition-colors duration-200">

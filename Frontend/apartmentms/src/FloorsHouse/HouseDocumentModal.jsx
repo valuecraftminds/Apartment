@@ -72,15 +72,15 @@ export default function HouseDocumentModal({ house, apartment, floor, onClose, o
         try {
             setLoadingDocuments(true);
             // 🔥 FIX: Add console.log to debug what ID is being sent
-            console.log('Loading documents for house ID:', house.id);
+           // console.log('Loading documents for house ID:', house.id);
             
             const response = await api.get(`/house-documents/${house.id}/documents`);
             
-            console.log('Documents response:', response.data);
+           // console.log('Documents response:', response.data);
             
             if (response.data.success) {
                 setDocuments(response.data.data);
-                console.log('Documents loaded:', response.data.data);
+                //console.log('Documents loaded:', response.data.data);
             } else {
                 console.error('API response not successful:', response.data);
             }

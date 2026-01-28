@@ -1,9 +1,11 @@
 //controllers/houseOwnerController.js
 const HouseOwner=require('../models/HouseOwner');
+const pool = require('../db');
 
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { v4: uuidv4 } = require('uuid');
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -34,51 +36,71 @@ const upload = multer({
 });
 
 const houseOwnerController ={
-    async createHouseOwner(req, res) {
-        try {
-            const { name, nic, occupation, country, mobile, email, occupied_way,apartment_id } = req.body;
-            const company_id = req.user.company_id;
-            // const apartment_id = req.apartment.id;
+    // controllers/houseOwnerController.js
+async createHouseOwner(req, res) {
+    try {
+        const { name, nic, occupation, country, mobile, email, occupied_way, apartment_id, role_id } = req.body;
+        const company_id = req.user.company_id;
 
-
-            let picturePath = null;
-            if (req.file) {
-                picturePath = '/evidance/proof/' + req.file.filename;
-            }
-
-            if (!name || !nic || !occupation || !country || !mobile || !email || !occupied_way ) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'All fields are required'
-                });
-            }
-
-            const newApartment = await HouseOwner.create({
-                    company_id,
-                    apartment_id,
-                    name,
-                    nic,
-                    occupation,
-                    country,
-                    mobile,
-                    email,
-                    occupied_way,
-                    proof: picturePath // Store the path, not the binary
-                    
-            });
-            res.status(201).json({
-            success: true,
-            message: 'House owner added successfully',
-            data: newApartment
-            });
-        } catch (err) {
-            console.error('Add house owner error', err);
-            res.status(500).json({
+        // Validate email format
+        if (!email || !email.includes('@')) {
+            return res.status(400).json({
                 success: false,
-                message: 'Server error while adding house owner'
+                message: 'Valid email address is required'
             });
         }
-    },
+        
+        // Check if email already exists for this apartment
+        const [existing] = await pool.execute(
+            'SELECT id FROM houseowner WHERE email = ? AND apartment_id = ?',
+            [email, apartment_id]
+        );
+        
+        if (existing.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email already registered for a house owner in this apartment'
+            });
+        }
+
+        let picturePath = null;
+        if (req.file) {
+            picturePath = '/evidance/proof/' + req.file.filename;
+        }
+
+        if (!name || !nic || !occupation || !country || !mobile || !email || !occupied_way ) {
+            return res.status(400).json({
+                success: false,
+                message: 'All fields are required'
+            });
+        }
+
+        const newHouseOwner = await HouseOwner.create({
+            company_id,
+            apartment_id,
+            name,
+            nic,
+            occupation,
+            country,
+            mobile,
+            email,
+            occupied_way,
+            proof: picturePath
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'House owner added successfully',
+            data: newHouseOwner
+        });
+    } catch (err) {
+        console.error('Add house owner error', err);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while adding house owner'
+        });
+    }
+},
 
     // Get all house
     async getAllHouseOwner(req, res) {
@@ -384,6 +406,276 @@ const houseOwnerController ={
                 success: false,
                 message: 'Error viewing proof document'
             });
+        }
+    },
+
+   
+
+    // Get house owner's own profile
+    async getMyProfile(req, res) {
+        try {
+            // The authenticated house owner ID comes from the middleware
+            const houseowner_id = req.houseowner.id;
+            
+            const houseOwner = await HouseOwner.findById(houseowner_id);
+
+            if (!houseOwner) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'House owner not found'
+                });
+            }
+
+            // Return the data (exclude sensitive info if needed)
+            res.json({
+                success: true,
+                data: houseOwner
+            });
+        } catch (err) {
+            console.error('Get my profile error', err);
+            res.status(500).json({
+                success: false,
+                message: 'Server error while fetching profile'
+            });
+        }
+    },
+
+    // Update house owner's own profile
+    async updateMyProfile(req, res) {
+        try {
+            const houseowner_id = req.houseowner.id;
+            const { name, nic, occupation, country, mobile, email, occupied_way } = req.body;
+
+            // Check if house owner exists
+            const existingHouseOwner = await HouseOwner.findById(houseowner_id);
+            if (!existingHouseOwner) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'House owner not found'
+                });
+            }
+
+            let picturePath = null;
+            if (req.file) {
+                picturePath = '/evidance/proof/' + req.file.filename;
+            }
+
+            // Update profile
+            const updatedHouseOwner = await HouseOwner.updateHouseOwner(houseowner_id, {
+                name: name || existingHouseOwner.name,
+                nic: nic || existingHouseOwner.nic,
+                occupation: occupation || existingHouseOwner.occupation,
+                country: country || existingHouseOwner.country,
+                mobile: mobile || existingHouseOwner.mobile,
+                email: email || existingHouseOwner.email,
+                occupied_way: occupied_way || existingHouseOwner.occupied_way,
+                proof: picturePath || existingHouseOwner.proof,
+            });
+
+            res.json({
+                success: true,
+                message: 'Profile updated successfully',
+                data: updatedHouseOwner
+            });
+        } catch (err) {
+            console.error('Update my profile error:', err);
+            res.status(500).json({
+                success: false,
+                message: 'Server error while updating profile'
+            });
+        }
+    },
+
+   // In houseOwnerController.js, update the importHouseOwnerFromExcel method
+    async importHouseOwnerFromExcel(req, res) {
+        let connection;
+        try {
+            if (!req.file) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'No file uploaded'
+                });
+            }
+
+            const company_id = req.user.company_id;
+            const { apartment_id, house_id } = req.body;
+
+            // Validate required fields
+            if (!apartment_id) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Apartment ID is required'
+                });
+            }
+
+            // Start a transaction
+            connection = await pool.getConnection();
+            await connection.beginTransaction();
+
+            // Parse Excel file
+            const xlsx = require('xlsx');
+            const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const jsonData = xlsx.utils.sheet_to_json(worksheet);
+            
+            if (!jsonData || jsonData.length === 0) {
+                await connection.rollback();
+                return res.status(400).json({
+                    success: false,
+                    message: 'No data found in Excel file'
+                });
+            }
+
+            // Take the first row only (single house owner)
+            const rowData = jsonData[0];
+            
+            // Extract and validate data
+            const extractedData = {
+                name: rowData.name || rowData.Name || rowData.NAME || '',
+                nic: rowData.nic || rowData.NIC || rowData.id || rowData.ID || '',
+                occupation: rowData.occupation || rowData.Occupation || rowData.OCCUPATION || '',
+                country: rowData.country || rowData.Country || rowData.COUNTRY || '',
+                mobile: rowData.mobile || rowData.Mobile || rowData.MOBILE || rowData.phone || rowData.Phone || '',
+                email: rowData.email || rowData.Email || rowData.EMAIL || '',
+                occupied_way: rowData.occupied_way || rowData['occupied way'] || rowData.occupiedWay || 'own'
+            };
+
+            // Validate required fields
+            if (!extractedData.name || !extractedData.nic || !extractedData.email) {
+                await connection.rollback();
+                return res.status(400).json({
+                    success: false,
+                    message: 'Name, NIC and Email are required fields'
+                });
+            }
+
+            // Validate email format
+            if (!extractedData.email.includes('@')) {
+                await connection.rollback();
+                return res.status(400).json({
+                    success: false,
+                    message: 'Valid email address is required'
+                });
+            }
+
+            // Check if email already exists for this apartment
+            const [existing] = await connection.execute(
+                'SELECT id FROM houseowner WHERE email = ? AND apartment_id = ?',
+                [extractedData.email, apartment_id]
+            );
+            
+            if (existing.length > 0) {
+                await connection.rollback();
+                return res.status(400).json({
+                    success: false,
+                    message: 'Email already registered for a house owner in this apartment'
+                });
+            }
+
+            // Get the House Owner role_id for this company
+            let role_id = null;
+            const [roleRows] = await connection.execute(
+                'SELECT id FROM roles WHERE company_id = ? AND role_name = ? AND is_active = 1 LIMIT 1',
+                [company_id, 'House Owner']
+            );
+            
+            if (roleRows.length > 0) {
+                role_id = roleRows[0].id;
+            }
+
+            // Create the house owner
+            const houseOwnerId = uuidv4().replace(/-/g, '').substring(0, 10);
+            
+            await connection.execute(
+                `INSERT INTO houseowner 
+                (id, company_id, apartment_id, name, nic, occupation, country, mobile, email, occupied_way, proof, 
+                is_active, is_verified, created_at, updated_at, role_id) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, NOW(), NOW(), ?)`,
+                [
+                    houseOwnerId, 
+                    company_id, 
+                    apartment_id, 
+                    extractedData.name,
+                    extractedData.nic,
+                    extractedData.occupation,
+                    extractedData.country,
+                    extractedData.mobile,
+                    extractedData.email,
+                    extractedData.occupied_way,
+                    null, // No proof from Excel import
+                    role_id
+                ]
+            );
+
+            const newHouseOwner = {
+                id: houseOwnerId,
+                company_id,
+                apartment_id,
+                ...extractedData,
+                role_id
+            };
+
+            let houseData = null;
+            
+            // If house_id is provided, link the house owner to the house
+            if (house_id) {
+                // First, check if the house exists and belongs to the same apartment
+                const [houseRows] = await connection.execute(
+                    'SELECT id, house_id, floor_id, status FROM houses WHERE id = ? AND apartment_id = ?',
+                    [house_id, apartment_id]
+                );
+                
+                if (houseRows.length > 0) {
+                    houseData = houseRows[0];
+                    
+                    // Update the house to link with the new owner
+                    await connection.execute(
+                        'UPDATE houses SET houseowner_id = ?, status = ? WHERE id = ?',
+                        [houseOwnerId, 'occupied', house_id]
+                    );
+                    
+                    // Also update the house data status
+                    houseData.status = 'occupied';
+                } else {
+                    console.warn(`House ${house_id} not found in apartment ${apartment_id}`);
+                }
+            }
+
+            // Commit the transaction
+            await connection.commit();
+
+            res.json({
+                success: true,
+                message: 'House owner imported successfully' + (house_id ? ' and linked to house' : ''),
+                data: {
+                    houseOwner: newHouseOwner,
+                    house: houseData,
+                    importedFrom: {
+                        fileName: req.file.originalname,
+                        importedAt: new Date().toISOString()
+                    }
+                }
+            });
+
+        } catch (error) {
+            console.error('Excel import error:', error);
+            
+            // Rollback transaction if connection exists
+            if (connection) {
+                await connection.rollback();
+            }
+            
+            res.status(500).json({
+                success: false,
+                message: 'Failed to import house owner from Excel',
+                error: error.message
+            });
+        } finally {
+            // Release connection
+            if (connection) {
+                connection.release();
+            }
         }
     }
 }

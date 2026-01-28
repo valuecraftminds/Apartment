@@ -31,7 +31,7 @@ export default function CompleteRegistration() {
     const tokenParam = searchParams.get("token");
     const idParam = searchParams.get("id");
 
-    console.log("URL Parameters:", { token: tokenParam, id: idParam });
+   // console.log("URL Parameters:", { token: tokenParam, id: idParam });
 
     if (!tokenParam || !idParam) {
       setIsValidLink(false);
@@ -51,7 +51,7 @@ export default function CompleteRegistration() {
           id: idParam 
         });
         
-        console.log("Link verification response:", response.data);
+       // console.log("Link verification response:", response.data);
         
         if (response.data.success) {
           setEmail(response.data.email);
@@ -68,6 +68,34 @@ export default function CompleteRegistration() {
 
     verifyLink();
   }, [searchParams]);
+
+  const [countries, setCountries] = useState([]);
+  
+    useEffect(() => {
+      const fetchCountries = async () => {
+        try {
+          const res = await fetch('https://general.apivcm.shop/countries');
+          const data = await res.json();
+          setCountries(data.data);
+        } catch (err) {
+          console.error("Error fetching countries:", err);
+        }
+      };
+      fetchCountries();
+    }, []);
+
+    const handleCountryChange = (e) => {
+      const countryName = e.target.value;
+      const selectedCountry = countries.find(c => c.country === countryName);
+      
+      if (selectedCountry) {
+        setFormData(prev => ({
+          ...prev,
+          country: selectedCountry.country,
+          mobile: selectedCountry.international_dialing + ' ' 
+        }));
+      }
+    };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -98,7 +126,7 @@ export default function CompleteRegistration() {
         id: userId
       });
 
-      console.log("Verification response:", verifyResponse.data);
+      // console.log("Verification response:", verifyResponse.data);
 
       // If verification successful, complete registration
       await api.post("/auth/complete-registration", {
@@ -206,7 +234,7 @@ export default function CompleteRegistration() {
             </div>
           </div>
 
-          <div>
+          {/* <div>
             <input
               type="text"
               name="country"
@@ -216,9 +244,26 @@ export default function CompleteRegistration() {
               required
               className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-3 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             />
+          </div> */}
+          <div>
+            <select
+              name="country"
+              value={formData.country || ''}
+              onChange={handleCountryChange}
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-3 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              required
+            >
+              <option value="">Select country *</option>
+              {countries.map(country => (
+                <option key={country.country} value={country.country}>
+                  {country.country} 
+                  {/* ({country.international_dialing}) */}
+                </option>
+              ))}
+            </select>
           </div>
 
-          <div>
+          {/* <div>
             <input
               type="tel"
               name="mobile"
@@ -227,6 +272,30 @@ export default function CompleteRegistration() {
               onChange={handleChange}
               required
               className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-3 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+          </div> */}
+          <div>
+            <input
+              name="mobile"
+              value={formData.mobile}
+              onChange={(e) => {
+                // Allow only numbers and + sign after the country code
+                const countryCode = formData.mobile.split(' ')[0] || '';
+                const userNumber = e.target.value.replace(countryCode + ' ', '');
+                const newValue = countryCode + (userNumber ? ' ' + userNumber.replace(/\D/g, '') : '');
+                
+                // Update state
+                const event = {
+                  target: {
+                    name: 'mobile',
+                    value: newValue
+                  }
+                };
+                handleChange(event, false);
+              }}
+              placeholder="Mobile * (e.g., +94 771234567)"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-3 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              required
             />
           </div>
 

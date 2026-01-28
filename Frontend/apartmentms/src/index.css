@@ -9,46 +9,125 @@
 }
 
 .welcomePage {
-  @apply min-h-screen w-screen flex items-center justify-center px-4;
+  @apply min-h-screen w-screen flex items-center justify-center
+   px-3 sm:px-4 md:px-6 relative overflow-hidden;
   background-image: 
     /* linear-gradient(135deg, rgba(29,78,216,0.65), rgba(139,92,246,0.65)), */
     url('../images/1.jpg'); /* Replace with your image */
   background-size: cover;
   background-position: center;
+  background-repeat: no-repeat;
   animation: gradientMove 15s ease infinite;
 }
 
-.welcomeCard {
+@media (max-width: 640px) {
+  .welcomePage {
+    background-attachment: scroll;
+    animation: gradientMove 20s ease infinite; /* Slower on mobile */
+  }
+}
+
+/* .welcomeCard {
   @apply bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-3xl w-full 
          shadow-2xl text-center;
+} */
+
+.welcomeCard {
+  @apply bg-white/10 backdrop-blur-md sm:backdrop-blur-lg rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 
+         max-w-xs sm:max-w-sm md:max-w-md lg:max-w-3xl w-full 
+         shadow-lg sm:shadow-xl md:shadow-2xl text-center mx-auto
+         border border-white/20;
 }
 
 .welcomeTitle {
-  @apply text-3xl sm:text-5xl md:text-6xl font-bold text-white mb-4;
+  /* @apply text-3xl sm:text-5xl md:text-6xl font-bold text-white mb-4; */
+  @apply text-white font-bold mb-2 sm:mb-3 md:mb-4 leading-tight;
 }
 
 .welcomeSubtitle {
-  @apply text-base sm:text-lg md:text-xl text-white/90 mb-8;
+  /* @apply text-base sm:text-lg md:text-xl text-white/90 mb-8; */
+  @apply text-white/90 leading-relaxed;
 }
 
 .featureGrid {
-  @apply grid grid-cols-2 gap-4 mb-10 text-lg text-white;
+  /* @apply grid grid-cols-2 gap-4 mb-10 text-lg text-white; */
+  @apply grid gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6 md:mb-8 text-white;
 }
 
 .featureItem {
-  @apply bg-white/20 rounded-lg py-3 px-4 backdrop-blur-sm shadow-md;
+  /* @apply bg-white/20 rounded-lg py-3 px-4 backdrop-blur-sm shadow-md; */
+  @apply bg-white/20 rounded-lg sm:rounded-xl backdrop-blur-sm shadow-md 
+         flex items-center justify-center gap-2 
+         transition-transform duration-200 hover:scale-[1.02];
 }
 
 .welcomeButton {
-  @apply bg-yellow-300 text-purple-900 font-bold py-3 px-8 rounded-lg shadow-lg
-         hover:bg-yellow-400 hover:scale-105 transition-transform duration-300 animate-bounce;
+  /* @apply bg-yellow-300 text-purple-900 font-bold py-3 px-8 rounded-lg shadow-lg
+         hover:bg-yellow-400 hover:scale-105 transition-transform duration-300 animate-bounce; */
+         @apply bg-yellow-300 text-purple-900 font-bold 
+         shadow-lg hover:bg-yellow-400 hover:scale-105 
+         transition-all duration-300 animate-bounce;
 }
 
 .signInSignUp{
-  @apply bg-gradient-to-t from-blue-200 font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-gradient-to-t bg-blue-500 border border-white
-         hover:scale-105 transition-transform duration-300 hover:text-blue-700
+  /* @apply bg-gradient-to-t from-blue-200 font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-gradient-to-t bg-blue-500 border border-white
+         hover:scale-105 transition-transform duration-300 hover:text-blue-700 */
+          @apply bg-gradient-to-t from-blue-200 to-blue-100 font-bold 
+         rounded-lg shadow-lg hover:bg-gradient-to-t hover:from-blue-300 hover:to-blue-200 
+         border border-white/50 hover:border-white
+         hover:scale-105 transition-all duration-300 hover:text-blue-800 text-black
+         active:scale-95;
 }
 
+@media (max-width: 640px) {
+  .welcomeButton,
+  .signInSignUp,
+  .featureItem {
+    min-height: 44px; /* Minimum touch target size for mobile */
+  }
+  
+  .featureItem {
+    padding: 12px 16px;
+  }
+}
+
+/* Improve readability on small screens */
+@media (max-width: 480px) {
+  .welcomeCard {
+    padding: 20px 16px;
+    max-width: 95%;
+  }
+  
+  .welcomeTitle {
+    font-size: 1.75rem;
+  }
+  
+  .welcomeSubtitle {
+    font-size: 0.95rem;
+    line-height: 1.4
+  }
+}
+
+/* Ensure images don't overflow on mobile */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Smooth transitions for all interactive elements */
+button, .featureItem {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Accessibility: focus styles */
+button:focus-visible {
+  @apply outline-2 outline-offset-2 outline-yellow-400;
+}
+
+/* Prevent text selection on buttons */
+button {
+  user-select: none;
+}
 
 /* Login Page Background */
 .loginPage {
