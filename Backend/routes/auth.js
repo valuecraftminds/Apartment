@@ -42,7 +42,7 @@ function signAccessToken(user) {
     role_id: user.role_id,
     company_id: user.company_id
   }, process.env.ACCESS_TOKEN_SECRET, { 
-    expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN
+    expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN 
   });
 }
 
