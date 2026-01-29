@@ -278,10 +278,10 @@ async function submit(e) {
     }
   }
 
-  // if (!allValid) {
-  //   toast.error("Please fix all validation errors before submitting");
-  //   return;
-  // }
+  if (!allValid) {
+    toast.warn("Please fix all validation errors before submitting");
+    return;
+  }
 
   try {
     // Prepare company data
