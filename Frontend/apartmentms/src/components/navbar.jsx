@@ -98,12 +98,12 @@ export default function Navbar() {
           {/* Left side - Mobile menu button and search */}
           <div className="flex items-center">
             {/* Mobile menu button - hidden on desktop */}
-            <button
+            {/* <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="lg:hidden p-2 rounded-md text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
             >
               {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
+            </button> */}
           </div>
 
           {/* Right side - Notifications and user info */}

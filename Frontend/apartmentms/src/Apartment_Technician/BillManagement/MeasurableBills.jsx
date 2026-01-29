@@ -5,7 +5,6 @@ import { toast, ToastContainer } from 'react-toastify'
 import api from '../../api/axios'
 import { Html5QrcodeScanner, Html5QrcodeScanType } from 'html5-qrcode'
 import Sidebar from '../../components/Sidebar'
-import Navbar from '../../components/Navbar'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AuthContext } from '../../contexts/AuthContext'
 
@@ -281,12 +280,24 @@ export default function MeasurableBills() {
         setHouseDetails(null)
         setManualHouseId('')
 
+        if (scannerRef.current) {
+            scannerRef.current.clear().catch(error => {
+                console.log('Scanner clear error on start:', error);
+            });
+            scannerRef.current = null;
+        }
+
         setTimeout(() => {
             try {
-                if (scannerRef.current) {
-                    scannerRef.current.clear().catch(error => {
-                        console.log('Scanner clear error:', error)
-                    })
+                // if (scannerRef.current) {
+                //     scannerRef.current.clear().catch(error => {
+                //         console.log('Scanner clear error:', error)
+                //     })
+                // }
+                const element = document.getElementById('qr-reader');
+                if (element) {
+                    // Clear any existing content
+                    element.innerHTML = '';
                 }
 
                 scannerRef.current = new Html5QrcodeScanner(
@@ -317,15 +328,40 @@ export default function MeasurableBills() {
     }
 
     // Toggle camera direction
-    const toggleCameraDirection = () => {
+    // const toggleCameraDirection = () => {
+    //     const newDirection = cameraDirection === 'environment' ? 'user' : 'environment';
+    //     setCameraDirection(newDirection);
+        
+    //     if (scanning) {
+    //         // Restart scanning with new camera direction
+    //         startScanning();
+    //     }
+    // };
+
+    const toggleCameraDirection = async () => {
         const newDirection = cameraDirection === 'environment' ? 'user' : 'environment';
+        
+        // First, stop any ongoing scanning
+        if (scannerRef.current) {
+            try {
+                await scannerRef.current.clear();
+                //console.log('Scanner cleared for camera switch');
+            } catch (error) {
+                console.log('Error clearing scanner:', error);
+            }
+        }
+        
         setCameraDirection(newDirection);
         
+        // Restart scanning with new camera direction
         if (scanning) {
-            // Restart scanning with new camera direction
-            startScanning();
+            // Small delay to ensure cleanup is complete
+            setTimeout(() => {
+                startScanning();
+            }, 500);
         }
     };
+
 
     // Handle successful scan - QR contains only house ID
     const handleScanSuccess = async (decodedText) => {
@@ -371,11 +407,20 @@ export default function MeasurableBills() {
     };
 
     // Reset and clean up
-    const handleReset = () => {
+    const handleReset = async () => {
         if (scannerRef.current) {
-            scannerRef.current.clear().catch(error => {
-                console.log('Scanner clear error on reset:', error)
-            })
+            try {
+                await scannerRef.current.clear();
+                console.log('Scanner cleared on reset');
+            } catch (error) {
+                console.log('Scanner clear error on reset:', error);
+            }
+            scannerRef.current = null;
+        }
+        
+        if (timerIntervalRef.current) {
+            clearInterval(timerIntervalRef.current);
+            timerIntervalRef.current = null;
         }
         setScanning(false)
         setScannedData(null)

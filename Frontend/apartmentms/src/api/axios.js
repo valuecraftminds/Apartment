@@ -392,21 +392,21 @@ api.interceptors.response.use(
     });
     
     // DEBUG: Log what's happening
-    // console.log('Interceptor check:', {
-    //   url: requestUrl,
-    //   shouldSkipRefresh,
-    //   status: error.response?.status
-    // });
+    //console.log('Interceptor check:', {
+      // url: requestUrl,
+      // shouldSkipRefresh,
+      // status: error.response?.status
+    //});
     
     // For registration/login endpoints, don't try to refresh
     if (shouldSkipRefresh) {
-      console.log('Skipping token refresh for endpoint:', requestUrl);
+      //console.log('Skipping token refresh for endpoint:', requestUrl);
       return Promise.reject(error);
     }
     
     // Only handle 401 errors for endpoints that need auth
     if (error.response && error.response.status === 401 && !originalRequest._retry) {
-      console.log('Attempting token refresh for protected endpoint:', requestUrl);
+      //console.log('Attempting token refresh for protected endpoint:', requestUrl);
       originalRequest._retry = true;
       
       // If we're already refreshing, add to queue
