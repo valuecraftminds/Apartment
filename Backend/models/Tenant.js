@@ -26,10 +26,10 @@ class Tenant{
     const { regNo, name, address } = tenantData;
     
     // Generate a proper UUID (not just 3 chars)
-    const id = uuidv4().replace(/-/g, '').substring(0, 3);
+    //const id = uuidv4().replace(/-/g, '').substring(0, 3);
     
-    console.log('🔍 Creating tenant with ID:', id);
-    
+    const uuid = uuidv4();
+    const id = uuid.replace(/\D/g, '').substring(0, 3);    
     try {
       const [result] = await pool.execute(
         'INSERT INTO tenants (id, regNo, name, address) VALUES (?, ?, ?, ?)',

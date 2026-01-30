@@ -20,7 +20,8 @@ import {
   Shield,
   RefreshCw,
   Menu,
-  X
+  X,
+  Building
 } from 'lucide-react';
 import { AuthContext } from '../contexts/AuthContext';
 import api from '../api/axios';
@@ -128,6 +129,16 @@ export default function Sidebar() {
         { name: 'All Complaints', path:'/view-complaints'},
       ]
     },
+    company_management: {
+      id: 'company_management',
+      name: 'Company Set up',
+      icon: Building,
+      isConstant: false,
+      children: [
+        { name: 'Import House owner', path: '/bulk-import-houseowner' },
+        // { name: 'Service Providers', path: '/service-providers' },
+      ]
+    },
     tenant_management: { 
       id: 'tenant_management', 
       name: 'Tenants', 
@@ -165,6 +176,7 @@ export default function Sidebar() {
     'apartments_management',
     'expenses_management',
     'complaint_management',
+    'company_management',
     'admin_profile'
   ];
 

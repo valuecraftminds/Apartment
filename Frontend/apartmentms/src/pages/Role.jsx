@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react'
-import Sidebar from '../components/Sidebar';
 import { Edit, Image, Loader, Plus, Settings, Trash2, UserCog } from 'lucide-react';
 import api from '../api/axios';
 import CreateRoles from '../Roles/CreateRoles';

@@ -6,9 +6,9 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Verify from './pages/Verify'
 import AdminDashboard from './pages/AdminDashboard'
-import NavBar from './components/Navbar'
+import NavBar from './components/navbar'
 import CompanyRegistration from './pages/CompanyRegistration'
-import { House, Sidebar } from 'lucide-react'
+import { House} from 'lucide-react'
 import ApartmentView from './pages/ApartmentView'
 import UserView from './pages/UserView'
 import Floors from './FloorsHouse/Floors'
@@ -50,6 +50,8 @@ import HouseOwnerProfilePage from './HouseOwner/HouseOwnerProfilePage'
 import StartWork from './Apartment_Technician/ComplaintManagament/StartWork'
 import MyWork from './Apartment_Technician/ComplaintManagament/MyWork'
 import ComplaintCategories from './Apartment_Technician/ComplaintManagament/ComplaintCategories'
+import Sidebar from './components/sidebar'
+import BulkImportHouseOwner from './FloorsHouse/BulkImportHouseOwner'
 
 export default function App() {
   return (
@@ -100,6 +102,7 @@ export default function App() {
         <Route path='/my-work/:complaintId' element={<MyWork />} />
         <Route path= '/start-work' element={<StartWork />} />
         <Route path= '/complaint-categories' element={<ComplaintCategories/>}/>
+        <Route path= '/bulk-import-houseowner' element= {<BulkImportHouseOwner/>}/>
       </Routes>
       </AuthProvider>
     </BrowserRouter>

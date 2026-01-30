@@ -5,7 +5,11 @@ const { v4: uuidv4 } = require('uuid');
 class BulkImportModel {
   static async createApartment(apartmentData) {
     const { company_id, name, address, city } = apartmentData;
-    const id = uuidv4();
+    const uuid = uuidv4();
+    const nextNumber = uuid.replace(/\D/g, '').substring(0, 3);
+    const id = `${company_id}-${nextNumber}`;
+    
+   // const id = uuidv4().replace(/-/g, '').substring(0, 3);
     const apartment_id = `APT${Date.now()}`;
     
     const [result] = await pool.execute(
@@ -27,7 +31,9 @@ class BulkImportModel {
 
   static async createFloor(floorData) {
     const { company_id, apartment_id, floor_id } = floorData;
-    const id = uuidv4();
+     const uuid = uuidv4();
+      const nextNumber = uuid.replace(/\D/g, '').substring(0, 3);
+      const id = `${apartment_id}-${nextNumber}`;
     
     const [result] = await pool.execute(
       `INSERT INTO floors (id, company_id, apartment_id, floor_id) 
@@ -48,7 +54,7 @@ class BulkImportModel {
 
   static async createHouseType(houseTypeData) {
     const { company_id, apartment_id, name, sqrfeet, rooms, bathrooms } = houseTypeData;
-    const id = uuidv4();
+    const id = uuidv4().replace(/-/g, '').substring(0, 3);
     
     const [result] = await pool.execute(
       `INSERT INTO housetype (id, company_id, apartment_id, name, sqrfeet, rooms, bathrooms) 
@@ -69,7 +75,9 @@ class BulkImportModel {
 
   static async createHouse(houseData) {
     const { company_id, apartment_id, floor_id, house_id, housetype_id, status } = houseData;
-    const id = uuidv4();
+    const uuid = uuidv4();
+    const nextNumber = uuid.replace(/\D/g, '').substring(0, 3);
+    const id = `${floor_id}-${nextNumber}`;
     
     const [result] = await pool.execute(
       `INSERT INTO houses (id, company_id, apartment_id, floor_id, house_id, housetype_id, status) 
@@ -123,7 +131,9 @@ class BulkImportModel {
     const houses = [];
     for (const houseData of housesData) {
       const { company_id, apartment_id, floor_id, house_id, housetype_id, status } = houseData;
-      const id = uuidv4();
+      const uuid = uuidv4();
+      const nextNumber = uuid.replace(/\D/g, '').substring(0, 3);
+      const id = `${floor_id}-${nextNumber}`;
       
       const [result] = await pool.execute(
         `INSERT INTO houses (id, company_id, apartment_id, floor_id, house_id, housetype_id, status) 

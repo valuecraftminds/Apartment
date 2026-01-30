@@ -11,7 +11,8 @@ class Floor {
         );
         
         // const nextNumber = (countResult[0].count + 1).toString().padStart(3, '0');
-        const nextNumber = uuidv4().replace(/-/g, '').substring(0, 3);
+        const uuid = uuidv4();
+        const nextNumber = uuid.replace(/\D/g, '').substring(0, 3);
         const id = `${apartment_id}-${nextNumber}`;
 
         const [result] = await pool.execute(

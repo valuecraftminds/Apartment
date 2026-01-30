@@ -1,6 +1,6 @@
 //Houses.jsx
 import React, { useEffect, useState } from 'react'
-import Sidebar from '../components/Sidebar'
+import Sidebar from '../components/sidebar'
 import Navbar from '../components/navbar'
 import { ChevronLeft, Edit, FileText, House, Image, Loader, Plus, QrCode, ToggleLeft, ToggleRight, Trash2, Menu } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom';

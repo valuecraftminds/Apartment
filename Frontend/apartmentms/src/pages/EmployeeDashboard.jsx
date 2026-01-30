@@ -3,7 +3,7 @@ import React, { useState, useEffect, useContext } from 'react'
 import api from '../api/axios';
 import { AuthContext } from '../contexts/AuthContext';
 import Navbar from '../components/navbar'
-import Sidebar from '../components/Sidebar'
+import Sidebar from '../components/sidebar'
 import { 
   Home, 
   Building2,

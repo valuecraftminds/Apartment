@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react'
-import Sidebar from '../components/Sidebar'
 import {Edit, Image, Loader, Plus, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';

@@ -224,6 +224,7 @@ mountRoute('/api/complaints', './routes/complaints');
 mountRoute('/api/categories', './routes/categories');
 mountRoute('/api/technician-categories', './routes/technicianCategories');
 mountRoute('/api/ratings', './routes/ratings');
+mountRoute('/api/house-owners/bulk', './routes/houseOwnerBulkRoutes');
 
 /* =====================================================
    HEALTH CHECK

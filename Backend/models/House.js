@@ -11,7 +11,8 @@ class House{
         [company_id, apartment_id,floor_id]
     );
     // const nextNumber = (countResult[0].count + 1).toString().padStart(3, '0');
-    const nextNumber = uuidv4().replace(/-/g, '').substring(0, 3);
+    const uuid = uuidv4();
+    const nextNumber = uuid.replace(/\D/g, '').substring(0, 3);
     const id = `${floor_id}-${nextNumber}`;
 
     const [result] = await pool.execute(

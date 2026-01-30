@@ -8,6 +8,7 @@ export default function QRCodeGenerator({ houses, apartment, floor, onClose }) {
     const [loading, setLoading] = useState(false)
     const [generatingPDF, setGeneratingPDF] = useState(false)
     const [qrCodeImages, setQrCodeImages] = useState({})
+    const [includeInternalIdInPdf, setIncludeInternalIdInPdf] = useState(false)
 
     // Create QR code data - House ID is what users see
     const createHouseQRData = (house) => {
@@ -108,7 +109,7 @@ export default function QRCodeGenerator({ houses, apartment, floor, onClose }) {
                 pdf.rect(x, yOffset, cardWidth, cardHeight)
                 
                 // Apartment name (top)
-                pdf.setFontSize(8)
+                pdf.setFontSize(12)
                 pdf.setFont(undefined, "bold")
                 pdf.text(apartment.name, x + cardWidth / 2, yOffset + 5, { align: 'center' })
                 
@@ -118,16 +119,18 @@ export default function QRCodeGenerator({ houses, apartment, floor, onClose }) {
                 pdf.text(`Floor: ${floor.floor_id}`, x + cardWidth / 2, yOffset + 9, { align: 'center' })
                 
                 // House ID (centered)
-                pdf.setFontSize(14)
+                pdf.setFontSize(12)
                 pdf.setFont(undefined, "bold")
                 pdf.setTextColor(0, 0, 0)
                 pdf.text(`${house.house_id}`, x + cardWidth / 2, yOffset + 15, { align: 'center' })
                 
-                //House DB Id
-                pdf.setFontSize(7)
-                pdf.setFont(undefined, "bold")
-                pdf.setTextColor(0, 0, 0)
-                pdf.text(`${house.id}`, x + cardWidth / 2, yOffset + 18, { align: 'center' })
+                //House DB Id (internal) - include only if user checked the option
+                if (includeInternalIdInPdf) {
+                    pdf.setFontSize(7)
+                    pdf.setFont(undefined, "bold")
+                    pdf.setTextColor(0, 0, 0)
+                    pdf.text(`${house.id}`, x + cardWidth / 2, yOffset + 18, { align: 'center' })
+                }
 
                 // QR Code
                 if (qrCodeImages[house.id]) {
@@ -379,6 +382,20 @@ export default function QRCodeGenerator({ houses, apartment, floor, onClose }) {
                             </div>
                         )}
                     </div>
+                </div>
+
+                {/* Include internal id checkbox */}
+                <div className="px-6 pb-4">
+                    <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                        <input
+                            type="checkbox"
+                            checked={includeInternalIdInPdf}
+                            onChange={(e) => setIncludeInternalIdInPdf(e.target.checked)}
+                            className="h-4 w-4 rounded border-gray-300 text-purple-600"
+                        />
+                        <span>Include internal house.id in PDF</span>
+                        <span className="text-xs text-gray-400 ml-2">(Only check to print internal DB id)</span>
+                    </label>
                 </div>
 
                 {/* Footer */}

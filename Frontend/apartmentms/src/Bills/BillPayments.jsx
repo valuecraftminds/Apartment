@@ -268,6 +268,76 @@ export default function BillPayments() {
     }
   };
 
+  // Generate PDF invoice for a single payment
+  const generateInvoice = async (payment) => {
+    try {
+      const { jsPDF } = await import('jspdf');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+
+      // Header
+      pdf.setFontSize(18);
+      pdf.setFont(undefined, 'bold');
+      pdf.text('INVOICE', pageWidth / 2, 20, { align: 'center' });
+
+      // Invoice No and Print Date (3-digit)
+      const invoiceNo = String(new Date().getTime() % 1000).padStart(3, '0');
+      const printDate = new Date().toISOString().split('T')[0];
+      pdf.setFontSize(10);
+      pdf.setFont(undefined, 'normal');
+      pdf.text(`Invoice No: ${invoiceNo}`, 15, 32);
+      pdf.text(`Print Date: ${printDate}`, pageWidth - 15, 32, { align: 'right' });
+
+      // House details
+      pdf.setFontSize(11);
+      pdf.text(`Apartment: ${payment.apartment_name || ''}`, 15, 44);
+      if (payment.floor_id) pdf.text(`Floor: ${payment.floor_id}`, 15, 52);
+      if (payment.house_number) pdf.text(`House: ${payment.house_number}`, 15, 60);
+
+      // Table header
+      const tableTop = 74;
+      const colX = [15, 110, 150]; // Description, Due Amount, Paid Amount
+      pdf.setDrawColor(0);
+      pdf.setFillColor(240, 240, 240);
+      pdf.rect(15, tableTop - 8, pageWidth - 30, 8, 'F');
+      pdf.setFontSize(11);
+      pdf.setTextColor(40);
+      pdf.text('Description', colX[0], tableTop - 2);
+      pdf.text('Due Amount', colX[1], tableTop - 2);
+      pdf.text('Paid Amount', colX[2], tableTop - 2);
+
+      // Row values
+      const desc = payment.bill_name || payment.bill_id || 'Charge';
+      const dueAmount = Number(payment.unitPrice ?? ((Number(payment.paidAmount || 0) + Number(payment.pendingAmount || 0))));
+      const paidAmount = Number(payment.paidAmount || 0);
+
+      const rowY = tableTop + 8;
+      pdf.setFontSize(10);
+      pdf.setTextColor(0);
+      pdf.text(String(desc), colX[0], rowY);
+      pdf.text(dueAmount.toFixed(2), colX[1], rowY);
+      pdf.text(paidAmount.toFixed(2), colX[2], rowY);
+
+      // Totals
+      const totalY = rowY + 18;
+      pdf.setFont(undefined, 'bold');
+      pdf.text('Total Paid:', colX[1], totalY);
+      pdf.text(paidAmount.toFixed(2), colX[2], totalY);
+
+      // Thanks quote
+      pdf.setFont(undefined, 'normal');
+      pdf.setFontSize(10);
+      pdf.text('Thank you for your business!', 15, totalY + 18);
+
+      const fileName = `INVOICE_${invoiceNo}_${(payment.apartment_name || 'apartment').replace(/\s+/g, '_')}_${payment.month || ''}_${payment.year || ''}.pdf`;
+      pdf.save(fileName);
+      toast.success('Invoice downloaded');
+    } catch (err) {
+      console.error('Invoice generation failed', err);
+      toast.error('Failed to generate invoice');
+    }
+  };
+
   const clearFilters = () => {
     setFilters({
       billtype: '',
@@ -747,6 +817,20 @@ export default function BillPayments() {
                               )} */}
                               
                               {/* Delete button */}
+                              <div className="relative group">
+                                <button
+                                  onClick={() => generateInvoice(payment)}
+                                  className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900/30 transition-all duration-200"
+                                  title="Download Invoice"
+                                >
+                                  <Download size={18} />
+                                </button>
+                                
+                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-800 dark:bg-gray-700 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
+                                  Download Invoice
+                                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800 dark:border-t-gray-700"></div>
+                                </div>
+                              </div>
                               <div className="relative group">
                                 <button
                                   onClick={() => handleDeleteClick(payment)}

@@ -1,9 +1,9 @@
 // CalculateMeasurableBill.jsx
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../api/axios';
-import Sidebar from '../../components/Sidebar';
-import Navbar from '../../components/Navbar';
+import Sidebar from '../../components/sidebar';
+import Navbar from '../../components/navbar';
 import { AuthContext } from '../../contexts/AuthContext';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -37,6 +37,16 @@ export default function CalculateMeasurableBill() {
     const [selectedRange, setSelectedRange] = useState(null);
     const [rangePrice, setRangePrice] = useState(null);
     const [dueDate, setDueDate] = useState('');
+    const defaultDueDate = useMemo(() => {
+        const d = new Date();
+        d.setDate(d.getDate() + 10);
+        return d.toISOString().split('T')[0];
+    }, []);
+
+    // Prefill due date with default (10 days from today) unless user sets one
+    useEffect(() => {
+        if (!dueDate) setDueDate(defaultDueDate);
+    }, [defaultDueDate]);
     
     // Form state
     const [formData, setFormData] = useState({

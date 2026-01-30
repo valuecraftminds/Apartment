@@ -826,7 +826,7 @@
 // }
 
 // GenerateSharedValueBill.jsx to create bill
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import api from '../api/axios';
 import { toast, ToastContainer } from 'react-toastify';
 const roundUpCustom = (number, precision = 2, roundTo = 'standard') => {
@@ -857,6 +857,15 @@ export default function GenerateSharedValueBill({ onClose, onCreated,apartment_i
     const [apartments, setApartments] = useState([]);
     const [loadingApartments, setLoadingApartments] = useState(false);
     const [dueDate, setDueDate] = useState('');
+    const defaultDueDate = useMemo(() => {
+        const d = new Date();
+        d.setDate(d.getDate() + 10);
+        return d.toISOString().split('T')[0];
+    }, []);
+    // Prefill due date with default (10 days from today) unless user sets one
+    useEffect(() => {
+        if (!dueDate) setDueDate(defaultDueDate);
+    }, [defaultDueDate]);
     const [houseTypes, setHouseTypes] = useState([]);
     
     // New state for selections
@@ -1109,7 +1118,8 @@ const handleGenerateBill = async () => {
             selected_floors: [],
             selected_houses: [],
             calculation_method: calculationMethod,
-            due_date: dueDate || null
+            // Default due date to 10 days after generation date when not provided
+            due_date: dueDate || new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
         };
         
        // console.log('Sending data to /generate-bills/multiple:', billData);
@@ -1223,6 +1233,9 @@ const handleGenerateBill = async () => {
                         onChange={(e) => setDueDate(e.target.value)}
                         className="w-full px-3 py-2 text-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
                     />
+                    {!dueDate && (
+                        <p className="text-xs text-gray-500 mt-1">Default due date: {defaultDueDate} (10 days from today)</p>
+                    )}
                 </div>
             </div>
 

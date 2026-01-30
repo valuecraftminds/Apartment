@@ -9,7 +9,7 @@ import EditApartment from '../Apartments/EditApartment';
 import { toast, ToastContainer } from 'react-toastify';
 import BulkImportModal from '../Apartments/BulkImportModal';
 import DocumentModal from '../Apartments/DocumentModal';
-import Sidebar from '../components/Sidebar';
+import Sidebar from '../components/sidebar';
 import Navbar from '../components/navbar';
 // import ViewApartment from '../Apartments/ViewApartment';
 

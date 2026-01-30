@@ -3,8 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { Search, Filter, Download, Eye, Edit, DollarSign, Calendar, Home, Building, Receipt, Trash2, CheckCircle, Clock, RefreshCw, PlusCircle, X } from 'lucide-react';
 import api from '../api/axios';
 import { toast, ToastContainer } from 'react-toastify';
-import Sidebar from '../components/Sidebar';
-import Navbar from '../components/Navbar';
+import Sidebar from '../components/sidebar';
+import Navbar from '../components/navbar';
 import UpdateBillPayments from './UpdateBillPayments';
 
 export default function BillPaymentSettle() {
@@ -27,6 +27,8 @@ export default function BillPaymentSettle() {
   const [apartments, setApartments] = useState([]);
   const [floors, setFloors] = useState([]);
   const [houses, setHouses] = useState([]);
+  const [manualHouseId, setManualHouseId] = useState('');
+  const [manualHousePK, setManualHousePK] = useState('');
   const [selectedHouseInfo, setSelectedHouseInfo] = useState(null);
   const [loadingApartments, setLoadingApartments] = useState(false);
   const [loadingFloors, setLoadingFloors] = useState(false);
@@ -138,6 +140,127 @@ export default function BillPaymentSettle() {
       setHouses([]);
     } finally {
       setLoadingHouses(false);
+    }
+  };
+
+  // Lookup house by external house_id (manual entry) and load bills
+  const handleManualHouseLookup = async () => {
+    const entered = (manualHouseId || '').trim();
+    if (!entered) {
+      toast.info('Please enter a House ID to lookup');
+      return;
+    }
+
+    try {
+      setLoadingHouses(true);
+      // Try endpoint that supports house_id lookup
+      const response = await api.get(`/houses?id=${encodeURIComponent(entered)}`);
+
+      let found = null;
+      if (response.data) {
+        const payload = response.data.data || response.data;
+        if (Array.isArray(payload)) {
+          found = payload[0];
+        } else if (typeof payload === 'object') {
+          // sometimes API returns single object
+          found = payload;
+        }
+      }
+
+      if (!found) {
+        toast.error('House not found');
+        return;
+      }
+
+      // Ensure filters use string ids
+      setFilters(prev => ({
+        ...prev,
+        apartment_id: found.apartment_id ? String(found.apartment_id) : prev.apartment_id,
+        floor_id: found.floor_id ? String(found.floor_id) : prev.floor_id,
+        house_id: found.id ? String(found.id) : prev.house_id
+      }));
+
+      setSelectedHouseInfo({
+        houseNumber: found.house_id || found.house_number || found.house_no || 'N/A',
+        apartmentName: found.apartment_name || found.apartment?.name || '',
+        floorNumber: found.floor_id || '' ,
+        houseId: found.id
+      });
+
+      // Trigger loading bills for the resolved internal house id
+      await loadBillsForHouse(found.id ? String(found.id) : entered);
+
+      toast.success(`Found house ${found.house_id || found.house_number || 'N/A'}`);
+    } catch (err) {
+      console.error('House lookup failed', err);
+      toast.error('Failed to lookup house');
+    } finally {
+      setLoadingHouses(false);
+    }
+  };
+
+  // Lookup bills directly by internal house PK (houses.id)
+  const handleManualHousePKLookup = async () => {
+    const entered = (manualHousePK || '').trim();
+    if (!entered) {
+      toast.info('Please enter an internal House PK to lookup');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const statusArray = filters.payment_status.split(',');
+      let billsData = [];
+
+      for (const status of statusArray) {
+        const params = new URLSearchParams({
+          house_id: entered,
+          year: filters.year,
+          payment_status: status.trim()
+        });
+
+        if (filters.month) params.append('month', filters.month);
+
+        const response = await api.get(`/bill-payments?${params}`);
+        if (response.data && response.data.success) {
+          billsData = [...billsData, ...(response.data.data || [])];
+        }
+      }
+
+      setAllBills(billsData);
+      updateFilteredBills(billsData);
+
+      const pendingTotal = billsData
+        .filter(bill => bill.payment_status === 'Pending')
+        .reduce((sum, bill) => sum + (parseFloat(bill.pendingAmount) || 0), 0);
+
+      const partialTotal = billsData
+        .filter(bill => bill.payment_status === 'Partial')
+        .reduce((sum, bill) => sum + (parseFloat(bill.pendingAmount) || 0), 0);
+
+      setTotalPendingAmount(pendingTotal);
+      setTotalPartialAmount(partialTotal);
+
+      setSelectedHouseInfo({
+        houseNumber: entered,
+        apartmentName: '',
+        floorNumber: '',
+        houseId: entered
+      });
+
+      setFilters(prev => ({ ...prev, house_id: entered }));
+
+      if (billsData.length > 0) {
+        toast.success(`Found ${billsData.length} bill(s) for house PK ${entered}`);
+      } else {
+        toast.info('No bills found for the given house PK');
+      }
+    } catch (err) {
+      console.error('House PK lookup failed', err);
+      toast.error('Failed to lookup bills by house PK');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -652,6 +775,32 @@ export default function BillPaymentSettle() {
                   {loadingHouses && (
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Loading houses...</p>
                   )}
+                </div>
+
+                {/* Manual House PK lookup */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Or enter House ID
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={manualHousePK}
+                      onChange={(e) => setManualHousePK(e.target.value)}
+                      placeholder="e.g. house-abc123"
+                      className="w-full px-3 py-2 text-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleManualHousePKLookup}
+                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"    
+                    >
+                      Lookup
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Enter the internal House ID to fetch all bill payments directly.
+                  </p>
                 </div>
 
                 {/* Status Filter */}
