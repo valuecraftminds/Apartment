@@ -303,8 +303,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-  //baseURL: 'https://apmt.apivcm.shop/api',
-  baseURL: 'http://localhost:2500/api',
+  baseURL: 'https://apmt.apivcm.shop/api',
+  //baseURL: 'http://localhost:2500/api',
   withCredentials: true,
 });
 

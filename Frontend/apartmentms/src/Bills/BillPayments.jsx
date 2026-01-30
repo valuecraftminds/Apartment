@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Filter, Download, Eye, Edit, DollarSign, Calendar, Home, Building, Receipt, Trash2, CheckCircle, Clock, RefreshCw } from 'lucide-react';
 import api from '../api/axios';
 import { toast, ToastContainer } from 'react-toastify';
-import Sidebar from '../components/Sidebar';
+import Sidebar from '../components/sidebar';
 import Navbar from '../components/navbar';
 import UpdateBillPayments from './UpdateBillPayments';
 
