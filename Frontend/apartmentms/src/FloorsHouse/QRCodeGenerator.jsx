@@ -79,15 +79,37 @@ export default function QRCodeGenerator({ houses, apartment, floor, onClose }) {
             const { jsPDF } = await import("jspdf")
             const pdf = new jsPDF("p", "mm", "a4")
 
-            const cardWidth = 85
-            const cardHeight = 70
             const margin = 12
-            const qrSize = 40
             const pageWidth = pdf.internal.pageSize.getWidth()
             const pageHeight = pdf.internal.pageSize.getHeight()
-            
-            let yOffset = margin
+
+            // Layout adjustments to reduce paper waste for small selections
             let cardsPerRow = 2
+            let cardWidth = 85
+            let cardHeight = 70
+            let qrSize = 40
+
+            if (houses.length === 1) {
+                // Single house: use most of the page and center the card
+                cardsPerRow = 1
+                cardWidth = pageWidth - margin * 2
+                cardHeight = pageHeight - margin * 2 - 30
+                qrSize = Math.min(cardWidth, cardHeight) * 0.5
+            } else if (houses.length === 2) {
+                // Two houses: make cards wider/taller to better fill page
+                cardsPerRow = 2
+                cardWidth = (pageWidth - margin * 3) / 2
+                cardHeight = Math.max(90, (pageHeight - margin * 3) / 2)
+                qrSize = Math.min(80, cardWidth * 0.6)
+            } else {
+                // Default for >=3
+                cardsPerRow = 2
+                cardWidth = 85
+                cardHeight = 70
+                qrSize = 40
+            }
+
+            let yOffset = margin
             let cardsInCurrentRow = 0
 
             for (let i = 0; i < houses.length; i++) {
@@ -95,8 +117,13 @@ export default function QRCodeGenerator({ houses, apartment, floor, onClose }) {
                 
                 // Calculate position
                 const col = i % cardsPerRow
-                const x = margin + col * (cardWidth + margin)
-                
+                let x = margin + col * (cardWidth + margin)
+
+                // Special centering for a single large card
+                if (houses.length === 1) {
+                    x = (pageWidth - cardWidth) / 2
+                }
+
                 // Check if we need a new page
                 if (yOffset + cardHeight > pageHeight - margin) {
                     pdf.addPage()
@@ -109,37 +136,37 @@ export default function QRCodeGenerator({ houses, apartment, floor, onClose }) {
                 pdf.rect(x, yOffset, cardWidth, cardHeight)
                 
                 // Apartment name (top)
-                pdf.setFontSize(12)
+                pdf.setFontSize(houses.length === 1 ? 18 : 12)
                 pdf.setFont(undefined, "bold")
-                pdf.text(apartment.name, x + cardWidth / 2, yOffset + 5, { align: 'center' })
+                pdf.text(apartment.name, x + cardWidth / 2, yOffset + (houses.length === 1 ? 12 : 5), { align: 'center' })
                 
                 // Floor information
-                pdf.setFontSize(7)
+                pdf.setFontSize(houses.length === 1 ? 10 : 7)
                 pdf.setTextColor(100, 100, 100)
-                pdf.text(`Floor: ${floor.floor_id}`, x + cardWidth / 2, yOffset + 9, { align: 'center' })
+                pdf.text(`Floor: ${floor.floor_id}`, x + cardWidth / 2, yOffset + (houses.length === 1 ? 18 : 9), { align: 'center' })
                 
                 // House ID (centered)
-                pdf.setFontSize(12)
+                pdf.setFontSize(houses.length === 1 ? 24 : 12)
                 pdf.setFont(undefined, "bold")
                 pdf.setTextColor(0, 0, 0)
-                pdf.text(`${house.house_id}`, x + cardWidth / 2, yOffset + 15, { align: 'center' })
+                pdf.text(`${house.house_id}`, x + cardWidth / 2, yOffset + (houses.length === 1 ? 30 : 15), { align: 'center' })
                 
                 //House DB Id (internal) - include only if user checked the option
                 if (includeInternalIdInPdf) {
-                    pdf.setFontSize(7)
+                    pdf.setFontSize(houses.length === 1 ? 10 : 7)
                     pdf.setFont(undefined, "bold")
                     pdf.setTextColor(0, 0, 0)
-                    pdf.text(`${house.id}`, x + cardWidth / 2, yOffset + 18, { align: 'center' })
+                    pdf.text(`${house.id}`, x + cardWidth / 2, yOffset + (houses.length === 1 ? 36 : 18), { align: 'center' })
                 }
 
                 // QR Code
                 if (qrCodeImages[house.id]) {
                     pdf.addImage(
-                        qrCodeImages[house.id], 
-                        "PNG", 
-                        x + (cardWidth - qrSize) / 2, 
-                        yOffset + 20,
-                        qrSize, 
+                        qrCodeImages[house.id],
+                        "PNG",
+                        x + (cardWidth - qrSize) / 2,
+                        yOffset + (houses.length === 1 ? (cardHeight - qrSize) / 2 : 20),
+                        qrSize,
                         qrSize
                     )
                 }
@@ -393,7 +420,7 @@ export default function QRCodeGenerator({ houses, apartment, floor, onClose }) {
                             onChange={(e) => setIncludeInternalIdInPdf(e.target.checked)}
                             className="h-4 w-4 rounded border-gray-300 text-purple-600"
                         />
-                        <span>Include internal house.id in PDF</span>
+                        <span>Include House No in PDF</span>
                         <span className="text-xs text-gray-400 ml-2">(Only check to print internal DB id)</span>
                     </label>
                 </div>

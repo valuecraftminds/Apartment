@@ -101,7 +101,7 @@
 // pages/BulkImportHouseOwner.js
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../components/sidebar';
-import Navbar from '../components/navbar';
+import Navbar from '../components/Navbar';
 import { UserCheck, Download, Upload, ChevronDown, ChevronRight, Check, Home, Building, Layers } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import api from '../api/axios';
@@ -548,7 +548,7 @@ export default function BulkImportHouseOwner() {
                 if (response.data.data?.errors && response.data.data.errors.length > 0) {
                     console.error('Import errors:', response.data.data.errors);
                     // Optionally show errors in a modal
-                    alert(`Some rows failed:\n${response.data.data.errors.map(e => `Row ${e.row}: ${e.error}`).join('\n')}`);
+                    toast.error(`Some rows failed:\n${response.data.data.errors.map(e => `Row ${e.row}: ${e.error}`).join('\n')}`);
                 }
             } else {
                 toast.error(response.data.message || 'Import failed');

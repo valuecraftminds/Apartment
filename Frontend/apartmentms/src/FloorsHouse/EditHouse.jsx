@@ -548,23 +548,45 @@ export default function EditHouse({ house, onClose, onUpdated, apartment_id, flo
         fetchCountries();
     }, []);
 
+    // After countries are loaded, pre-fill country from admin profile if available
+    useEffect(() => {
+        const prefillAdminCountry = async () => {
+            try {
+                const res = await api.get('/auth/me');
+                if (res.data?.success && res.data.data && res.data.data.length > 0) {
+                    const admin = res.data.data[0];
+                    const adminCountry = admin.country || admin.country_name || '';
+
+                    if (adminCountry) {
+                        const matched = (countries || []).find(c => c.country === adminCountry || c.country_name === adminCountry);
+                        setOwnerFormData(prev => ({
+                            ...prev,
+                            country: prev.country || adminCountry,
+                            mobile: prev.mobile || (matched ? (matched.international_dialing + ' ') : prev.mobile)
+                        }));
+                    }
+                }
+            } catch (err) {
+                console.error('Error fetching admin profile for prefill:', err);
+            }
+        };
+
+        if (countries && countries.length > 0) {
+            prefillAdminCountry();
+        }
+    }, [countries]);
+
     const handleCountryChange = (e) => {
         const countryName = e.target.value;
         const selectedCountry = countries.find(c => c.country === countryName);
-        
-        if (selectedCountry) {
-            setOwnerFormData(prev => ({
-                ...prev,
-                country: selectedCountry.country,
-                mobile: selectedCountry.international_dialing + ' ' // Add space after country code
-            }));
-        } else {
-            setOwnerFormData(prev => ({
-                ...prev,
-                country: '',
-                mobile: ''
-            }));
-        }
+
+        // Always update the typed country so the input is editable.
+        // If the typed value matches a known country, autofill the dial code.
+        setOwnerFormData(prev => ({
+            ...prev,
+            country: countryName,
+            mobile: selectedCountry ? (selectedCountry.international_dialing + ' ') : prev.mobile
+        }));
     };
 
     // const handleCountryChange = (e) => {
@@ -958,21 +980,20 @@ export default function EditHouse({ house, onClose, onUpdated, apartment_id, flo
                                     </div> */}
                                     <div>
                                         <label className="block text-gray-700 dark:text-gray-200 mb-1">Country *</label>
-                                        <select
+                                        <input
                                             name="country"
+                                            list="owner-country-list"
                                             value={ownerFormData.country || ''}
                                             onChange={handleCountryChange}
+                                            placeholder="Select or type country *"
                                             className="w-full p-2 border rounded-md dark:bg-gray-700 dark:text-white text-black bg-white"
                                             required
-                                        >
-                                            <option value="">Select country *</option>
+                                        />
+                                        <datalist id="owner-country-list">
                                             {countries.map(country => (
-                                                <option key={country.country} value={country.country}>
-                                                    {country.country} 
-                                                    {/*({country.international_dialing})*/}
-                                                </option>
+                                                <option key={country.country} value={country.country} />
                                             ))}
-                                        </select>
+                                        </datalist>
                                     </div>
                                 </div>
 
@@ -1004,11 +1025,11 @@ export default function EditHouse({ house, onClose, onUpdated, apartment_id, flo
                                     <div>
                                         <label className="block text-gray-700 dark:text-gray-200 mb-1">Mobile *</label>
                                         <div className="flex items-center">
-                                            {selectedCountry && (
+                                            {/* {selectedCountry && (
                                                 <span className="bg-gray-200 dark:bg-gray-700 px-3 py-2 rounded-l-md border border-r-0 border-gray-300 dark:border-gray-600 whitespace-nowrap">
                                                     {selectedCountry.international_dialing}
                                                 </span>
-                                            )}
+                                            )} */}
                                             <input
                                                 name="mobile"
                                                 value={ownerFormData.mobile}

@@ -83,17 +83,23 @@ export default function CombinedRegistration() {
   // };
 
   const handleCountryChange = (e) => {
-  const countryName = e.target.value;
-  const selectedCountry = countries.find(c => c.country === countryName);
-  
-  if (selectedCountry) {
+    const countryName = e.target.value;
+
+    // Always update the typed country value so the input isn't read-only
+    const selectedCountry = countries.find(c => c.country === countryName);
+
     setUserData(prev => ({
       ...prev,
-      country: selectedCountry.country,
-      mobile: selectedCountry.international_dialing + ' ' 
+      country: countryName,
+      // If a known country is selected from the list, auto-fill the dial code
+      mobile: selectedCountry ? (selectedCountry.international_dialing + ' ') : prev.mobile
     }));
-  }
-};
+
+    if (touched.country) {
+      const error = validateField('country', countryName);
+      setErrors(prev => ({ ...prev, country: error }));
+    }
+  };
   
   const navigate = useNavigate();
   const totalSteps = 3;
@@ -552,20 +558,20 @@ async function submit(e) {
                 </div> */}
 
                 <div>
-                  <select
+                  <input
                     name="country"
+                    list="country-list"
                     value={userData.country || ''}
                     onChange={handleCountryChange}
                     onBlur={(e) => handleBlur(e, false)}
+                    placeholder="Select or type country *"
                     className={`loginInput ${errors.country ? 'border-red-500' : touched.country && 'border-green-500'}`}
-                  >
-                    <option value="">Select country *</option>
+                  />
+                  <datalist id="country-list">
                     {countries.map(country => (
-                      <option key={country.country} value={country.country}>
-                        {country.country}
-                      </option>
+                      <option key={country.country} value={country.country} />
                     ))}
-                  </select>
+                  </datalist>
                   {touched.country && errors.country && (
                     <div className="text-red-500 text-sm mt-1 flex items-center">
                       <X size={14} className="mr-1" /> {errors.country}

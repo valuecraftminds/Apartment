@@ -3,8 +3,8 @@ import React, { useState, useEffect, useRef, useContext } from 'react'
 import { Loader, ArrowLeft, FileText, Camera, QrCode, AlertCircle, Check, X, Receipt, RotateCw } from 'lucide-react'
 import { toast, ToastContainer } from 'react-toastify'
 import api from '../../api/axios'
-import { Html5QrcodeScanner, Html5QrcodeScanType } from 'html5-qrcode'
-import Sidebar from '../../components/Sidebar'
+import { Html5Qrcode } from 'html5-qrcode'
+import Sidebar from '../../components/sidebar'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AuthContext } from '../../contexts/AuthContext'
 
@@ -20,6 +20,7 @@ export default function MeasurableBills() {
     const [houseDetails, setHouseDetails] = useState(null)
     const [manualHouseId, setManualHouseId] = useState('') // State for manual input
     const scannerRef = useRef(null)
+    const timerIntervalRef = useRef(null)
     const navigate = useNavigate();
     const { auth } = useContext(AuthContext);
     const [cameraDirection, setCameraDirection] = useState('environment'); // 'environment' for back, 'user' for front
@@ -271,8 +272,25 @@ export default function MeasurableBills() {
         }
     };
 
-    // Initialize QR Scanner
-    const startScanning = () => {
+    // Helper to pick a camera id by direction preference
+    const pickCameraIdForDirection = (cameras, direction) => {
+        if (!cameras || cameras.length === 0) return null;
+        const lower = (s) => (s || '').toLowerCase();
+        if (direction === 'environment') {
+            const back = cameras.find(c => /back|rear|environment/.test(lower(c.label)));
+            if (back) return back.id;
+            return cameras[cameras.length - 1].id;
+        } else {
+            const front = cameras.find(c => /front|user|face/.test(lower(c.label)));
+            if (front) return front.id;
+            return cameras[0].id;
+        }
+    }
+
+    // Start scanning using Html5Qrcode with an exact deviceId (more reliable than facingMode)
+    const startScanning = async (overrideDirection) => {
+        const direction = overrideDirection || cameraDirection;
+
         setScanning(true)
         setScannedData(null)
         setAccessGranted(false)
@@ -280,51 +298,39 @@ export default function MeasurableBills() {
         setHouseDetails(null)
         setManualHouseId('')
 
+        // Stop and clear any existing scanner
         if (scannerRef.current) {
-            scannerRef.current.clear().catch(error => {
-                console.log('Scanner clear error on start:', error);
-            });
+            try { await scannerRef.current.stop(); } catch(e) {}
+            try { scannerRef.current.clear(); } catch(e) {}
             scannerRef.current = null;
         }
 
-        setTimeout(() => {
-            try {
-                // if (scannerRef.current) {
-                //     scannerRef.current.clear().catch(error => {
-                //         console.log('Scanner clear error:', error)
-                //     })
-                // }
-                const element = document.getElementById('qr-reader');
-                if (element) {
-                    // Clear any existing content
-                    element.innerHTML = '';
-                }
+        // Clear DOM container
+        const el = document.getElementById('qr-reader');
+        if (el) el.innerHTML = '';
 
-                scannerRef.current = new Html5QrcodeScanner(
-                    "qr-reader",
-                    {
-                        fps: 10,
-                        qrbox: { width: 250, height: 250 },
-                        aspectRatio: 1.0,
-                        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
-                        facingMode: cameraDirection // Use selected camera direction
-                    },
-                    false
-                )
+        try {
+            const cameras = await Html5Qrcode.getCameras();
+            const cameraId = pickCameraIdForDirection(cameras, direction) || (cameras[0] && cameras[0].id);
 
-                scannerRef.current.render(
-                    (decodedText) => {
-                        handleScanSuccess(decodedText)
-                    },
-                    (error) => {
-                        console.log('QR Scan error:', error)
-                    }
-                )
-            } catch (error) {
-                console.error('Scanner initialization error:', error)
-                toast.error('Failed to initialize scanner. Please refresh and try again.')
-            }
-        }, 100)
+            const html5QrCode = new Html5Qrcode('qr-reader');
+            scannerRef.current = html5QrCode;
+
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+            await html5QrCode.start(
+                { deviceId: { exact: cameraId } },
+                config,
+                (decodedText) => { handleScanSuccess(decodedText); },
+                (error) => { /* ignore scan errors */ }
+            );
+
+            console.log('Scanner started with camera id:', cameraId, 'direction:', direction);
+        } catch (error) {
+            console.error('Scanner initialization error:', error);
+            toast.error('Failed to initialize scanner. Please refresh and try again.');
+            setScanning(false);
+        }
     }
 
     // Toggle camera direction
@@ -340,25 +346,19 @@ export default function MeasurableBills() {
 
     const toggleCameraDirection = async () => {
         const newDirection = cameraDirection === 'environment' ? 'user' : 'environment';
-        
-        // First, stop any ongoing scanning
+
+        // Stop existing scanner (if any)
         if (scannerRef.current) {
-            try {
-                await scannerRef.current.clear();
-                //console.log('Scanner cleared for camera switch');
-            } catch (error) {
-                console.log('Error clearing scanner:', error);
-            }
+            try { await scannerRef.current.stop(); } catch(e) {}
+            try { scannerRef.current.clear(); } catch(e) {}
+            scannerRef.current = null;
         }
-        
+
         setCameraDirection(newDirection);
-        
-        // Restart scanning with new camera direction
+
         if (scanning) {
-            // Small delay to ensure cleanup is complete
-            setTimeout(() => {
-                startScanning();
-            }, 500);
+            // restart scanning with new direction
+            setTimeout(() => startScanning(newDirection), 250);
         }
     };
 
@@ -367,9 +367,12 @@ export default function MeasurableBills() {
     const handleScanSuccess = async (decodedText) => {
         try {
             setLoading(true);
-            
+
+            // stop and clear scanner after successful decode
             if (scannerRef.current) {
-                await scannerRef.current.clear();
+                try { await scannerRef.current.stop(); } catch(e) {}
+                try { scannerRef.current.clear(); } catch(e) {}
+                scannerRef.current = null;
             }
             setScanning(false);
             setManualHouseId('');
@@ -390,7 +393,7 @@ export default function MeasurableBills() {
             
             if (accessResult.access) {
                 setAccessGranted(true);
-                toast.success(`Access granted! House ${houseDetails?.house_id || houseId} has ${selectedBill?.bill_name} bill.`);
+                toast.success('Access granted! House');
             } else {
                 setAccessGranted(false);
                 setAccessDeniedReason(accessResult.reason || 'Access denied');
@@ -410,8 +413,9 @@ export default function MeasurableBills() {
     const handleReset = async () => {
         if (scannerRef.current) {
             try {
-                await scannerRef.current.clear();
-                console.log('Scanner cleared on reset');
+                try { await scannerRef.current.stop(); } catch(e) {}
+                try { scannerRef.current.clear(); } catch(e) {}
+                console.log('Scanner stopped and cleared on reset');
             } catch (error) {
                 console.log('Scanner clear error on reset:', error);
             }
@@ -458,9 +462,8 @@ export default function MeasurableBills() {
     useEffect(() => {
         return () => {
             if (scannerRef.current) {
-                scannerRef.current.clear().catch(error => {
-                    console.log('Scanner clear error on unmount:', error)
-                })
+                try { scannerRef.current.stop().catch?.(() => {}); } catch(e) {}
+                try { scannerRef.current.clear(); } catch(e) {}
             }
         }
     }, [])
