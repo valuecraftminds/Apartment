@@ -21,6 +21,7 @@ export default function MeasurableBills() {
     const [manualHouseId, setManualHouseId] = useState('') // State for manual input
     const scannerRef = useRef(null)
     const timerIntervalRef = useRef(null)
+    const currentCameraIdRef = useRef(null)
     const navigate = useNavigate();
     const { auth } = useContext(AuthContext);
     const [cameraDirection, setCameraDirection] = useState('environment'); // 'environment' for back, 'user' for front
@@ -288,7 +289,7 @@ export default function MeasurableBills() {
     }
 
     // Start scanning using Html5Qrcode with an exact deviceId (more reliable than facingMode)
-    const startScanning = async (overrideDirection) => {
+    const startScanning = async (overrideDirection, deviceIdOverride) => {
         const direction = overrideDirection || cameraDirection;
 
         setScanning(true)
@@ -311,7 +312,7 @@ export default function MeasurableBills() {
 
         try {
             const cameras = await Html5Qrcode.getCameras();
-            const cameraId = pickCameraIdForDirection(cameras, direction) || (cameras[0] && cameras[0].id);
+            let cameraId = deviceIdOverride || pickCameraIdForDirection(cameras, direction) || (cameras[0] && cameras[0].id);
 
             const html5QrCode = new Html5Qrcode('qr-reader');
             scannerRef.current = html5QrCode;
@@ -325,7 +326,9 @@ export default function MeasurableBills() {
                 (error) => { /* ignore scan errors */ }
             );
 
-            console.log('Scanner started with camera id:', cameraId, 'direction:', direction);
+            currentCameraIdRef.current = cameraId;
+            setCameraDirection(direction);
+            //console.log('Scanner started with camera id:', cameraId, 'direction:', direction);
         } catch (error) {
             console.error('Scanner initialization error:', error);
             toast.error('Failed to initialize scanner. Please refresh and try again.');
@@ -347,18 +350,29 @@ export default function MeasurableBills() {
     const toggleCameraDirection = async () => {
         const newDirection = cameraDirection === 'environment' ? 'user' : 'environment';
 
-        // Stop existing scanner (if any)
-        if (scannerRef.current) {
-            try { await scannerRef.current.stop(); } catch(e) {}
-            try { scannerRef.current.clear(); } catch(e) {}
-            scannerRef.current = null;
-        }
+        try {
+            const cameras = await Html5Qrcode.getCameras();
+            let desiredCameraId = pickCameraIdForDirection(cameras, newDirection) || (cameras[0] && cameras[0].id);
 
-        setCameraDirection(newDirection);
+            if (desiredCameraId && currentCameraIdRef.current && desiredCameraId === currentCameraIdRef.current && cameras.length > 1) {
+                const alt = cameras.find(c => c.id !== currentCameraIdRef.current);
+                if (alt) desiredCameraId = alt.id;
+            }
 
-        if (scanning) {
-            // restart scanning with new direction
-            setTimeout(() => startScanning(newDirection), 250);
+            // Stop and clear any active scanner first
+            if (scannerRef.current) {
+                try { await scannerRef.current.stop(); } catch(e) {}
+                try { scannerRef.current.clear(); } catch(e) {}
+                scannerRef.current = null;
+            }
+
+            setCameraDirection(newDirection);
+
+            if (scanning) {
+                setTimeout(() => startScanning(newDirection, desiredCameraId), 250);
+            }
+        } catch (err) {
+            console.error('Error toggling camera direction:', err);
         }
     };
 
@@ -373,6 +387,7 @@ export default function MeasurableBills() {
                 try { await scannerRef.current.stop(); } catch(e) {}
                 try { scannerRef.current.clear(); } catch(e) {}
                 scannerRef.current = null;
+                currentCameraIdRef.current = null;
             }
             setScanning(false);
             setManualHouseId('');
@@ -420,6 +435,7 @@ export default function MeasurableBills() {
                 console.log('Scanner clear error on reset:', error);
             }
             scannerRef.current = null;
+            currentCameraIdRef.current = null;
         }
         
         if (timerIntervalRef.current) {
@@ -464,6 +480,7 @@ export default function MeasurableBills() {
             if (scannerRef.current) {
                 try { scannerRef.current.stop().catch?.(() => {}); } catch(e) {}
                 try { scannerRef.current.clear(); } catch(e) {}
+                currentCameraIdRef.current = null;
             }
         }
     }, [])

@@ -25,9 +25,9 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import api from '../../api/axios';
-import Sidebar from '../../components/Sidebar';
+import Sidebar from '../../components/sidebar';
 import { AuthContext } from '../../contexts/AuthContext';
-import { Html5QrcodeScanner, Html5QrcodeScanType } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeScanner, Html5QrcodeScanType } from 'html5-qrcode';
 import HoldComplaintModal from './HoldComplaintModal';
 
 export default function StartWork() {
@@ -45,6 +45,7 @@ export default function StartWork() {
     const [elapsedTime, setElapsedTime] = useState(0);
     const [cameraDirection, setCameraDirection] = useState('environment'); // 'environment' (back) or 'user' (front)
     const scannerRef = useRef(null);
+    const currentCameraIdRef = useRef(null);
     const navigate = useNavigate();
     const { auth } = useContext(AuthContext);
     const timerIntervalRef = useRef(null);
@@ -430,105 +431,69 @@ export default function StartWork() {
         }
     };
 
-    // Initialize QR Scanner
-    // const startScanning = () => {
-    //     setScanning(true);
-    //     setScannedData(null);
-    //     setAccessGranted(false);
-    //     setAccessDeniedReason('');
-    //     setHouseDetails(null);
-    //     setManualHouseId('');
+    // Helper to pick a camera id by direction preference
+    const pickCameraIdForDirection = (cameras, direction) => {
+        if (!cameras || cameras.length === 0) return null;
+        const lower = (s) => (s || '').toLowerCase();
+        if (direction === 'environment') {
+            const back = cameras.find(c => /back|rear|environment/.test(lower(c.label)));
+            if (back) return back.id;
+            return cameras[cameras.length - 1].id;
+        } else {
+            const front = cameras.find(c => /front|user|face/.test(lower(c.label)));
+            if (front) return front.id;
+            return cameras[0].id;
+        }
+    }
 
-    //     setTimeout(() => {
-    //         try {
-    //             if (scannerRef.current) {
-    //                 scannerRef.current.clear().catch(error => {
-    //                     console.log('Scanner clear error:', error);
-    //                 });
-    //             }
+    // Start scanning using Html5Qrcode with an exact deviceId (more reliable than facingMode)
+    const startScanning = async (overrideDirection, deviceIdOverride) => {
+        const direction = overrideDirection || cameraDirection;
 
-    //             scannerRef.current = new Html5QrcodeScanner(
-    //                 "qr-reader",
-    //                 {
-    //                     fps: 10,
-    //                     qrbox: { width: 250, height: 250 },
-    //                     aspectRatio: 1.0,
-    //                     supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
-    //                     facingMode: cameraDirection // Use selected camera direction
-    //                 },
-    //                 false
-    //             );
+        setScanning(true)
+        setScannedData(null)
+        setAccessGranted(false)
+        setAccessDeniedReason('')
+        setHouseDetails(null)
+        setManualHouseId('')
 
-    //             scannerRef.current.render(
-    //                 (decodedText) => {
-    //                     handleScanSuccess(decodedText);
-    //                 },
-    //                 (error) => {
-    //                     console.log('QR Scan error:', error);
-    //                 }
-    //             );
-    //         } catch (error) {
-    //             console.error('Scanner initialization error:', error);
-    //             toast.error('Failed to initialize scanner. Please refresh and try again.');
-    //         }
-    //     }, 100);
-    // };
-
-    const startScanning = () => {
-        setScanning(true);
-        setScannedData(null);
-        setAccessGranted(false);
-        setAccessDeniedReason('');
-        setHouseDetails(null);
-        setManualHouseId('');
-
-        // Clear any existing scanner
+        // Stop and clear any existing scanner
         if (scannerRef.current) {
-            scannerRef.current.clear().catch(error => {
-                console.log('Scanner clear error on start:', error);
-            });
+            try { await scannerRef.current.stop(); } catch(e) {}
+            try { scannerRef.current.clear(); } catch(e) {}
             scannerRef.current = null;
         }
 
-        // Use setTimeout to ensure DOM is ready
-        setTimeout(() => {
-            try {
-                const element = document.getElementById('qr-reader');
-                if (element) {
-                    // Clear any existing content
-                    element.innerHTML = '';
-                }
+        // Clear DOM container
+        const el = document.getElementById('qr-reader');
+        if (el) el.innerHTML = '';
 
-                // Create new scanner instance
-                scannerRef.current = new Html5QrcodeScanner(
-                    "qr-reader",
-                    {
-                        fps: 10,
-                        qrbox: { width: 250, height: 250 },
-                        aspectRatio: 1.0,
-                        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
-                        facingMode: cameraDirection // Use current camera direction
-                    },
-                    false // verbose mode
-                );
+        try {
+            const cameras = await Html5Qrcode.getCameras();
 
-                scannerRef.current.render(
-                    (decodedText) => {
-                        handleScanSuccess(decodedText);
-                    },
-                    (error) => {
-                        console.log('QR Scan error:', error);
-                    }
-                );
-                
-                console.log('Scanner started with camera:', cameraDirection);
-            } catch (error) {
-                console.error('Scanner initialization error:', error);
-                toast.error('Failed to initialize scanner. Please refresh and try again.');
-                setScanning(false);
-            }
-        }, 300);
-    };
+            let cameraId = deviceIdOverride || pickCameraIdForDirection(cameras, direction) || (cameras[0] && cameras[0].id);
+
+            const html5QrCode = new Html5Qrcode('qr-reader');
+            scannerRef.current = html5QrCode;
+
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+            await html5QrCode.start(
+                { deviceId: { exact: cameraId } },
+                config,
+                (decodedText) => { handleScanSuccess(decodedText); },
+                (error) => { /* ignore scan errors */ }
+            );
+
+            currentCameraIdRef.current = cameraId;
+            setCameraDirection(direction);
+          //  console.log('Scanner started with camera id:', cameraId, 'direction:', direction);
+        } catch (error) {
+            console.error('Scanner initialization error:', error);
+            toast.error('Failed to initialize scanner. Please refresh and try again.');
+            setScanning(false);
+        }
+    }
 
 
     // Handle successful scan
@@ -537,7 +502,10 @@ export default function StartWork() {
             setLoading(true);
             
             if (scannerRef.current) {
-                await scannerRef.current.clear();
+                try { await scannerRef.current.stop(); } catch(e) {}
+                try { await scannerRef.current.clear(); } catch(e) {}
+                scannerRef.current = null;
+                currentCameraIdRef.current = null;
             }
             setScanning(false);
             setManualHouseId('');
@@ -616,25 +584,33 @@ export default function StartWork() {
 
     const toggleCameraDirection = async () => {
         const newDirection = cameraDirection === 'environment' ? 'user' : 'environment';
-        
-        // First, stop any ongoing scanning
-        if (scannerRef.current) {
-            try {
-                await scannerRef.current.clear();
-                console.log('Scanner cleared for camera switch');
-            } catch (error) {
-                console.log('Error clearing scanner:', error);
+
+        // Determine target camera id; if it matches current, pick an alternate so toggle always switches
+        try {
+            const cameras = await Html5Qrcode.getCameras();
+            let desiredCameraId = pickCameraIdForDirection(cameras, newDirection) || (cameras[0] && cameras[0].id);
+
+            if (desiredCameraId && currentCameraIdRef.current && desiredCameraId === currentCameraIdRef.current && cameras.length > 1) {
+                // pick a different camera id
+                const alt = cameras.find(c => c.id !== currentCameraIdRef.current);
+                if (alt) desiredCameraId = alt.id;
             }
-        }
-        
-        setCameraDirection(newDirection);
-        
-        // Restart scanning with new camera direction
-        if (scanning) {
-            // Small delay to ensure cleanup is complete
-            setTimeout(() => {
-                startScanning();
-            }, 500);
+
+            // Stop and clear any active scanner first
+            if (scannerRef.current) {
+                try { await scannerRef.current.stop(); } catch(e) {}
+                try { await scannerRef.current.clear(); } catch(e) {}
+                scannerRef.current = null;
+            }
+
+            setCameraDirection(newDirection);
+
+            // Restart scanning with new camera id when active
+            if (scanning) {
+                setTimeout(() => startScanning(newDirection, desiredCameraId), 250);
+            }
+        } catch (err) {
+            console.error('Error toggling camera direction:', err);
         }
     };
 
@@ -671,13 +647,12 @@ export default function StartWork() {
 
     const handleReset = async () => {
         if (scannerRef.current) {
-            try {
-                await scannerRef.current.clear();
-                //console.log('Scanner cleared on reset');
-            } catch (error) {
+            try { await scannerRef.current.stop(); } catch(e) {}
+            try { await scannerRef.current.clear(); } catch (error) {
                 console.log('Scanner clear error on reset:', error);
             }
             scannerRef.current = null;
+            currentCameraIdRef.current = null;
         }
         
         if (timerIntervalRef.current) {
@@ -700,9 +675,13 @@ export default function StartWork() {
     useEffect(() => {
         return () => {
             if (scannerRef.current) {
-                scannerRef.current.clear().catch(error => {
-                    console.log('Scanner clear error on unmount:', error);
-                });
+                (async () => {
+                    try { await scannerRef.current.stop(); } catch(e) {}
+                    try { await scannerRef.current.clear(); } catch (error) {
+                        console.log('Scanner clear error on unmount:', error);
+                    }
+                })();
+                currentCameraIdRef.current = null;
             }
             if (timerIntervalRef.current) {
                 clearInterval(timerIntervalRef.current);

@@ -1069,11 +1069,20 @@ router.post('/invite', authenticateToken, async (req, res) => {
       [tokenHash, expiresAt, userId]
     );
 
-    // Use email helper with role_name
-    await sendInvitationEmail(email, plainToken, userId, role_name);
-    console.log(`Invite email sent to: ${email}`);
-
-    res.status(201).json({ message: 'Invitation sent successfully' });
+    // Use email helper with role_name — attempt to send but don't fail the request if email fails
+    try {
+      await sendInvitationEmail(email, plainToken, userId, role_name);
+      console.log(`Invite email sent to: ${email}`);
+      res.status(201).json({ message: 'Invitation sent successfully' });
+    } catch (emailErr) {
+      console.error('Failed to send invite email:', emailErr);
+      // Return success for creation but indicate email sending failed so frontend can show a warning
+      res.status(201).json({
+        message: 'User invited but failed to send email',
+        warning: 'email_failed',
+        details: emailErr.message || 'See server logs for details'
+      });
+    }
   } catch (err) {
     console.error('Invite error:', err);
     res.status(500).json({ message: 'Server error while inviting user' });

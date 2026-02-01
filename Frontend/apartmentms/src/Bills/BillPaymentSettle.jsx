@@ -4,7 +4,7 @@ import { Search, Filter, Download, Eye, Edit, DollarSign, Calendar, Home, Buildi
 import api from '../api/axios';
 import { toast, ToastContainer } from 'react-toastify';
 import Sidebar from '../components/sidebar';
-import Navbar from '../components/navbar';
+import Navbar from '../components/Navbar';
 import UpdateBillPayments from './UpdateBillPayments';
 
 export default function BillPaymentSettle() {
@@ -252,7 +252,7 @@ export default function BillPaymentSettle() {
       setFilters(prev => ({ ...prev, house_id: entered }));
 
       if (billsData.length > 0) {
-        toast.success(`Found ${billsData.length} bill(s) for house PK ${entered}`);
+        toast.success(`Found ${billsData.length} bill(s)`);
       } else {
         toast.info('No bills found for the given house PK');
       }
