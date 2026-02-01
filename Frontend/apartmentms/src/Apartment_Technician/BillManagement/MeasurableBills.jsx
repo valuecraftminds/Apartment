@@ -4,7 +4,7 @@ import { Loader, ArrowLeft, FileText, Camera, QrCode, AlertCircle, Check, X, Rec
 import { toast, ToastContainer } from 'react-toastify'
 import api from '../../api/axios'
 import { Html5Qrcode } from 'html5-qrcode'
-import Sidebar from '../../components/sidebar'
+import Sidebar from '../../components/Sidebar'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AuthContext } from '../../contexts/AuthContext'
 

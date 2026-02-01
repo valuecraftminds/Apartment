@@ -691,8 +691,8 @@
 // }
 
 import React, { useState, useEffect } from 'react'
-import Navbar from '../components/Navbar'
-import Sidebar from '../components/sidebar'
+import Navbar from '../components/navbar'
+import Sidebar from '../components/Sidebar'
 import { 
   Home, Building2, Plus, Edit, Trash2, 
   Users, CheckCircle, XCircle, ChevronRight,

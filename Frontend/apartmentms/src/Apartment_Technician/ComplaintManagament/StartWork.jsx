@@ -25,7 +25,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import api from '../../api/axios';
-import Sidebar from '../../components/sidebar';
+import Sidebar from '../../components/Sidebar';
 import { AuthContext } from '../../contexts/AuthContext';
 import { Html5Qrcode, Html5QrcodeScanner, Html5QrcodeScanType } from 'html5-qrcode';
 import HoldComplaintModal from './HoldComplaintModal';

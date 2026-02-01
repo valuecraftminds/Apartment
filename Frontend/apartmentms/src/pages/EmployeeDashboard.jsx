@@ -3,7 +3,7 @@ import React, { useState, useEffect, useContext } from 'react'
 import api from '../api/axios';
 import { AuthContext } from '../contexts/AuthContext';
 import Navbar from '../components/navbar'
-import Sidebar from '../components/sidebar'
+import Sidebar from '../components/Sidebar'
 import { 
   Home, 
   Building2,
@@ -25,7 +25,10 @@ export default function EmployeeDashboard() {
     assignedApartments: 0,
     pendingTasks: 0,
     completedTasks: 0,
-    maintenanceRequests: 0
+    maintenanceRequests: 0,
+    assignedBills: 0,
+    totalComplaints: 0,
+    complaintCategories: 0
   });
   const { auth } = useContext(AuthContext);
 
@@ -65,17 +68,71 @@ export default function EmployeeDashboard() {
   // Fetch other dashboard stats
   const fetchDashboardStats = async () => {
     try {
-      // You would replace these with actual API calls
-      // For now, using mock data
-      const mockStats = {
-        pendingTasks: 12,
-        completedTasks: 45,
-        maintenanceRequests: 8
-      };
-      
+      // Replace mock values with API calls where possible.
+      let pendingTasks = 12;
+      let completedTasks = 45;
+      let maintenanceRequests = 8;
+      let assignedBills = 0;
+      let totalComplaints = 0;
+      let complaintCategories = 0;
+
+      // Attempt to fetch complaints assigned to this user
+      try {
+        let complaintsRes = null;
+        try {
+          complaintsRes = await api.get(`/complaints?assigned_to=${auth.user.id}`);
+        } catch (e1) {
+          try {
+            complaintsRes = await api.get(`/complaints?user_id=${auth.user.id}`);
+          } catch (e2) {
+            try {
+              complaintsRes = await api.get('/complaints');
+            } catch (e3) {
+              complaintsRes = null;
+            }
+          }
+        }
+
+        const complaints = complaintsRes && (Array.isArray(complaintsRes.data.data) ? complaintsRes.data.data : Array.isArray(complaintsRes.data) ? complaintsRes.data : []);
+        totalComplaints = complaints.length;
+        // count distinct complaint categories if present on complaint objects
+        const categoriesSet = new Set();
+        complaints.forEach(c => {
+          if (c.category) categoriesSet.add(c.category);
+          else if (c.category_id) categoriesSet.add(c.category_id);
+        });
+        complaintCategories = categoriesSet.size;
+      } catch (err) {
+        console.error('Error fetching complaints:', err);
+      }
+
+      // Attempt to fetch assigned bills for this user
+      try {
+        let billsRes = null;
+        try {
+          billsRes = await api.get(`/user-bills/users/${auth.user.id}/bills`);
+        } catch (e1) {
+          try {
+            billsRes = await api.get(`/bills?assigned_to=${auth.user.id}`);
+          } catch (e2) {
+            billsRes = null;
+          }
+        }
+
+        const bills = billsRes && (Array.isArray(billsRes.data.data) ? billsRes.data.data : Array.isArray(billsRes.data) ? billsRes.data : []);
+        assignedBills = bills.length;
+      } catch (err) {
+        console.error('Error fetching assigned bills:', err);
+      }
+
       setDashboardStats(prev => ({
         ...prev,
-        ...mockStats
+        pendingTasks,
+        completedTasks,
+        maintenanceRequests,
+        assignedBills,
+        totalComplaints,
+        complaintCategories
       }));
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
@@ -154,147 +211,25 @@ export default function EmployeeDashboard() {
               </div>
             </div>
 
-            {/* Assigned Apartments Summary */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Assigned Apartments Summary</h2>
-                <button className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300">
-                  View Details
-                </button>
-              </div>
-              
-              {assignedApartments === 0 ? (
-                <div className="text-center py-8">
-                  <Building2 size={48} className="mx-auto text-gray-400 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                    No Apartments Assigned
-                  </h3>
-                  <p className="text-gray-500 dark:text-gray-400">
-                    You haven't been assigned to any apartments yet.
-                  </p>
+            {/* Assigned totals: show assigned bills and total complaints as a simple grid */}
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Your Assigned Totals</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-center">
+                  <h3 className="text-sm font-medium text-gray-500 mb-2">Assigned Bills</h3>
+                  <div className="text-3xl font-bold text-indigo-600 dark:text-indigo-400 mb-1">{formatNumber(dashboardStats.assignedBills)}</div>
+                  <p className="text-xs text-gray-500">Bills currently assigned to you</p>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {/* Summary Stats */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
-                      <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                        {formatNumber(assignedApartments)}
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">Total Apartments</div>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
-                      <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                        {formatNumber(assignedApartments)}
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">Active Status</div>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
-                      <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-                        {formatNumber(dashboardStats.pendingTasks)}
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">Pending Tasks</div>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
-                      <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                        {formatNumber(dashboardStats.maintenanceRequests)}
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">Maintenance</div>
-                    </div>
-                  </div>
 
-                  {/* Quick Tips */}
-                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg p-4 mt-6">
-                    <h4 className="font-medium text-blue-800 dark:text-blue-300 mb-2">Quick Tips</h4>
-                    <ul className="space-y-2 text-sm text-blue-700 dark:text-blue-400">
-                      <li className="flex items-start">
-                        <CheckCircle size={16} className="mr-2 mt-0.5 flex-shrink-0" />
-                        <span>You are responsible for {assignedApartments} apartments</span>
-                      </li>
-                      <li className="flex items-start">
-                        <CheckCircle size={16} className="mr-2 mt-0.5 flex-shrink-0" />
-                        <span>Regular inspections ensure tenant satisfaction</span>
-                      </li>
-                      <li className="flex items-start">
-                        <CheckCircle size={16} className="mr-2 mt-0.5 flex-shrink-0" />
-                        <span>Keep track of pending tasks and maintenance requests</span>
-                      </li>
-                    </ul>
-                  </div>
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-center">
+                  <h3 className="text-sm font-medium text-gray-500 mb-2">Total Complaints</h3>
+                  <div className="text-3xl font-bold text-red-600 dark:text-red-400 mb-1">{formatNumber(dashboardStats.totalComplaints)}</div>
+                  <p className="text-xs text-gray-500">Complaints assigned to you</p>
                 </div>
-              )}
+              </div>
             </div>
 
-            {/* Recent Activity - Simplified */}
-            <div className="mt-6 lg:mt-8 bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Recent Activity</h2>
-                <button className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300">
-                  View All
-                </button>
-              </div>
-              
-              <div className="space-y-4">
-                {assignedApartments === 0 ? (
-                  <p className="text-gray-500 dark:text-gray-400 text-center py-4">
-                    No recent activity. Start by getting assigned to apartments.
-                  </p>
-                ) : (
-                  <>
-                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-full">
-                          <CheckCircle size={16} className="text-green-600 dark:text-green-400" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-800 dark:text-gray-200">
-                            Assigned to {assignedApartments} apartments
-                          </p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            Today • All apartments active
-                          </p>
-                        </div>
-                      </div>
-                      <ArrowUpRight size={16} className="text-green-500" />
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-full">
-                          <Clock size={16} className="text-yellow-600 dark:text-yellow-400" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-800 dark:text-gray-200">
-                            {dashboardStats.pendingTasks} pending tasks
-                          </p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            Requires your attention
-                          </p>
-                        </div>
-                      </div>
-                      <ArrowUpRight size={16} className="text-yellow-500" />
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-                          <Users size={16} className="text-blue-600 dark:text-blue-400" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-800 dark:text-gray-200">
-                            {dashboardStats.maintenanceRequests} maintenance requests
-                          </p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            Scheduled for this week
-                          </p>
-                        </div>
-                      </div>
-                      <ArrowUpRight size={16} className="text-blue-500" />
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
+            {/* Recent Activity removed - summary now shows complaints and assigned bills */}
           </div>
         </div>
       </div>

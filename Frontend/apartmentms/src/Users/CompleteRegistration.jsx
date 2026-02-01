@@ -87,14 +87,12 @@ export default function CompleteRegistration() {
     const handleCountryChange = (e) => {
       const countryName = e.target.value;
       const selectedCountry = countries.find(c => c.country === countryName);
-      
-      if (selectedCountry) {
-        setFormData(prev => ({
-          ...prev,
-          country: selectedCountry.country,
-          mobile: selectedCountry.international_dialing + ' ' 
-        }));
-      }
+
+      setFormData(prev => ({
+        ...prev,
+        country: countryName,
+        mobile: selectedCountry ? (selectedCountry.international_dialing + ' ') : prev.mobile
+      }));
     };
 
   const handleChange = (e) => {
@@ -246,21 +244,22 @@ export default function CompleteRegistration() {
             />
           </div> */}
           <div>
-            <select
-              name="country"
-              value={formData.country || ''}
-              onChange={handleCountryChange}
-              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-3 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              required
-            >
-              <option value="">Select country *</option>
-              {countries.map(country => (
-                <option key={country.country} value={country.country}>
-                  {country.country} 
-                  {/* ({country.international_dialing}) */}
-                </option>
-              ))}
-            </select>
+              <div>
+                <input
+                  name="country"
+                  list="country-list"
+                  value={formData.country || ''}
+                  onChange={handleCountryChange}
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-3 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="Select or type country *"
+                  required
+                />
+                <datalist id="country-list">
+                  {countries.map(country => (
+                    <option key={country.country} value={country.country} />
+                  ))}
+                </datalist>
+              </div>
           </div>
 
           {/* <div>

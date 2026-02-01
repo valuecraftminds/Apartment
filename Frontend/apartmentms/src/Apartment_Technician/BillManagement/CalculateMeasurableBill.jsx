@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useContext, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../api/axios';
-import Sidebar from '../../components/sidebar';
+import Sidebar from '../../components/Sidebar';
 import Navbar from '../../components/navbar';
 import { AuthContext } from '../../contexts/AuthContext';
 import { toast, ToastContainer } from 'react-toastify';

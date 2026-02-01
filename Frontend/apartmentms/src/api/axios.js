@@ -404,8 +404,11 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
     
-    // Only handle 401 errors for endpoints that need auth
-    if (error.response && error.response.status === 401 && !originalRequest._retry) {
+    // Handle auth errors (401 and some 403 cases) for endpoints that need auth
+    const statusCode = error.response?.status;
+    const requiresLoginFlag = error.response?.data?.requiresLogin;
+
+    if ((requiresLoginFlag || (statusCode === 401) || (statusCode === 403)) && !originalRequest._retry) {
       //console.log('Attempting token refresh for protected endpoint:', requestUrl);
       originalRequest._retry = true;
       
@@ -470,6 +473,14 @@ api.interceptors.response.use(
       }
     }
     
+    // If backend explicitly asks client to re-authenticate, clear tokens and redirect
+    if (error.response && error.response.data && error.response.data.requiresLogin) {
+      try { localStorage.removeItem('accessToken'); sessionStorage.removeItem('accessToken'); } catch(e){}
+      delete api.defaults.headers.common.Authorization;
+      if (typeof window !== 'undefined') window.location.href = '/login?session=expired';
+      return Promise.reject(error);
+    }
+
     // For 429 errors, show rate limit message
     if (error.response && error.response.status === 429) {
       console.error('Rate limited. Please wait before trying again.');

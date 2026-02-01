@@ -220,8 +220,14 @@ export function AuthProvider({ children }) {
     
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
     }
     
+    // notify other tabs/windows to logout
+    try {
+      localStorage.setItem('logout', Date.now().toString());
+    } catch (e) { /* ignore */ }
+
     navigate("/login");
     //console.log('Auto logged out due to inactivity');
   }, [navigate]);
@@ -233,7 +239,9 @@ export function AuthProvider({ children }) {
     }
 
     // Update last activity time
-    localStorage.setItem('lastActivity', Date.now().toString());
+    try {
+      localStorage.setItem('lastActivity', Date.now().toString());
+    } catch (e) { /* ignore */ }
 
     // Set new timeout
     timeoutRef.current = setTimeout(() => {
@@ -243,17 +251,23 @@ export function AuthProvider({ children }) {
 
   const setupActivityListeners = useCallback(() => {
     const activityEvents = [
-      "mousemove", "mousedown", "keydown", "scroll", "click", 
-      "touchstart", "touchmove", "wheel", "resize", "focus"
+      'mousemove','mousedown','pointerdown','keydown','scroll','click',
+      'touchstart','touchmove','wheel','resize','focus'
     ];
 
+    // Debounce repeated events to avoid excessive localStorage writes
+    let lastReset = 0;
     const handleActivity = () => {
-      resetTimer();
+      const now = Date.now();
+      if (now - lastReset > 1000) { // 1s throttle
+        lastReset = now;
+        resetTimer();
+      }
     };
 
-    // Add event listeners
+    // Add event listeners on document to capture more interactions
     activityEvents.forEach(event => {
-      window.addEventListener(event, handleActivity, { passive: true });
+      document.addEventListener(event, handleActivity, { passive: true, capture: true });
     });
 
     // Handle visibility change
@@ -262,17 +276,17 @@ export function AuthProvider({ children }) {
         resetTimer();
       }
     };
-    
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Cleanup function
     return () => {
       activityEvents.forEach(event => {
-        window.removeEventListener(event, handleActivity);
+        document.removeEventListener(event, handleActivity, { capture: true });
       });
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
       }
     };
   }, [resetTimer]);
@@ -294,6 +308,7 @@ export function AuthProvider({ children }) {
         
         // Otherwise, set timeout for remaining time
         const remainingTime = AUTO_LOGOUT_TIME - timeSinceLastActivity;
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
         timeoutRef.current = setTimeout(logout, remainingTime);
       } else {
         // No previous activity, start fresh
@@ -303,7 +318,35 @@ export function AuthProvider({ children }) {
       // Setup activity listeners
       const cleanup = setupActivityListeners();
 
-      return cleanup;
+      // Listen for storage events to sync activity/logout across tabs
+      const storageHandler = (e) => {
+        try {
+          if (e.key === 'lastActivity' && e.newValue) {
+            const last = parseInt(e.newValue, 10);
+            const elapsed = Date.now() - last;
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            const remaining = AUTO_LOGOUT_TIME - elapsed;
+            if (remaining <= 0) {
+              logout();
+            } else {
+              timeoutRef.current = setTimeout(logout, remaining);
+            }
+          }
+          if (e.key === 'logout') {
+            // Another tab initiated logout
+            logout();
+          }
+        } catch (err) {
+          // ignore parsing errors
+        }
+      };
+
+      window.addEventListener('storage', storageHandler);
+
+      return () => {
+        window.removeEventListener('storage', storageHandler);
+        cleanup();
+      };
     } else {
       // If not authenticated, clear any existing timeout
       if (timeoutRef.current) {

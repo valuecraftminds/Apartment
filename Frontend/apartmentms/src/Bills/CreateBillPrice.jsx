@@ -4,8 +4,8 @@ import api from "../api/axios";
 
 export default function CreateBillPrice({ bill_id, billrange_id, onClose, onCreated }) {
   const [formData, setFormData] = useState({
-    year: "",
-    month: "",
+    year: new Date().getFullYear(),
+    month: new Date().getMonth() + 1,
     unitprice: "",
     fixedamount: "",
   });
