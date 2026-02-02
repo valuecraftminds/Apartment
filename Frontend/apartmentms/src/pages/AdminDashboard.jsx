@@ -1053,6 +1053,95 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
+
+            {/* Quick Actions - Larger action cards */}
+            <div className="mb-6">
+              <h2 className="text-lg md:text-xl font-semibold text-gray-800 dark:text-white mb-4">
+                Quick Actions
+              </h2>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5">
+                {/* Users */}
+                <div
+                  onClick={() => navigate('/userview')}
+                  className="bg-white dark:bg-gray-800 rounded-lg p-4 min-h-[96px] flex items-center justify-between cursor-pointer hover:shadow-lg transition-all duration-200 border border-gray-200 dark:border-gray-700"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                      <Users size={20} className="text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <div>
+                      <div className="text-base font-medium text-gray-800 dark:text-white">Users</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">Manage users</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Service Category */}
+                <div
+                  onClick={() => navigate('/complaint-categories')}
+                  className="bg-white dark:bg-gray-800 rounded-lg p-4 min-h-[96px] flex items-center justify-between cursor-pointer hover:shadow-lg transition-all duration-200 border border-gray-200 dark:border-gray-700"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                      <Filter size={20} className="text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <div className="text-base font-medium text-gray-800 dark:text-white">Service Category</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">Manage categories</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bills */}
+                <div
+                  onClick={() => navigate('/bills-and-calculations')}
+                  className="bg-white dark:bg-gray-800 rounded-lg p-4 min-h-[96px] flex items-center justify-between cursor-pointer hover:shadow-lg transition-all duration-200 border border-gray-200 dark:border-gray-700"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                      <Maximize2 size={20} className="text-green-600 dark:text-green-400" />
+                    </div>
+                    <div>
+                      <div className="text-base font-medium text-gray-800 dark:text-white">Bills</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">Create or view bills</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Complaints */}
+                <div
+                  onClick={() => navigate('/view-complaints')}
+                  className="bg-white dark:bg-gray-800 rounded-lg p-4 min-h-[96px] flex items-center justify-between cursor-pointer hover:shadow-lg transition-all duration-200 border border-gray-200 dark:border-gray-700"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-yellow-50 dark:bg-yellow-900/10 rounded-lg">
+                      <Trash2 size={20} className="text-yellow-600 dark:text-yellow-400" />
+                    </div>
+                    <div>
+                      <div className="text-base font-medium text-gray-800 dark:text-white">Complaints</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">View reports</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bill Payments */}
+                <div
+                  onClick={() => navigate('/bill-payments')}
+                  className="bg-white dark:bg-gray-800 rounded-lg p-4 min-h-[96px] flex items-center justify-between cursor-pointer hover:shadow-lg transition-all duration-200 border border-gray-200 dark:border-gray-700"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
+                      <CheckCircle size={20} className="text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    <div>
+                      <div className="text-base font-medium text-gray-800 dark:text-white">Bill Reviews</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">Record payments</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
