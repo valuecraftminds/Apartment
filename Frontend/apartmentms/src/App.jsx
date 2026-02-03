@@ -6,7 +6,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Verify from './pages/Verify'
 import AdminDashboard from './pages/AdminDashboard'
-import NavBar from './components/navbar'
+import NavBar from './components/Navbar'
 import CompanyRegistration from './pages/CompanyRegistration'
 import { House} from 'lucide-react'
 import ApartmentView from './pages/ApartmentView'
@@ -52,6 +52,7 @@ import MyWork from './Apartment_Technician/ComplaintManagament/MyWork'
 import ComplaintCategories from './Apartment_Technician/ComplaintManagament/ComplaintCategories'
 import Sidebar from './components/sidebar'
 import BulkImportHouseOwner from './FloorsHouse/BulkImportHouseOwner'
+import CompanySetup from './pages/CompanySetup'
 
 export default function App() {
   return (
@@ -103,6 +104,7 @@ export default function App() {
         <Route path= '/start-work' element={<StartWork />} />
         <Route path= '/complaint-categories' element={<ComplaintCategories/>}/>
         <Route path= '/bulk-import-houseowner' element= {<BulkImportHouseOwner/>}/>
+        <Route path='/company-setup' element={<CompanySetup/>}/>
       </Routes>
       </AuthProvider>
     </BrowserRouter>

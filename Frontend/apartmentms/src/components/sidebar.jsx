@@ -135,8 +135,8 @@ export default function Sidebar() {
       icon: Building,
       isConstant: false,
       children: [
-        { name: 'Import House owner', path: '/bulk-import-houseowner' },
-        // { name: 'Service Providers', path: '/service-providers' },
+        { name: 'Company View', path: '/company-setup' },
+        { name: 'Import House owner', path: '/bulk-import-houseowner' }
       ]
     },
     tenant_management: { 
