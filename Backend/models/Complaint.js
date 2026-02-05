@@ -1170,6 +1170,14 @@ static async getTimerStatus(complaintId) {
             return false;
         }
     }
+
+    static async delete(id, companyId) {
+        await pool.execute(
+            `Delete FROM complaints WHERE id = ? AND company_id = ?`,
+            [id, companyId]
+        );
+        return true;
+    }
 }
 
 

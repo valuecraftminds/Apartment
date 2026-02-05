@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Filter, Download, Eye, Edit, DollarSign, Calendar, Home, Building, Receipt, Trash2, CheckCircle, Clock, RefreshCw } from 'lucide-react';
 import api from '../api/axios';
 import { toast, ToastContainer } from 'react-toastify';
-import Sidebar from '../components/sidebar';
+import Sidebar from '../components/Sidebar';
 import Navbar from '../components/navbar';
 import UpdateBillPayments from './UpdateBillPayments';
 
@@ -23,6 +23,7 @@ export default function BillPayments() {
   const [apartments, setApartments] = useState([]);
   const [floors, setFloors] = useState([]);
   const [houses, setHouses] = useState([]);
+  const [manualHousePK, setManualHousePK] = useState('');
   const [bills, setBills] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -214,6 +215,29 @@ export default function BillPayments() {
     }));
   };
 
+  // Lookup bills directly by internal house PK (manual input)
+  const handleManualHousePKLookup = async () => {
+    const entered = (manualHousePK || '').trim();
+    if (!entered) {
+      toast.info('Please enter an internal House ID to lookup');
+      return;
+    }
+
+    // Set the house_id filter and trigger loadPayments
+    setFilters(prev => ({ ...prev, house_id: entered }));
+
+    // Small delay to ensure filters state update propagates before load
+    setTimeout(() => {
+      try {
+        loadPayments();
+        toast.success('Loading bills for House');
+      } catch (err) {
+        console.error('Manual house lookup failed', err);
+        toast.error('Failed to load bills for the provided House ID');
+      }
+    }, 120);
+  };
+
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({
       ...prev,
@@ -269,74 +293,309 @@ export default function BillPayments() {
   };
 
   // Generate PDF invoice for a single payment
-  const generateInvoice = async (payment) => {
+  // const generateInvoice = async (payment) => {
+  //   try {
+  //     const { jsPDF } = await import('jspdf');
+  //     const pdf = new jsPDF('p', 'mm', 'a4');
+  //     const pageWidth = pdf.internal.pageSize.getWidth();
+
+  //     // Header
+  //     pdf.setFontSize(18);
+  //     pdf.setFont(undefined, 'bold');
+  //     pdf.text('INVOICE', pageWidth / 2, 20, { align: 'center' });
+
+  //     // Invoice No and Print Date (3-digit)
+  //     const invoiceNo = String(new Date().getTime() % 1000).padStart(3, '0');
+  //     const printDate = new Date().toISOString().split('T')[0];
+  //     pdf.setFontSize(10);
+  //     pdf.setFont(undefined, 'normal');
+  //     pdf.text(`Invoice No: ${invoiceNo}`, 15, 32);
+  //     pdf.text(`Print Date: ${printDate}`, pageWidth - 15, 32, { align: 'right' });
+
+  //     // House details
+  //     pdf.setFontSize(11);
+  //     pdf.text(`Apartment: ${payment.apartment_name || ''}`, 15, 44);
+  //     if (payment.floor_id) pdf.text(`Floor: ${payment.floor_id}`, 15, 52);
+  //     if (payment.house_number) pdf.text(`House: ${payment.house_number}`, 15, 60);
+
+  //     // Table header
+  //     const tableTop = 74;
+  //     const colX = [15, 110, 150]; // Description, Due Amount, Paid Amount
+  //     pdf.setDrawColor(0);
+  //     pdf.setFillColor(240, 240, 240);
+  //     pdf.rect(15, tableTop - 8, pageWidth - 30, 8, 'F');
+  //     pdf.setFontSize(11);
+  //     pdf.setTextColor(40);
+  //     pdf.text('Description', colX[0], tableTop - 2);
+  //     pdf.text('Due Amount', colX[1], tableTop - 2);
+  //     pdf.text('Paid Amount', colX[2], tableTop - 2);
+
+  //     // Row values
+  //     const desc = payment.bill_name || payment.bill_id || 'Charge';
+  //     const dueAmount = Number(payment.unitPrice ?? ((Number(payment.paidAmount || 0) + Number(payment.pendingAmount || 0))));
+  //     const paidAmount = Number(payment.paidAmount || 0);
+
+  //     const rowY = tableTop + 8;
+  //     pdf.setFontSize(10);
+  //     pdf.setTextColor(0);
+  //     pdf.text(String(desc), colX[0], rowY);
+  //     pdf.text(dueAmount.toFixed(2), colX[1], rowY);
+  //     pdf.text(paidAmount.toFixed(2), colX[2], rowY);
+
+  //     // Totals
+  //     const totalY = rowY + 18;
+  //     pdf.setFont(undefined, 'bold');
+  //     pdf.text('Total Paid:', colX[1], totalY);
+  //     pdf.text(paidAmount.toFixed(2), colX[2], totalY);
+
+  //     // Thanks quote
+  //     pdf.setFont(undefined, 'normal');
+  //     pdf.setFontSize(10);
+  //     pdf.text('Thank you for your business!', 15, totalY + 18);
+
+  //     const fileName = `INVOICE_${invoiceNo}_${(payment.apartment_name || 'apartment').replace(/\s+/g, '_')}_${payment.month || ''}_${payment.year || ''}.pdf`;
+  //     pdf.save(fileName);
+  //     toast.success('Invoice downloaded');
+  //   } catch (err) {
+  //     console.error('Invoice generation failed', err);
+  //     toast.error('Failed to generate invoice');
+  //   }
+  // };
+
+  // Generate PDF invoice for a single payment
+const generateInvoice = async (payment) => {
+  try {
+    const { jsPDF } = await import('jspdf');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const margin = 20;
+    const contentWidth = pageWidth - (margin * 2);
+    
+    // Colors
+    const primaryColor = [75, 85, 99]; // gray-600
+    const accentColor = [147, 51, 234]; // purple-600
+    const lightBg = [249, 250, 251]; // gray-50
+    const borderColor = [209, 213, 219]; // gray-300
+
+    // ========== HEADER SECTION ==========
+    // Add background rectangle
+    pdf.setFillColor(...accentColor);
+    pdf.rect(0, 0, pageWidth, 50, 'F');
+    
+    // Add logo (you need to add the apartment.png to your public folder)
     try {
-      const { jsPDF } = await import('jspdf');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pageWidth = pdf.internal.pageSize.getWidth();
-
-      // Header
-      pdf.setFontSize(18);
-      pdf.setFont(undefined, 'bold');
-      pdf.text('INVOICE', pageWidth / 2, 20, { align: 'center' });
-
-      // Invoice No and Print Date (3-digit)
-      const invoiceNo = String(new Date().getTime() % 1000).padStart(3, '0');
-      const printDate = new Date().toISOString().split('T')[0];
-      pdf.setFontSize(10);
-      pdf.setFont(undefined, 'normal');
-      pdf.text(`Invoice No: ${invoiceNo}`, 15, 32);
-      pdf.text(`Print Date: ${printDate}`, pageWidth - 15, 32, { align: 'right' });
-
-      // House details
-      pdf.setFontSize(11);
-      pdf.text(`Apartment: ${payment.apartment_name || ''}`, 15, 44);
-      if (payment.floor_id) pdf.text(`Floor: ${payment.floor_id}`, 15, 52);
-      if (payment.house_number) pdf.text(`House: ${payment.house_number}`, 15, 60);
-
-      // Table header
-      const tableTop = 74;
-      const colX = [15, 110, 150]; // Description, Due Amount, Paid Amount
-      pdf.setDrawColor(0);
-      pdf.setFillColor(240, 240, 240);
-      pdf.rect(15, tableTop - 8, pageWidth - 30, 8, 'F');
-      pdf.setFontSize(11);
-      pdf.setTextColor(40);
-      pdf.text('Description', colX[0], tableTop - 2);
-      pdf.text('Due Amount', colX[1], tableTop - 2);
-      pdf.text('Paid Amount', colX[2], tableTop - 2);
-
-      // Row values
-      const desc = payment.bill_name || payment.bill_id || 'Charge';
-      const dueAmount = Number(payment.unitPrice ?? ((Number(payment.paidAmount || 0) + Number(payment.pendingAmount || 0))));
-      const paidAmount = Number(payment.paidAmount || 0);
-
-      const rowY = tableTop + 8;
-      pdf.setFontSize(10);
-      pdf.setTextColor(0);
-      pdf.text(String(desc), colX[0], rowY);
-      pdf.text(dueAmount.toFixed(2), colX[1], rowY);
-      pdf.text(paidAmount.toFixed(2), colX[2], rowY);
-
-      // Totals
-      const totalY = rowY + 18;
-      pdf.setFont(undefined, 'bold');
-      pdf.text('Total Paid:', colX[1], totalY);
-      pdf.text(paidAmount.toFixed(2), colX[2], totalY);
-
-      // Thanks quote
-      pdf.setFont(undefined, 'normal');
-      pdf.setFontSize(10);
-      pdf.text('Thank you for your business!', 15, totalY + 18);
-
-      const fileName = `INVOICE_${invoiceNo}_${(payment.apartment_name || 'apartment').replace(/\s+/g, '_')}_${payment.month || ''}_${payment.year || ''}.pdf`;
-      pdf.save(fileName);
-      toast.success('Invoice downloaded');
-    } catch (err) {
-      console.error('Invoice generation failed', err);
-      toast.error('Failed to generate invoice');
+      const logoResponse = await fetch('/apartment.png');
+      if (logoResponse.ok) {
+        const logoBlob = await logoResponse.blob();
+        const logoUrl = URL.createObjectURL(logoBlob);
+        pdf.addImage(logoUrl, 'PNG', margin, 15, 15, 15);
+      }
+    } catch (error) {
+      console.log('Logo not found, using text only');
     }
-  };
+    
+    // Company name
+    pdf.setFontSize(22);
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont(undefined, 'bold');
+    pdf.text('AptSync', margin + 20, 25);
+    
+    // Invoice title
+    pdf.setFontSize(28);
+    pdf.text('INVOICE', pageWidth - margin, 25, { align: 'right' });
+    
+    // ========== INVOICE DETAILS SECTION ==========
+    let yPos = 70;
+    
+    // Invoice number and date
+    pdf.setFontSize(10);
+    pdf.setTextColor(...primaryColor);
+    pdf.setFont(undefined, 'normal');
+    
+    const invoiceNo = `INV-${new Date().getFullYear()}-${String(new Date().getTime() % 10000).padStart(4, '0')}`;
+    const invoiceDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    
+    pdf.text(`Invoice No: ${invoiceNo}`, margin, yPos);
+    pdf.text(`Date: ${invoiceDate}`, pageWidth - margin, yPos, { align: 'right' });
+    
+    yPos += 15;
+    
+    // ========== BILL TO SECTION ==========
+    pdf.setFontSize(14);
+    pdf.setFont(undefined, 'bold');
+    pdf.setTextColor(...accentColor);
+    pdf.text('BILL TO', margin, yPos);
+    
+    yPos += 8;
+    pdf.setFontSize(11);
+    pdf.setFont(undefined, 'normal');
+    pdf.setTextColor(...primaryColor);
+    
+    pdf.text(`Apartment: ${payment.apartment_name || 'N/A'}`, margin, yPos);
+    yPos += 6;
+    
+    if (payment.floor_id) {
+      pdf.text(`Floor: ${payment.floor_id}`, margin, yPos);
+      yPos += 6;
+    }
+    
+    if (payment.house_number) {
+      pdf.text(`House No: ${payment.house_number}`, margin, yPos);
+      yPos += 6;
+    }
+    
+    yPos += 10;
+    
+    // ========== BILL PERIOD SECTION ==========
+    pdf.setFontSize(14);
+    pdf.setFont(undefined, 'bold');
+    pdf.setTextColor(...accentColor);
+    pdf.text('BILL PERIOD', pageWidth - margin, yPos, { align: 'right' });
+    
+    yPos += 8;
+    pdf.setFontSize(11);
+    pdf.setFont(undefined, 'normal');
+    pdf.setTextColor(...primaryColor);
+    
+    const monthYear = `${payment.month || ''} ${payment.year || ''}`.trim();
+    pdf.text(monthYear || 'N/A', pageWidth - margin, yPos, { align: 'right' });
+    yPos += 10;
+    
+    // ========== ITEMS TABLE ==========
+    // Table header
+    pdf.setFillColor(...lightBg);
+    pdf.rect(margin, yPos, contentWidth, 10, 'F');
+    
+    // Draw border around header
+    pdf.setDrawColor(...borderColor);
+    pdf.rect(margin, yPos, contentWidth, 10);
+    
+    // Header text
+    pdf.setFontSize(11);
+    pdf.setFont(undefined, 'bold');
+    pdf.setTextColor(...primaryColor);
+    
+    const colWidth = contentWidth / 4;
+    pdf.text('Description', margin + 5, yPos + 7);
+    pdf.text('Unit Price', margin + colWidth * 2, yPos + 7, { align: 'right' });
+    pdf.text('Paid Amount', margin + colWidth * 3, yPos + 7, { align: 'right' });
+    
+    yPos += 10;
+    
+    // Table row
+    const desc = payment.bill_name || payment.bill_id || 'Service Charge';
+    const unitPrice = Number(payment.unitPrice ?? ((Number(payment.paidAmount || 0) + Number(payment.pendingAmount || 0))));
+    const paidAmount = Number(payment.paidAmount || 0);
+    
+    // Row background
+    pdf.setFillColor(255, 255, 255);
+    pdf.rect(margin, yPos, contentWidth, 12, 'F');
+    
+    // Row border
+    pdf.setDrawColor(...borderColor);
+    pdf.rect(margin, yPos, contentWidth, 12);
+    
+    // Row text
+    pdf.setFontSize(10);
+    pdf.setFont(undefined, 'normal');
+    pdf.setTextColor(...primaryColor);
+    
+    // Wrap description text if too long
+    const maxDescWidth = colWidth * 1.5;
+    let descLines = pdf.splitTextToSize(desc, maxDescWidth);
+    pdf.text(descLines, margin + 5, yPos + 4);
+    
+    pdf.text(`$${unitPrice.toFixed(2)}`, margin + colWidth * 2, yPos + 4, { align: 'right' });
+    pdf.text(`$${paidAmount.toFixed(2)}`, margin + colWidth * 3, yPos + 4, { align: 'right' });
+    
+    // Adjust yPos based on description height
+    const descHeight = Math.max(descLines.length * 4, 12);
+    yPos += descHeight;
+    
+    // ========== TOTAL SECTION ==========
+    yPos += 10;
+    
+    // Total background
+    pdf.setFillColor(...lightBg);
+    pdf.rect(margin + colWidth * 2, yPos, colWidth * 2, 15, 'F');
+    
+    // Total border
+    pdf.setDrawColor(...borderColor);
+    pdf.rect(margin + colWidth * 2, yPos, colWidth * 2, 15);
+    
+    // Total text
+    pdf.setFontSize(12);
+    pdf.setFont(undefined, 'bold');
+    pdf.setTextColor(...accentColor);
+    pdf.text('Total Paid:', margin + colWidth * 2 + 10, yPos + 10);
+    
+    pdf.setFontSize(14);
+    pdf.text(`$${paidAmount.toFixed(2)}`, margin + colWidth * 3, yPos + 10, { align: 'right' });
+    
+    // ========== PAYMENT STATUS ==========
+    yPos += 25;
+    pdf.setFontSize(11);
+    pdf.setFont(undefined, 'bold');
+    pdf.setTextColor(...primaryColor);
+    
+    pdf.text('Payment Status:', margin, yPos);
+    
+    // Status badge
+    const status = payment.payment_status || 'Pending';
+    let statusColor;
+    switch (status) {
+      case 'Paid': statusColor = [34, 197, 94]; break; // green-500
+      case 'Partial': statusColor = [59, 130, 246]; break; // blue-500
+      case 'Pending': statusColor = [245, 158, 11]; break; // yellow-500
+      case 'Failed': statusColor = [239, 68, 68]; break; // red-500
+      default: statusColor = primaryColor;
+    }
+    
+    pdf.setFillColor(...statusColor);
+    pdf.roundedRect(margin + 35, yPos - 3, 25, 8, 4, 4, 'F');
+    
+    pdf.setFontSize(9);
+    pdf.setTextColor(255, 255, 255);
+    pdf.text(status, margin + 35 + 12.5, yPos + 2, { align: 'center' });
+    
+    // ========== FOOTER SECTION ==========
+    const footerY = pdf.internal.pageSize.getHeight() - 40;
+    
+    // Separator line
+    pdf.setDrawColor(...borderColor);
+    pdf.setLineWidth(0.5);
+    pdf.line(margin, footerY, pageWidth - margin, footerY);
+    
+    // Footer text
+    pdf.setFontSize(9);
+    pdf.setFont(undefined, 'normal');
+    pdf.setTextColor(100, 116, 139); // gray-500
+    pdf.text('Thank you for choosing AptSync!', pageWidth / 2, footerY + 10, { align: 'center' });
+    
+    pdf.setFontSize(8);
+    pdf.text('If you have any questions about this invoice, please contact support@aptsync.com', 
+             pageWidth / 2, footerY + 17, { align: 'center' });
+    
+    // Page border
+    pdf.setDrawColor(200, 200, 200);
+    pdf.setLineWidth(0.5);
+    pdf.rect(10, 10, pageWidth - 20, pdf.internal.pageSize.getHeight() - 20);
+    
+    // ========== SAVE PDF ==========
+    const fileName = `Invoice_${invoiceNo}_${(payment.apartment_name || 'Apartment').replace(/\s+/g, '_')}.pdf`;
+    pdf.save(fileName);
+    
+    toast.success('Invoice downloaded successfully!');
+    
+  } catch (err) {
+    console.error('Invoice generation failed', err);
+    toast.error('Failed to generate invoice');
+  }
+};
 
   const clearFilters = () => {
     setFilters({
@@ -588,6 +847,28 @@ export default function BillPayments() {
                   <Filter size={16} />
                   <span>{filteredPayments.length} payments found</span>
                 </div>
+              </div>
+
+              {/* Manual House PK lookup placed after all filters */}
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Or enter House ID to load bills</label>
+                <div className="flex gap-2 max-w-md">
+                  <input
+                    type="text"
+                    value={manualHousePK}
+                    onChange={(e) => setManualHousePK(e.target.value)}
+                    placeholder="Enter internal House ID (e.g. house-abc123)"
+                    className="flex-1 px-3 py-2 text-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleManualHousePKLookup}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    Lookup
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Lookup bills by internal House PK across the selected filters.</p>
               </div>
             </div>
 

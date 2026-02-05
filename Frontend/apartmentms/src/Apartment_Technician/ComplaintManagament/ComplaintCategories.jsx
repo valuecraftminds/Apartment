@@ -1,7 +1,7 @@
 //ComplaintCategories.jsx
 import React, { useContext, useEffect, useState } from 'react'
 import Sidebar from '../../components/Sidebar'
-import Navbar from '../../components/Navbar';
+import Navbar from '../../components/navbar';
 import { Edit, Image, Loader, Plus, Settings, Trash2, Menu, Smartphone, Monitor } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../contexts/AuthContext';

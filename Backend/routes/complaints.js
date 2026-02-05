@@ -18,6 +18,7 @@ router.patch('/:id/status', authenticateToken, complaintController.updateComplai
 router.get('/technicians/category', authenticateToken, complaintController.getTechniciansByCategory);
 router.get('/categories', authenticateToken, complaintController.getCategories);
 router.get('/my-complaints/technician', authenticateToken, complaintController.getTechnicianComplaints);
+router.delete('/:id', authenticateToken, complaintController.deleteComplaint);
 
 // Timer routes for technicians
 router.post('/:id/timer/start', authenticateToken, complaintController.startTimer);

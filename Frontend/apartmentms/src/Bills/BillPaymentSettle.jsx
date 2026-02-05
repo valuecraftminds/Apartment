@@ -3,8 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { Search, Filter, Download, Eye, Edit, DollarSign, Calendar, Home, Building, Receipt, Trash2, CheckCircle, Clock, RefreshCw, PlusCircle, X } from 'lucide-react';
 import api from '../api/axios';
 import { toast, ToastContainer } from 'react-toastify';
-import Sidebar from '../components/sidebar';
-import Navbar from '../components/Navbar';
+import Sidebar from '../components/Sidebar';
+import Navbar from '../components/navbar';
 import UpdateBillPayments from './UpdateBillPayments';
 
 export default function BillPaymentSettle() {
@@ -183,6 +183,7 @@ export default function BillPaymentSettle() {
       setSelectedHouseInfo({
         houseNumber: found.house_id || found.house_number || found.house_no || 'N/A',
         apartmentName: found.apartment_name || found.apartment?.name || '',
+        apartmentAddress: found.apartment_address || found.apartment?.address || '',
         floorNumber: found.floor_id || '' ,
         houseId: found.id
       });
@@ -245,6 +246,7 @@ export default function BillPaymentSettle() {
       setSelectedHouseInfo({
         houseNumber: entered,
         apartmentName: '',
+        apartmentAddress: '',
         floorNumber: '',
         houseId: entered
       });
@@ -293,6 +295,7 @@ export default function BillPaymentSettle() {
         setSelectedHouseInfo({
           houseNumber: selectedHouse.house_id,
           apartmentName: apartment.name,
+          apartmentAddress: apartment.address,
           floorNumber: floor.floor_id,
           houseId: selectedHouse.id
         });
@@ -479,6 +482,9 @@ export default function BillPaymentSettle() {
 
   // Handle payment update from modal
   const handlePaymentUpdate = (updatedPayment) => {
+    // Find previous bill to compute paid-now
+    const previousBill = allBills.find(b => b.id === updatedPayment.id) || null;
+
     // Update the bills list
     const updatedBills = allBills.map(bill => 
       bill.id === updatedPayment.id ? updatedPayment : bill
@@ -500,7 +506,35 @@ export default function BillPaymentSettle() {
     setTotalPartialAmount(partialTotal);
     
     handleCloseModal();
-    
+
+    // If payment changed (some amount paid), generate invoice for this bill
+    try {
+      const prevPaid = parseFloat(previousBill?.paidAmount || 0);
+      const newPaid = parseFloat(updatedPayment.paidAmount || 0);
+      const paidNow = Math.max(0, newPaid - prevPaid);
+
+      if (paidNow > 0) {
+        const invoiceBill = {
+          ...previousBill,
+          // original pending before payment
+          originalPendingAmount: parseFloat(previousBill?.pendingAmount || 0),
+          // amount paid now
+          pendingAmount: paidNow,
+          // paidAmount field represents paid before this payment
+          paidAmount: prevPaid,
+          additionalPayment: paidNow
+        };
+
+        // fire-and-forget invoice generation
+        generateInvoiceForBills([invoiceBill]).catch(err => {
+          console.error('Invoice generation for single bill failed', err);
+          toast.error('Payment succeeded but invoice generation failed');
+        });
+      }
+    } catch (err) {
+      console.error('Error while preparing invoice for updated payment', err);
+    }
+
     if (updatedPayment.payment_status === 'Paid') {
       toast.success('Payment completed successfully!');
     }
@@ -516,7 +550,9 @@ export default function BillPaymentSettle() {
   const handleTotalPaymentSubmit = async () => {
     try {
       setLoading(true);
-      
+      // Capture snapshot of bills to include on invoice (before server updates)
+      const billsToInvoice = filteredBills.map(bill => ({ ...bill }));
+
       // Mark all filtered bills as paid
       const paymentPromises = filteredBills.map(bill =>
         api.patch(`/bill-payments/${bill.id}/status`, {
@@ -528,20 +564,212 @@ export default function BillPaymentSettle() {
       );
 
       await Promise.all(paymentPromises);
-      
+
       const totalAmount = totalPendingAmount + totalPartialAmount;
       toast.success(`Successfully paid ${filteredBills.length} bills totaling $${totalAmount.toFixed(2)}`);
-      
+
+      // Generate invoice for all paid bills (include details)
+      try {
+        await generateInvoiceForBills(billsToInvoice);
+      } catch (invErr) {
+        console.error('Invoice generation after total payment failed', invErr);
+        toast.error('Payment succeeded but invoice generation failed');
+      }
+
       // Clear the bills and reload
       await loadBillsForHouse(filters.house_id);
-      
+
       setShowTotalPaymentModal(false);
-      
     } catch (error) {
       console.error('Error processing total payment:', error);
       toast.error('Failed to process total payment');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Generate invoice PDF for multiple bills (used after paying all in full)
+  const generateInvoiceForBills = async (bills) => {
+    try {
+      const { jsPDF } = await import('jspdf');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 15;
+      const contentWidth = pageWidth - margin * 2;
+
+      // Ensure each bill has a due_date (fetch from backend if missing)
+      const enrichedBills = await Promise.all(bills.map(async (bill) => {
+        if (bill.due_date || bill.dueDate || bill.due) return bill;
+        try {
+          const resp = await api.get(`/bill-payments/${bill.id}`);
+          const payload = resp.data && (resp.data.data || resp.data);
+          if (payload) {
+            return {
+              ...bill,
+              due_date: payload.due_date || payload.dueDate || payload.due || bill.due_date
+            };
+          }
+        } catch (e) {
+          // ignore and return original bill
+        }
+        return bill;
+      }));
+
+      // Use enriched bills for rendering
+      bills = enrichedBills;
+
+      // Header (no background color)
+      try {
+        const logoResponse = await fetch('/apartment.png');
+        if (logoResponse.ok) {
+          const blob = await logoResponse.blob();
+          const url = URL.createObjectURL(blob);
+          pdf.addImage(url, 'PNG', margin, 12, 16, 16);
+        }
+      } catch (e) {
+        // ignore
+      }
+      pdf.setFontSize(20);
+      pdf.setTextColor(58, 50, 150);
+      pdf.setFont(undefined, 'bold');
+      pdf.text('AptSync', margin + 22, 26);
+      pdf.setFontSize(26);
+      pdf.setTextColor(40, 40, 40);
+      pdf.text('INVOICE', pageWidth - margin, 26, { align: 'right' });
+
+      let y = 50;
+      pdf.setFontSize(10);
+      pdf.setTextColor(40, 40, 40);
+
+      // Invoice meta
+      const invoiceNo = `INV-${new Date().getFullYear()}-${String(new Date().getTime() % 10000).padStart(4, '0')}`;
+      const invoiceDate = new Date().toLocaleDateString();
+      pdf.text(`Invoice No: ${invoiceNo}`, margin, y);
+      pdf.text(`Date: ${invoiceDate}`, pageWidth - margin, y, { align: 'right' });
+
+      y += 12;
+
+      // Bill to
+      pdf.setFont(undefined, 'bold');
+      pdf.setTextColor(58, 50, 150);
+      pdf.text('BILL TO', margin, y);
+      pdf.setFont(undefined, 'normal');
+      pdf.setTextColor(40, 40, 40);
+      y += 8;
+      pdf.text(`Apartment: ${selectedHouseInfo?.apartmentName || 'N/A'}`, margin, y);
+      y += 6;
+      pdf.text(`Address: ${selectedHouseInfo ?.apartmentAddress || 'N/A'}`, margin, y);
+      y += 6;
+      pdf.text(`Floor: ${selectedHouseInfo?.floorNumber || 'N/A'}`, margin, y);
+      y += 6;
+      pdf.text(`House: ${selectedHouseInfo?.houseNumber || ''}`, margin, y);
+      y += 10;
+
+      // Table header (Description | Period | Due Date | Total | Paid | Pending)
+      const col1 = margin;
+      const col2 = margin + contentWidth * 0.30; // Period
+      const col3 = col2 + contentWidth * 0.20; // Due Date
+      const col4 = col3 + contentWidth * 0.15; // Total
+      const col5 = col4 + contentWidth * 0.12; // Paid
+      const rightX = pageWidth - margin; // Pending
+
+      pdf.setFillColor(245, 245, 245);
+      pdf.rect(margin, y, contentWidth, 10, 'F');
+      pdf.setDrawColor(200);
+      pdf.rect(margin, y, contentWidth, 10);
+      pdf.setFont(undefined, 'bold');
+      pdf.setFontSize(11);
+      pdf.text('Description', col1 + 2, y + 7);
+      pdf.text('Period', col2 + 2, y + 7);
+      pdf.text('Due Date', col3 + 2, y + 7);
+      pdf.text('Total', col4 + 2, y + 7);
+      pdf.text('Paid', col5 + 2, y + 7);
+      pdf.text('Pending', rightX - 2, y + 7, { align: 'right' });
+
+      y += 14;
+
+      // Rows
+      pdf.setFont(undefined, 'normal');
+      pdf.setFontSize(10);
+      let grandTotal = 0;
+      let grandPaidNow = 0;
+
+      for (const bill of bills) {
+        const desc = bill.bill_name || bill.bill_id || 'Charge';
+        const period = `${bill.month || ''} ${bill.year || ''}`.trim() || 'N/A';
+        const dueDateText = bill.due_date || bill.dueDate || bill.due
+          ? new Date(bill.due_date || bill.dueDate || bill.due).toLocaleDateString()
+          : 'N/A';
+
+        const originalPaid = parseFloat(bill.paidAmount) || 0;
+        // For partial invoices we set originalPendingAmount; otherwise use bill.pendingAmount
+        const originalPending = typeof bill.originalPendingAmount !== 'undefined'
+          ? parseFloat(bill.originalPendingAmount) || 0
+          : parseFloat(bill.pendingAmount) || 0;
+
+        // Amount paid now for this invoice
+        const paidNow = (typeof bill.additionalPayment !== 'undefined')
+          ? parseFloat(bill.additionalPayment) || parseFloat(bill.pendingAmount) || 0
+          : parseFloat(bill.pendingAmount) || 0;
+
+        const totalDue = originalPaid + originalPending;
+        const paidAfter = originalPaid + paidNow;
+        const pendingAfter = Math.max(0, totalDue - paidAfter);
+
+        // Row background and border
+        pdf.setFillColor(255, 255, 255);
+        pdf.rect(margin, y - 3, contentWidth, 9, 'F');
+        pdf.setDrawColor(220);
+        pdf.rect(margin, y - 3, contentWidth, 9);
+
+        pdf.text(desc, col1 + 2, y + 4);
+        pdf.text(period, col2 + 2, y + 4);
+        pdf.text(dueDateText, col3 + 2, y + 4);
+        pdf.text(`$${totalDue.toFixed(2)}`, col4 + 2, y + 4);
+        pdf.text(`$${paidAfter.toFixed(2)}`, col5 + 2, y + 4);
+        pdf.text(`$${pendingAfter.toFixed(2)}`, rightX - 2, y + 4, { align: 'right' });
+
+        y += 12;
+        grandTotal += totalDue;
+        grandPaidNow += paidNow;
+
+        if (y > pageHeight - 80) {
+          pdf.addPage();
+          y = 20;
+        }
+      }
+
+      // Totals block
+      y += 6;
+      pdf.setFillColor(245, 245, 245);
+      pdf.rect(col3, y, contentWidth - (col3 - margin), 12, 'F');
+      pdf.setDrawColor(200);
+      pdf.rect(col3, y, contentWidth - (col3 - margin), 12);
+      pdf.setFont(undefined, 'bold');
+      pdf.setFontSize(12);
+      pdf.setTextColor(58, 50, 150);
+      pdf.text('Grand Total:', col3 + 6, y + 8);
+      pdf.text(`$${grandTotal.toFixed(2)}`, rightX - 2, y + 8, { align: 'right' });
+      pdf.setFont(undefined, 'normal');
+
+      y += 18;
+      pdf.setFont(undefined, 'normal');
+      pdf.setFontSize(10);
+      pdf.setTextColor(100, 116, 139);
+      pdf.text('Thank you for your payment!', pageWidth / 2, pageHeight - 30, { align: 'center' });
+
+      // Page border
+      pdf.setDrawColor(200);
+      pdf.setLineWidth(0.5);
+      pdf.rect(10, 10, pageWidth - 20, pageHeight - 20);
+
+      const fileName = `Invoice_${invoiceNo}_${(selectedHouseInfo?.apartmentName || 'Apartment').replace(/\s+/g, '_')}_${selectedHouseInfo?.houseNumber || ''}.pdf`;
+      pdf.save(fileName);
+      toast.success('Invoice downloaded');
+    } catch (err) {
+      console.error('Invoice generation failed', err);
+      toast.error('Failed to generate invoice');
     }
   };
 
@@ -576,6 +804,16 @@ export default function BillPaymentSettle() {
       });
       
       // Update each bill with its share of the partial payment
+      // Snapshot for invoice: set pendingAmount to the additionalPayment (amount paid now for that bill)
+      const billsToInvoice = billsWithDistribution.map(bill => ({
+        ...bill,
+        // preserve original pending for invoice calculations
+        originalPendingAmount: parseFloat(bill.pendingAmount) || 0,
+        // pendingAmount field here represents the amount paid now for this invoice
+        pendingAmount: bill.additionalPayment,
+        paidAmount: bill.paidAmount
+      }));
+
       const paymentPromises = billsWithDistribution.map(bill => {
         const newPaidAmount = parseFloat(bill.paidAmount) + bill.additionalPayment;
         const newPendingAmount = parseFloat(bill.pendingAmount) - bill.additionalPayment;
@@ -600,6 +838,14 @@ export default function BillPaymentSettle() {
       
       // Reload bills to get updated amounts
       await loadBillsForHouse(filters.house_id);
+
+      // Generate invoice for the partial payments (show breakdown)
+      try {
+        await generateInvoiceForBills(billsToInvoice);
+      } catch (invErr) {
+        console.error('Invoice generation after partial payment failed', invErr);
+        toast.error('Partial payment succeeded but invoice generation failed');
+      }
       
       setShowPartialPaymentModal(false);
       
@@ -865,31 +1111,18 @@ export default function BillPaymentSettle() {
                   </div>
                 </div>
 
-                {/* Amount Summary Cards */}
+                {/* Amount Summary Card - Combined Pending */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                  <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 md:col-span-2">
                     <div className="flex items-center mb-2">
                       <div className="w-3 h-3 rounded-full bg-yellow-500 mr-2"></div>
-                      <h3 className="font-medium text-yellow-800 dark:text-yellow-300">Pending Bills</h3>
+                      <h3 className="font-medium text-yellow-800 dark:text-yellow-300">Total Pending Amount</h3>
                     </div>
                     <div className="text-yellow-800 dark:text-yellow-300 font-bold text-2xl">
-                      ${formatCurrency(totalPendingAmount)}
+                      ${formatCurrency(totalAmount)}
                     </div>
                     <div className="text-yellow-600 dark:text-yellow-400 text-sm">
-                      {allBills.filter(b => b.payment_status === 'Pending').length} bills
-                    </div>
-                  </div>
-                  
-                  <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                    <div className="flex items-center mb-2">
-                      <div className="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
-                      <h3 className="font-medium text-blue-800 dark:text-blue-300">Partial Bills</h3>
-                    </div>
-                    <div className="text-blue-800 dark:text-blue-300 font-bold text-2xl">
-                      ${formatCurrency(totalPartialAmount)}
-                    </div>
-                    <div className="text-blue-600 dark:text-blue-400 text-sm">
-                      {allBills.filter(b => b.payment_status === 'Partial').length} bills
+                      {allBills.filter(b => b.payment_status === 'Pending').length} pending • {allBills.filter(b => b.payment_status === 'Partial').length} partial
                     </div>
                   </div>
                 </div>

@@ -278,7 +278,7 @@ export default function HouseOwnerDashboard() {
             </div>
             
             {/* Quick Actions - Mobile friendly */}
-            <div className="mb-6 md:mb-8">
+            {/* <div className="mb-6 md:mb-8">
               <h3 className="text-lg md:text-xl font-semibold text-gray-800 dark:text-white mb-4">Quick Actions</h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4">
                 <button 
@@ -303,7 +303,7 @@ export default function HouseOwnerDashboard() {
                   <span className="text-xs md:text-sm font-medium text-gray-800 dark:text-gray-200">Profile</span>
                 </button>
               </div>
-            </div>
+            </div> */}
 
             {/* Mobile Footer Spacer */}
             {mobileView && <div className="h-16"></div>}

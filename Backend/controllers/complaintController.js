@@ -940,6 +940,24 @@ const complaintController = {
                 message: 'Server error while checking rating status'
             });
         }
+    },
+
+    async deleteComplaint(req, res) {
+        try {
+            const { id } = req.params;
+            const company_id = req.user?.company_id;
+            await Complaint.delete(id, company_id);
+            res.json({
+                success: true,
+                message: 'Complaint deleted successfully'
+            });
+        } catch (err) {
+            console.error('Delete complaint error:', err);
+            res.status(500).json({
+                success: false,
+                message: 'Server error while deleting complaint'
+            });
+        }
     }
 };
 
