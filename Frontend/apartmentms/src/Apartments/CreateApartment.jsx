@@ -5,7 +5,6 @@ import { toast } from 'react-toastify';
 
 export default function CreateApartment({ onClose, onCreated }) {
   const [formData, setFormData] = useState({
-    apartment_id:'',
     name: '',
     address: '',
     city: '',
@@ -24,25 +23,25 @@ export default function CreateApartment({ onClose, onCreated }) {
   };
 
   //fetch last apartment id and increment it automatically
-  const fetchLastApyId = async () => {
-    try {
-      const result = await api.get('/apartments')
-      const apt = result.data.data
-      const lastApt = apt[0];
-      const lastAptId = lastApt ? parseInt(lastApt.apartment_id.slice(3)) : 0; // Extract the number part and convert to integer
-      const newAptId = `A${String(lastAptId + 1).padStart(3, '0')}`; // Increment the number part and format it
-      setFormData(prevApartment => ({
-        ...prevApartment,
-        apartment_id: newAptId
-      }));
-    } catch (error) {
-      console.error("Error fetching last apartment id:", error);
-    }
-  };
+  // const fetchLastApyId = async () => {
+  //   try {
+  //     const result = await api.get('/apartments')
+  //     const apt = result.data.data
+  //     const lastApt = apt[0];
+  //     const lastAptId = lastApt ? parseInt(lastApt.apartment_id.slice(3)) : 0; // Extract the number part and convert to integer
+  //     const newAptId = `A${String(lastAptId + 1).padStart(3, '0')}`; // Increment the number part and format it
+  //     setFormData(prevApartment => ({
+  //       ...prevApartment,
+  //       apartment_id: newAptId
+  //     }));
+  //   } catch (error) {
+  //     console.error("Error fetching last apartment id:", error);
+  //   }
+  // };
 
-  useEffect(() => {
-    fetchLastApyId(); // Fetch the last attendance id when the component mounts
-  }, []);
+  // useEffect(() => {
+  //   fetchLastApyId(); // Fetch the last attendance id when the component mounts
+  // }, []);
 
 const handleSubmit = async (e) => {
   e.preventDefault();
@@ -50,7 +49,7 @@ const handleSubmit = async (e) => {
   setLoading(true);
   try {
     const submitFormData = new FormData(); 
-    submitFormData.append('apartment_id',formData.apartment_id);
+    // submitFormData.append('apartment_id',formData.apartment_id);
     submitFormData.append('name', formData.name); 
     submitFormData.append('address', formData.address);
     submitFormData.append('city', formData.city);
@@ -78,7 +77,7 @@ const handleSubmit = async (e) => {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {error && <p className="text-red-500">{error}</p>}
-      <input
+      {/* <input
         type="text"
         name="apartment_id"
         value={formData.apartment_id}
@@ -86,7 +85,7 @@ const handleSubmit = async (e) => {
         className="border rounded p-2 text-black dark:text-white border-purple-600"
         required
         disabled
-      />
+      /> */}
       <input
         type="text"
         name="name"

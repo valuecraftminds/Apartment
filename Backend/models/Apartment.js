@@ -3,7 +3,8 @@ const { v4: uuidv4 } = require('uuid');
 
 class Apartment {
     static async create(apartmentData) {
-        const { apartment_id, name, address, city, picture, company_id } = apartmentData;
+        const { name, address, city, picture, company_id } = apartmentData;
+        const apartment_id = `APT${Date.now()}`;
         
         // Get count of existing apartments for this company
         const [countResult] = await pool.execute(

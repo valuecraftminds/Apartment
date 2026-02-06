@@ -35,7 +35,7 @@ const upload = multer({
 const apartmentController = {
     async createApartment(req, res) {
         try {
-            const { apartment_id,name, address, city } = req.body;
+            const { name, address, city } = req.body;
             const company_id = req.user.company_id;
 
             let picturePath = null;
@@ -43,7 +43,7 @@ const apartmentController = {
                 picturePath = '/uploads/images/' + req.file.filename;
             }
 
-            if (!apartment_id || !name || !address || !city ) {
+            if (!name || !address || !city ) {
                 return res.status(400).json({
                     success: false,
                     message: 'All fields are required'
@@ -51,7 +51,6 @@ const apartmentController = {
             }
 
             const newApartment = await Apartment.create({
-                    apartment_id,
                     name,
                     address,
                     city,

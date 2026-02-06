@@ -1121,9 +1121,9 @@ export default function BillPaymentSettle() {
                     <div className="text-yellow-800 dark:text-yellow-300 font-bold text-2xl">
                       ${formatCurrency(totalAmount)}
                     </div>
-                    <div className="text-yellow-600 dark:text-yellow-400 text-sm">
+                    {/* <div className="text-yellow-600 dark:text-yellow-400 text-sm">
                       {allBills.filter(b => b.payment_status === 'Pending').length} pending • {allBills.filter(b => b.payment_status === 'Partial').length} partial
-                    </div>
+                    </div> */}
                   </div>
                 </div>
 
