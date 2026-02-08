@@ -246,7 +246,7 @@ export default function MeasurableBills() {
             
             if (accessResult.access) {
                 setAccessGranted(true);
-                toast.success(`Access granted! House ${houseDetails?.house_id || houseId} has ${selectedBill?.bill_name} bill.`);
+             //   toast.success(`Access granted! House ${houseDetails?.house_id || houseId} has ${selectedBill?.bill_name} bill.`);
             } else {
                 setAccessGranted(false);
                 setAccessDeniedReason(accessResult.reason || 'Access denied');

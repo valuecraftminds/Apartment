@@ -309,7 +309,7 @@ export default function StartWork() {
                     setElapsedTime(response.data.data.currentElapsedTime);
                 }
 
-                toast.success('Timer paused');
+                // toast.success('Timer paused');
                 return true;
             } else {
                 toast.error(response.data.message || 'Failed to pause timer');
@@ -342,7 +342,7 @@ export default function StartWork() {
                     }, 1000);
                 }
 
-                toast.success('Timer resumed');
+                //toast.success('Timer resumed');
                 return true;
             } else {
                 toast.error(response.data.message || 'Failed to resume timer');
@@ -397,7 +397,7 @@ export default function StartWork() {
                 
                 if (accessResult.access) {
                     setAccessGranted(true);
-                    toast.success(`Access granted! This is the correct house.`);
+                    // toast.success(`Access granted! This is the correct house.`);
                     
                     // Auto-start timer
                     try {

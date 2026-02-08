@@ -4,7 +4,10 @@ const { v4: uuidv4 } = require('uuid');
 class HouseType{
     static async create(houseTypeData) {
     const { company_id, apartment_id, name, sqrfeet, rooms, bathrooms} = houseTypeData;
-    const id = uuidv4().replace(/-/g, '').substring(0, 10);
+
+    const uuid = uuidv4();
+    const nextNumber = uuid.replace(/\D/g, '').substring(0, 4);
+    const id = `${company_id}-${nextNumber}`;
 
     const [result] = await pool.execute(
         `INSERT INTO housetype 

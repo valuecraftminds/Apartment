@@ -29,7 +29,8 @@ class Tenant{
     //const id = uuidv4().replace(/-/g, '').substring(0, 3);
     
     const uuid = uuidv4();
-    const id = uuid.replace(/\D/g, '').substring(0, 3);    
+    const id = (countResult[0].count + 1).toString().padStart(4, '0');
+    
     try {
       const [result] = await pool.execute(
         'INSERT INTO tenants (id, regNo, name, address) VALUES (?, ?, ?, ?)',

@@ -203,8 +203,8 @@ export function AuthProvider({ children }) {
   const navigate = useNavigate();
   const timeoutRef = useRef(null);
 
-  // Auto-logout after 10 minutes
-  const AUTO_LOGOUT_TIME = 10 * 60 * 1000;
+  // Auto-logout after 15 minutes
+  const AUTO_LOGOUT_TIME = 15 * 60 * 1000;
 
   const logout = useCallback(() => {
     setAuth({ accessToken: null, user: null, userType: null });
