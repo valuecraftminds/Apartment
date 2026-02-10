@@ -82,13 +82,39 @@ static async create(houseOwnerData) {
     return rows;
 }
 
-    static async findByApartment(apartment_id) {
-      const [rows] = await pool.execute(
-          'SELECT * FROM houseowner WHERE apartment_id=?',
-          [apartment_id]
-      );
-      return rows;
-  }
+        static async findByApartment(apartment_id, options = {}) {
+            // options: { company_id, is_verified }
+            const vals = [];
+            let where = [];
+
+            if (apartment_id) {
+                where.push('ho.apartment_id = ?');
+                vals.push(apartment_id);
+            }
+
+            if (options.company_id) {
+                where.push('ho.company_id = ?');
+                vals.push(options.company_id);
+            }
+
+            if (options.is_verified !== undefined && options.is_verified !== null) {
+                where.push('ho.is_verified = ?');
+                vals.push(options.is_verified);
+            }
+
+            const whereClause = where.length > 0 ? ('WHERE ' + where.join(' AND ')) : '';
+
+            const query = `
+                SELECT ho.*, r.role_name
+                FROM houseowner ho
+                LEFT JOIN roles r ON ho.role_id = r.id
+                ${whereClause}
+                ORDER BY ho.name ASC
+            `;
+
+            const [rows] = await pool.execute(query, vals);
+            return rows;
+    }
 
  
   // FIXED: Get house owner by house ID (using houseowner_id from houses table)

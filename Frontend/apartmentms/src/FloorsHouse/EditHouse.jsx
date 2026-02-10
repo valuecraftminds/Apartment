@@ -503,10 +503,8 @@
 
 import React, { useEffect, useState } from 'react';
 import api from '../api/axios';
-import { Loader, ChevronDown, ChevronUp, Upload } from 'lucide-react';
-import ImportHouseOwnerModal from './ImportHouseOwnerModal';
+import { Loader, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { use } from 'react';
 
 export default function EditHouse({ house, onClose, onUpdated, apartment_id, floor_id }) {
     const [formData, setFormData] = useState({
@@ -533,7 +531,7 @@ export default function EditHouse({ house, onClose, onUpdated, apartment_id, flo
     const [file, setFile] = useState(null);
     const [countries, setCountries] = useState([]);
     const [ownerFormExpanded, setOwnerFormExpanded] = useState(true);
-    const [showImportModal, setShowImportModal] = useState(false);
+    // import modal removed
 
     useEffect(() => {
         const fetchCountries = async () => {
@@ -747,9 +745,11 @@ export default function EditHouse({ house, onClose, onUpdated, apartment_id, flo
             if (res.data.success) {
                 if (newHouseOwnerCreated) {
                     onUpdated();
+                    onClose();
                     toast.success('House owner saved successfully! You can now setup login.');
                 } else {
                     onUpdated();
+                    onClose();
                 }
                 return houseOwnerId;
             }
@@ -765,53 +765,7 @@ export default function EditHouse({ house, onClose, onUpdated, apartment_id, flo
     const selectedCountry = countries.find(c => c.country === ownerFormData.country);
 
 
-    const handleSetPasswordAndVerify = async () => {
-        try {
-            setLoading(true);
-            
-            const houseownerId = formData.houseowner_id;
-            
-            if (!houseownerId) {
-                toast.error('House owner ID not found. Please save the house owner first.');
-                return;
-            }
-            
-            const houseOwnerEmail = ownerFormData.email;
-            
-            if (!houseOwnerEmail || !houseOwnerEmail.includes('@')) {
-                toast.error('Please enter a valid email address for the house owner');
-                return;
-            }
-            
-            const confirmSetup = window.confirm(
-                `Send verification email to ${houseOwnerEmail}?\n\n` +
-                `The house owner will receive an email with verification link.`
-            );
-            
-            if (!confirmSetup) {
-                setLoading(false);
-                return;
-            }
-            
-            const res = await api.post('/houseowner-auth/admin/setup', {
-                houseowner_id: houseownerId,
-                send_email: true
-            });
-            
-            if (res.data.success) {
-                toast.success('Verification email sent. Check your inbox ');
-                onUpdated();
-                
-            } else {
-                toast.error(res.data.message || 'Failed to set up house owner');
-            }
-        } catch (err) {
-            console.error('Error setting up house owner:', err);
-            toast.error('Error setting up house owner. Please try again.');
-        } finally {
-            setLoading(false);
-        }
-    };
+    // Removed auth/setup functionality: only update house and add house owner now.
 
     const handleImportSuccess = (importedOwner) => {
         // Auto-fill form with imported data
@@ -834,7 +788,7 @@ export default function EditHouse({ house, onClose, onUpdated, apartment_id, flo
             }));
         }
         
-        setShowImportModal(false);
+        // import modal removed
     };
 
     return (
@@ -911,15 +865,7 @@ export default function EditHouse({ house, onClose, onUpdated, apartment_id, flo
                                 )}
                             </button>
                             
-                            {/* Import from Excel Button */}
-                            <button
-                                type="button"
-                                onClick={() => setShowImportModal(true)}
-                                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-                            >
-                                <Upload size={16} />
-                                Import from Excel
-                            </button>
+                            {/* Excel import removed */}
                         </div>
                         
                         {ownerFormExpanded && (
@@ -1121,29 +1067,11 @@ export default function EditHouse({ house, onClose, onUpdated, apartment_id, flo
                         {loading && <Loader size={16} className="animate-spin" />}
                         {showOwnerForm ? 'Save House & Owner' : 'Save Changes'}
                     </button>
-                    {(formData.houseowner_id || (showOwnerForm && ownerFormData.email)) && (
-                        <button
-                            type="button"
-                            onClick={handleSetPasswordAndVerify}
-                            disabled={loading || !ownerFormData.email}
-                            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50"
-                            title={!ownerFormData.email ? "Enter email first" : "Setup login for house owner"}
-                        >
-                            Setup Auth
-                        </button>
-                    )}
+                    {/* removed Setup Auth button - auth handled separately */}
                 </div>
             </div>
 
-            {/* Import House Owner Modal */}
-            <ImportHouseOwnerModal
-                isOpen={showImportModal}
-                onClose={() => setShowImportModal(false)}
-                onImportSuccess={handleImportSuccess}
-                apartment_id={apartment_id}
-                house_id={house.id}
-                floor_id={floor_id}
-            />
+            {/* Excel import removed */}
         </form>
     );
 }

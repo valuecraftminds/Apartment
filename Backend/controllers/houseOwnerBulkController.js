@@ -402,26 +402,32 @@ const houseOwnerBulkController = {
                         [ownerId, 'occupied', occupiedAtVal, resolvedHouseId]
                     );
 
-                    // Generate verification token for newly created owners only
-                    const crypto = require('crypto');
-                    const verificationToken = crypto.randomBytes(32).toString('hex');
-                    const tokenHash = crypto.createHash('sha256').update(verificationToken).digest('hex');
-                    const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+                            // Respect `send_verification` flag from the upload form (multipart fields)
+                            // Default: send verification unless explicitly set to 'false'/'0'/'no'
+                            const sendVerification = !(req.body && (String(req.body.send_verification).toLowerCase() === 'false' || String(req.body.send_verification).toLowerCase() === '0' || String(req.body.send_verification).toLowerCase() === 'no'));
 
-                    await connection.execute(
-                        'UPDATE houseowner SET verification_token_hash = ?, verification_token_expires = ? WHERE id = ?',
-                        [tokenHash, tokenExpires, ownerId]
-                    );
+                            let verificationToken = null;
+                            if (sendVerification) {
+                                const crypto = require('crypto');
+                                verificationToken = crypto.randomBytes(32).toString('hex');
+                                const tokenHash = crypto.createHash('sha256').update(verificationToken).digest('hex');
+                                const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-                    results.success++;
-                    results.importedOwners.push({
-                        row: rowNumber,
-                        ownerId,
-                        name: ownerName,
-                        email,
-                        houseId: resolvedHouseId,
-                        verificationToken
-                    });
+                                await connection.execute(
+                                    'UPDATE houseowner SET verification_token_hash = ?, verification_token_expires = ? WHERE id = ?',
+                                    [tokenHash, tokenExpires, ownerId]
+                                );
+                            }
+
+                            results.success++;
+                            results.importedOwners.push({
+                                row: rowNumber,
+                                ownerId,
+                                name: ownerName,
+                                email,
+                                houseId: resolvedHouseId,
+                                verificationToken
+                            });
 
                 } catch (error) {
                     results.failed++;
@@ -440,11 +446,12 @@ const houseOwnerBulkController = {
             // Commit transaction
             await connection.commit();
 
-            // Send verification emails for successful imports (in background)
-            if (results.importedOwners.length > 0) {
+            // Send verification emails for successful imports (in background) only if tokens were generated
+            const anyWithToken = results.importedOwners.some(o => o.verificationToken);
+            if (anyWithToken) {
                 // Don't await - let it run in background
                 Promise.allSettled(
-                    results.importedOwners.map(async (owner) => {
+                    results.importedOwners.filter(o => o.verificationToken).map(async (owner) => {
                         try {
                             await sendHouseOwnerVerificationEmail(owner.email, owner.verificationToken, owner.ownerId);
                             console.log(`Verification email sent to ${owner.email}`);
@@ -453,7 +460,7 @@ const houseOwnerBulkController = {
                         }
                     })
                 ).then(() => {
-                    console.log(`All verification emails processed for ${results.importedOwners.length} owners`);
+                    console.log(`All verification emails processed for ${results.importedOwners.filter(o => o.verificationToken).length} owners`);
                 });
             }
 
@@ -576,7 +583,93 @@ const houseOwnerBulkController = {
                 error: error.message
             });
         }
+    },
+
+    // In houseOwnerBulkController.js - Add this method
+async sendBulkVerificationEmail(req, res) {
+    try {
+        const { owner_ids, email } = req.body;
+        const company_id = req.user.company_id;
+        
+        // For single email (backward compatibility)
+        if (email && !owner_ids) {
+            // Use the existing sendVerificationEmail logic
+            return this.sendVerificationEmail(req, res);
+        }
+        
+        if (!owner_ids || !Array.isArray(owner_ids) || owner_ids.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please select at least one house owner'
+            });
+        }
+        
+        // Get unverified house owners from the list
+        const placeholders = owner_ids.map(() => '?').join(',');
+        const [owners] = await pool.execute(
+            `SELECT id, email, name, is_verified FROM houseowner 
+             WHERE id IN (${placeholders}) AND company_id = ? AND is_verified = 0`,
+            [...owner_ids, company_id]
+        );
+        
+        if (owners.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Selected owners are already verified or not found'
+            });
+        }
+        
+        const crypto = require('crypto');
+        const results = {
+            total: owners.length,
+            success: 0,
+            failed: 0,
+            errors: []
+        };
+        
+        // Send verification emails to each owner
+        for (const owner of owners) {
+            try {
+                // Generate new verification token
+                const verificationToken = crypto.randomBytes(32).toString('hex');
+                const tokenHash = crypto.createHash('sha256').update(verificationToken).digest('hex');
+                const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+                
+                // Update the owner's verification token
+                await pool.execute(
+                    'UPDATE houseowner SET verification_token_hash = ?, verification_token_expires = ? WHERE id = ?',
+                    [tokenHash, tokenExpires, owner.id]
+                );
+                
+                // Send email
+                await sendHouseOwnerVerificationEmail(owner.email, verificationToken, owner.id);
+                results.success++;
+                
+            } catch (error) {
+                results.failed++;
+                results.errors.push({
+                    ownerId: owner.id,
+                    email: owner.email,
+                    error: error.message
+                });
+            }
+        }
+        
+        res.json({
+            success: true,
+            message: `Verification emails sent: ${results.success} successful, ${results.failed} failed`,
+            data: results
+        });
+        
+    } catch (error) {
+        console.error('Bulk verification email error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to send bulk verification emails',
+            error: error.message
+        });
     }
+}
 };
 
 module.exports = houseOwnerBulkController;

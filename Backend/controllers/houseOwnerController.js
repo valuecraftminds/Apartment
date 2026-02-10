@@ -108,7 +108,7 @@ async createHouseOwner(req, res) {
 
             // Get company_id from authenticated user (from JWT token)
             const company_id = req.user.company_id; // Assuming you store company_id in JWT
-            const { apartment_id } = req.query; // take from query params
+            const { apartment_id, filter } = req.query; // take from query params
 
             if(!company_id){
                 return res.status(400).json({
@@ -116,12 +116,8 @@ async createHouseOwner(req, res) {
                     message:'Company Id is required'
                 });
             }
-            if(!apartment_id){
-                return res.status(400).json({
-                    success:false,
-                    message:'Apartment Id is required'
-                });
-            }
+            // apartment_id is optional; if not provided we'll scope by company_id
+            // (useful for admins who manage multiple apartments)
 
             if (!req.user) {
             return res.status(401).json({
@@ -130,7 +126,12 @@ async createHouseOwner(req, res) {
             });
         }
 
-            const houseOwner = await HouseOwner.findByApartment(apartment_id);
+            // Determine verification filter
+            let is_verified;
+            if (filter === 'verified') is_verified = 1;
+            else if (filter === 'unverified') is_verified = 0;
+
+            const houseOwner = await HouseOwner.findByApartment(apartment_id, { company_id, is_verified });
             res.json({
                 success: true,
                 data: houseOwner

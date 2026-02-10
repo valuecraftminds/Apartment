@@ -136,7 +136,8 @@ export default function Sidebar() {
       isConstant: false,
       children: [
         { name: 'Company View', path: '/company-setup' },
-        { name: 'Import House owner', path: '/bulk-import-houseowner' }
+        { name: 'Import House owner', path: '/bulk-import-houseowner' },
+        { name: 'Handling email', path: '/bulk-email-verification' }
       ]
     },
     tenant_management: { 

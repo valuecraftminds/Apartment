@@ -50,9 +50,10 @@ import HouseOwnerProfilePage from './HouseOwner/HouseOwnerProfilePage'
 import StartWork from './Apartment_Technician/ComplaintManagament/StartWork'
 import MyWork from './Apartment_Technician/ComplaintManagament/MyWork'
 import ComplaintCategories from './Apartment_Technician/ComplaintManagament/ComplaintCategories'
-import Sidebar from './components/sidebar'
+import Sidebar from './components/Sidebar'
 import BulkImportHouseOwner from './FloorsHouse/BulkImportHouseOwner'
 import CompanySetup from './pages/CompanySetup'
+import BulkEmailVerification from './FloorsHouse/BulkEmailVerification'
 
 export default function App() {
   return (
@@ -105,6 +106,7 @@ export default function App() {
         <Route path= '/complaint-categories' element={<ComplaintCategories/>}/>
         <Route path= '/bulk-import-houseowner' element= {<BulkImportHouseOwner/>}/>
         <Route path='/company-setup' element={<CompanySetup/>}/>
+        <Route path='/bulk-email-verification' element= {<BulkEmailVerification/>}/>
       </Routes>
       </AuthProvider>
     </BrowserRouter>

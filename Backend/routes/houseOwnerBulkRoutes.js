@@ -39,6 +39,8 @@ router.get('/houses-for-selection', authenticateToken, houseOwnerBulkController.
 // Send verification email
 router.post('/send-verification', authenticateToken, houseOwnerBulkController.sendVerificationEmail);
 
+router.post('/send-verification-bulk', authenticateToken, houseOwnerBulkController.sendBulkVerificationEmail);
+
 // Error handling for multer
 router.use((error, req, res, next) => {
     if (error instanceof multer.MulterError) {
@@ -57,5 +59,7 @@ router.use((error, req, res, next) => {
     }
     next();
 });
+
+
 
 module.exports = router;

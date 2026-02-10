@@ -1,106 +1,6 @@
-// import React, { useState } from 'react'
-// import Sidebar from '../components/sidebar';
-// import Navbar from '../components/navbar';
-// import { UserCheck } from 'lucide-react';
-
-// export default function BulkImportHouseOwner() {
-//     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-//     const [apartments, setApartments] = useState([]);
-//     const [floors, setFloors] = useState({});
-//     const [houses, setHouses] = useState({});
-//     const [loadingApartments, setLoadingApartments] = useState(false);
-//     const [loadingFloors, setLoadingFloors] = useState({});
-//     const [loadingHouses, setLoadingHouses] = useState({});
-
-//     const loadApartments = async () => {
-//     try {
-//       setLoadingApartments(true);
-//       const result = await api.get('/apartments');
-//       if (result.data.success) {
-//         setApartments(result.data.data || []);
-//       }
-//     } catch (err) {
-//       console.error('Error loading apartments:', err);
-//       toast.error('Failed to load apartments');
-//     } finally {
-//       setLoadingApartments(false);
-//     }
-//   };
-
-//   // Load floors for a specific apartment
-//   const loadFloorsForApartment = async (apartmentId) => {
-//     if (!apartmentId) return;
-    
-//     try {
-//       setLoadingFloors(prev => ({ ...prev, [apartmentId]: true }));
-//       const result = await api.get(`/floors?apartment_id=${apartmentId}`);
-//       if (result.data.success) {
-//         const floorsData = result.data.data || [];
-//         setFloors(prev => ({
-//           ...prev,
-//           [apartmentId]: floorsData
-//         }));
-//       }
-//     } catch (err) {
-//       console.error('Error loading floors:', err);
-//       toast.error('Failed to load floors');
-//     } finally {
-//       setLoadingFloors(prev => ({ ...prev, [apartmentId]: false }));
-//     }
-//   };
-
-//   // Load houses for a specific floor
-//   const loadHousesForFloor = async (apartmentId, floorId) => {
-//     if (!apartmentId || !floorId) return;
-    
-//     try {
-//       setLoadingHouses(prev => ({ ...prev, [floorId]: true }));
-//       const result = await api.get(`/houses?apartment_id=${apartmentId}&floor_id=${floorId}`);
-//       if (result.data.success) {
-//         const housesData = result.data.data || [];
-//         setHouses(prev => ({
-//           ...prev,
-//           [floorId]: housesData
-//         }));
-//       }
-//     } catch (err) {
-//       console.error('Error loading houses:', err);
-//       toast.error('Failed to load houses');
-//     } finally {
-//       setLoadingHouses(prev => ({ ...prev, [floorId]: false }));
-//     }
-//   };
-
-//   return (
-//     <div className='flex h-screen bg-gray-100 dark:bg-gray-900 w-screen transition-colors duration-200'>
-//          <Sidebar onCollapse={setIsSidebarCollapsed}/>
-//         <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${isSidebarCollapsed ? 'ml-20' : 'ml-64'}`}>
-//             <Navbar/>
-//             <div className='flex-1 overflow-y-auto p-6'>
-//                 <div className='mx-auto max-w-7xl'>
-//                     <div className='flex items-center justify-between bg-white dark:bg-gray-800 rounded-2xl p-6 mb-6'>
-//                         <div className='flex items-center'>
-//                             <UserCheck size={40} className='text-purple-600 dark:text-purple-400 mr-3'/>
-//                             <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Bulk import of House Owners</h1>
-//                         </div>
-//                     </div> 
-//                     <div className='bg-white dark:bg-gray-800 rounded-2xl p-6 text-gray-700 dark:text-gray-300'>
-//                         <button
-//                             className='flex items-center gap-2 mb-6 px-4 py-2 rounded-lg font-semibold shadow-md transition-all duration-300 text-white bg-purple-600'>
-//                             <span>Excel Downloads</span>
-//                         </button>
-//                     </div>
-//                 </div>
-
-//             </div>
-//         </div>
-//     </div>
-//   )
-// }
-
 // pages/BulkImportHouseOwner.js
 import React, { useState, useEffect } from 'react';
-import Sidebar from '../components/sidebar';
+import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import { UserCheck, Download, Upload, ChevronDown, ChevronRight, Check, Home, Building, Layers } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -171,7 +71,9 @@ export default function BulkImportHouseOwner() {
         try {
             const result = await api.get(`/houses?apartment_id=${apartmentId}&floor_id=${floorId}&status=vacant`);
             if (result.data.success) {
-                const housesData = result.data.data || [];
+                // Ensure we only store houses that are vacant (server should already filter,
+                // but guard here in case API returns extra items)
+                const housesData = (result.data.data || []).filter(h => (h.status || '').toString().toLowerCase() === 'vacant');
                 setHouses(prev => ({
                     ...prev,
                     [floorId]: housesData
@@ -777,7 +679,7 @@ export default function BulkImportHouseOwner() {
                                         Upload & Import
                                     </h3>
                                     <p className="text-gray-600 dark:text-gray-400 text-sm mb-6">
-                                        Upload the filled Excel sheet to import house owners in bulk. Verification emails will be sent automatically.
+                                        Upload the filled Excel sheet to import house owners in bulk. No verification emails will be sent.
                                     </p>
                                     
                                     <div className="mb-4">
